@@ -81,3 +81,5 @@ set_target_properties(melyar PROPERTIES
 )
 
 install(TARGETS melyar DESTINATION bin)
+install(FILES resources/melyar.desktop DESTINATION share/applications)
+install(FILES resources/melyar.svg DESTINATION share/icons/hicolor/scalable/apps)

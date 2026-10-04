@@ -15,6 +15,64 @@ Window {
 
     property string currentTab: "search"
     property bool showLyrics: false
+    property double prevVol: 100.0
+
+    // -------------------------------------------------------------
+    // Global Keyboard Shortcuts
+    // -------------------------------------------------------------
+    Shortcut {
+        sequence: "Space"
+        enabled: !searchInput.activeFocus
+        onActivated: bridge.togglePlay()
+    }
+    Shortcut {
+        sequence: "Left"
+        enabled: !searchInput.activeFocus
+        onActivated: bridge.seek(Math.max(0, bridge.currentPosition - 5))
+    }
+    Shortcut {
+        sequence: "Right"
+        enabled: !searchInput.activeFocus
+        onActivated: bridge.seek(Math.min(bridge.currentDuration, bridge.currentPosition + 5))
+    }
+    Shortcut {
+        sequence: "Up"
+        enabled: !searchInput.activeFocus
+        onActivated: bridge.setVolume(Math.min(100, bridge.volume + 5))
+    }
+    Shortcut {
+        sequence: "Down"
+        enabled: !searchInput.activeFocus
+        onActivated: bridge.setVolume(Math.max(0, bridge.volume - 5))
+    }
+    Shortcut {
+        sequences: ["Ctrl+F", "/"]
+        onActivated: searchInput.forceActiveFocus()
+    }
+    Shortcut {
+        sequence: "Escape"
+        onActivated: {
+            window.focus = true;
+            if (window.showLyrics) window.showLyrics = false;
+        }
+    }
+    Shortcut {
+        sequence: "L"
+        enabled: !searchInput.activeFocus
+        onActivated: window.showLyrics = !window.showLyrics
+    }
+    Shortcut {
+        sequence: "M"
+        enabled: !searchInput.activeFocus
+        onActivated: {
+            if (bridge.volume > 0) {
+                window.prevVol = bridge.volume;
+                bridge.setVolume(0);
+            } else {
+                bridge.setVolume(window.prevVol > 0 ? window.prevVol : 100);
+            }
+        }
+    }
 
     // Root Layout
     Item {

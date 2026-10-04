@@ -249,9 +249,35 @@ Rectangle {
                         height: 12
                         radius: 6
                         color: "#FFFFFF"
-                        x: seekProgress.width - 6
+                        x: Math.max(0, Math.min(seekTrack.width - width, seekProgress.width - 6))
                         anchors.verticalCenter: parent.verticalCenter
-                        visible: seekMouse.containsMouse
+                        visible: seekMouse.containsMouse || seekMouse.pressed
+                    }
+
+                    // Hover Tooltip with preview timestamp
+                    Rectangle {
+                        id: seekTooltip
+                        width: 48
+                        height: 22
+                        radius: 4
+                        color: "#282828"
+                        border.color: "#3e3e3e"
+                        border.width: 1
+                        y: -30
+                        x: Math.max(0, Math.min(seekTrack.width - width, seekMouse.mouseX - width / 2))
+                        visible: (seekMouse.containsMouse || seekMouse.pressed) && bridge.currentDuration > 0
+                        z: 100
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: {
+                                var ratio = Math.max(0, Math.min(1.0, (seekMouse.mouseX - 6) / seekTrack.width));
+                                return Style.formatTime(ratio * bridge.currentDuration);
+                            }
+                            color: "#FFFFFF"
+                            font.pixelSize: 10
+                            font.bold: true
+                        }
                     }
 
                     MouseArea {
@@ -261,10 +287,17 @@ Rectangle {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
 
-                        onClicked: (mouse) => {
+                        function updateSeek(mouse) {
                             if (bridge.currentDuration > 0) {
-                                var ratio = Math.max(0, Math.min(1, (mouse.x - 6) / seekTrack.width));
+                                var ratio = Math.max(0, Math.min(1.0, (mouse.x - 6) / seekTrack.width));
                                 bridge.seek(ratio * bridge.currentDuration);
+                            }
+                        }
+
+                        onClicked: (mouse) => updateSeek(mouse)
+                        onPositionChanged: (mouse) => {
+                            if (pressed) {
+                                updateSeek(mouse);
                             }
                         }
                     }
@@ -315,14 +348,30 @@ Rectangle {
 
             // Volume Section
             Row {
+                id: volRow
                 spacing: 8
                 anchors.verticalCenter: parent.verticalCenter
+
+                property double prevVolume: 100.0
 
                 Text {
                     text: bridge.volume > 50 ? "🔊" : (bridge.volume > 0 ? "🔉" : "🔇")
                     font.pixelSize: 14
                     anchors.verticalCenter: parent.verticalCenter
                     color: Style.textSecondary
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (bridge.volume > 0) {
+                                volRow.prevVolume = bridge.volume;
+                                bridge.setVolume(0);
+                            } else {
+                                bridge.setVolume(volRow.prevVolume > 0 ? volRow.prevVolume : 100);
+                            }
+                        }
+                    }
                 }
 
                 Rectangle {

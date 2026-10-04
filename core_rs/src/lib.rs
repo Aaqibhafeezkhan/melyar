@@ -13,6 +13,7 @@ use crate::audio::queue::TrackQueue;
 use crate::db::storage::DbStorage;
 use crate::innertube::client::InnerTubeClient;
 use crate::linux::mpris::{MprisCommandHandler, MprisManager};
+use crate::linux::waybar::{WaybarCommandHandler, WaybarIpc};
 
 #[cxx::bridge(namespace = "melyar")]
 pub mod ffi {
@@ -60,6 +61,7 @@ pub struct MelyarCore {
     storage: Arc<DbStorage>,
     audio: Mutex<Option<Arc<MelyarAudioEngine>>>,
     _mpris: Mutex<Option<Arc<MprisManager>>>,
+    _waybar: Mutex<Option<Arc<WaybarIpc>>>,
     runtime: Arc<Runtime>,
 }
 
@@ -68,6 +70,7 @@ struct EngineEvents {
     innertube: Arc<InnerTubeClient>,
     audio_holder: Mutex<Option<Arc<MelyarAudioEngine>>>,
     mpris_holder: Mutex<Option<Arc<MprisManager>>>,
+    waybar_holder: Mutex<Option<Arc<WaybarIpc>>>,
     storage: Arc<DbStorage>,
     runtime: Arc<Runtime>,
 }
@@ -77,12 +80,18 @@ impl AudioEventHandler for EngineEvents {
         if let Some(ref mpris) = *self.mpris_holder.lock() {
             mpris.update_position(current_secs);
         }
+        if let Some(ref waybar) = *self.waybar_holder.lock() {
+            waybar.update_position(current_secs);
+        }
         ffi::on_progress_update(current_secs, total_secs);
     }
 
     fn on_state_changed(&self, is_playing: bool) {
         if let Some(ref mpris) = *self.mpris_holder.lock() {
             mpris.update_playback_state(is_playing);
+        }
+        if let Some(ref waybar) = *self.waybar_holder.lock() {
+            waybar.update_playback_state(is_playing);
         }
         ffi::on_state_changed(is_playing);
     }
@@ -93,6 +102,7 @@ impl AudioEventHandler for EngineEvents {
             let audio_opt = self.audio_holder.lock().clone();
             let storage = self.storage.clone();
             let mpris_opt = self.mpris_holder.lock().clone();
+            let waybar_opt = self.waybar_holder.lock().clone();
             let rt = self.runtime.clone();
 
             rt.spawn(async move {
@@ -102,6 +112,9 @@ impl AudioEventHandler for EngineEvents {
                         let _ = storage.add_history(&next);
                         if let Some(ref mpris) = mpris_opt {
                             mpris.update_track(Some(next.clone()));
+                        }
+                        if let Some(ref waybar) = waybar_opt {
+                            waybar.update_track(Some(next.clone()));
                         }
                         ffi::on_track_changed(next.clone());
 
@@ -182,6 +195,23 @@ impl MprisCommandHandler for MprisHandlerImpl {
     }
 }
 
+impl WaybarCommandHandler for MprisHandlerImpl {
+    fn on_toggle(&self) {
+        let _ = toggle_play();
+    }
+    fn on_next(&self) {
+        let _ = next_track();
+    }
+    fn on_prev(&self) {
+        let _ = previous_track();
+    }
+    fn on_stop(&self) {
+        if let Some(ref audio) = *self.audio_holder.lock() {
+            let _ = audio.stop();
+        }
+    }
+}
+
 static CORE: OnceCell<Arc<MelyarCore>> = OnceCell::new();
 
 fn get_core() -> &'static Arc<MelyarCore> {
@@ -196,6 +226,7 @@ fn get_core() -> &'static Arc<MelyarCore> {
             innertube: innertube.clone(),
             audio_holder: Mutex::new(None),
             mpris_holder: Mutex::new(None),
+            waybar_holder: Mutex::new(None),
             storage: storage.clone(),
             runtime: runtime.clone(),
         });
@@ -221,8 +252,11 @@ fn get_core() -> &'static Arc<MelyarCore> {
             runtime: runtime.clone(),
         });
 
-        let mpris = Arc::new(MprisManager::new(mpris_handler, runtime.clone()));
+        let mpris = Arc::new(MprisManager::new(mpris_handler.clone(), runtime.clone()));
         *events.mpris_holder.lock() = Some(mpris.clone());
+
+        let waybar = Arc::new(WaybarIpc::new(mpris_handler, runtime.clone()));
+        *events.waybar_holder.lock() = Some(waybar.clone());
 
         Arc::new(MelyarCore {
             innertube,
@@ -230,6 +264,7 @@ fn get_core() -> &'static Arc<MelyarCore> {
             storage,
             audio: Mutex::new(audio),
             _mpris: Mutex::new(Some(mpris)),
+            _waybar: Mutex::new(Some(waybar)),
             runtime,
         })
     })
@@ -268,6 +303,7 @@ pub fn play_track(track_id: String) -> bool {
     let audio_opt = core.audio.lock().clone();
     let storage = core.storage.clone();
     let mpris_opt = core._mpris.lock().clone();
+    let waybar_opt = core._waybar.lock().clone();
     let queue = core.queue.clone();
     let rt = core.runtime.clone();
 
@@ -285,6 +321,9 @@ pub fn play_track(track_id: String) -> bool {
                             let _ = storage.add_history(&meta);
                             if let Some(ref mpris) = mpris_opt {
                                 mpris.update_track(Some(meta.clone()));
+                            }
+                            if let Some(ref waybar) = waybar_opt {
+                                waybar.update_track(Some(meta.clone()));
                             }
                             ffi::on_track_changed(meta.clone());
 

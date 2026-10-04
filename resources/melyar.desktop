@@ -1,0 +1,25 @@
+[Desktop Entry]
+Name=Melyar
+GenericName=Music Player
+Comment=Ultra-lightweight native YouTube Music desktop client in C++20 and Rust
+Exec=melyar
+Icon=melyar
+Terminal=false
+Type=Application
+Categories=AudioVideo;Audio;Player;Qt;
+Keywords=music;streaming;youtube;spotify;audio;
+StartupWMClass=melyar
+MimeType=x-scheme-handler/melyar;
+Actions=PlayPause;Next;Previous;
+
+[Desktop Action PlayPause]
+Name=Play/Pause
+Exec=sh -c "echo toggle | nc -U ${XDG_RUNTIME_DIR:-/tmp}/melyar.sock"
+
+[Desktop Action Next]
+Name=Next Track
+Exec=sh -c "echo next | nc -U ${XDG_RUNTIME_DIR:-/tmp}/melyar.sock"
+
+[Desktop Action Previous]
+Name=Previous Track
+Exec=sh -c "echo prev | nc -U ${XDG_RUNTIME_DIR:-/tmp}/melyar.sock"

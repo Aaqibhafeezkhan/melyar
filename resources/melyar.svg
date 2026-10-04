@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#181818"/>
+      <stop offset="100%" stop-color="#0a0a0a"/>
+    </linearGradient>
+    <linearGradient id="neonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1ED760"/>
+      <stop offset="100%" stop-color="#1DB954"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background circle with subtle border -->
+  <circle cx="256" cy="256" r="240" fill="url(#bgGrad)" stroke="#282828" stroke-width="8"/>
+  <circle cx="256" cy="256" r="236" fill="none" stroke="url(#neonGrad)" stroke-width="3" opacity="0.3"/>
+
+  <!-- Modern Stylized "M" with soundwave arcs -->
+  <g filter="url(#glow)">
+    <!-- Central Sound Waves / Melyar "M" glyph -->
+    <path d="M 140 350 L 140 180 C 140 165 160 155 172 166 L 256 260 L 340 166 C 352 155 372 165 372 180 L 372 350" 
+          fill="none" stroke="url(#neonGrad)" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Accent audio pulse bars -->
+    <line x1="210" y1="310" x2="210" y2="350" stroke="#1ED760" stroke-width="16" stroke-linecap="round"/>
+    <line x1="256" y1="285" x2="256" y2="350" stroke="#1ED760" stroke-width="16" stroke-linecap="round"/>
+    <line x1="302" y1="310" x2="302" y2="350" stroke="#1ED760" stroke-width="16" stroke-linecap="round"/>
+  </g>
+</svg>
