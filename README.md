@@ -8,6 +8,8 @@
 
 [![CI](https://github.com/MAKHMUDuz/melyar/actions/workflows/ci.yml/badge.svg)](https://github.com/MAKHMUDuz/melyar/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-APACHE)
+[![Contributors](https://img.shields.io/github/contributors/MAKHMUDuz/melyar.svg)](https://github.com/MAKHMUDuz/melyar/graphs/contributors)
+[![Discussions](https://img.shields.io/github/discussions/MAKHMUDuz/melyar?label=discussions&logo=github)](https://github.com/MAKHMUDuz/melyar/discussions)
 
 </div>
 
@@ -23,6 +25,36 @@ Playback is powered by `libmpv`, and stream/metadata resolution goes through
 > **Project status: Work in progress.** Melyar is actively developed. Some UI
 > interactions and provider integrations are still being refined, so expect
 > changes and occasional bugs.
+> **[Looking to help? Read the contributing guide.](CONTRIBUTING.md)**
+
+---
+
+## Why Melyar
+
+There are other YouTube Music clients. Two of them are good. Melyar exists to
+be the best one **on Linux**, not the most portable one.
+
+| | Melyar | Spotube | BloomeeTunes |
+|---|---|---|---|
+| Stack | **Rust + Qt6/QML + React** | Flutter/Dart | Flutter/Dart |
+| Platforms | Linux | Win, macOS, mobile, web | Win, macOS, mobile, web |
+| Runtime footprint | Small - no Flutter engine, no Electron tree | Large | Large |
+| MPRIS (GNOME, KDE, i3) | Full | Partial | Partial |
+| Waybar / Polybar IPC | Built in | No | No |
+| License | **MIT OR Apache-2.0** | BSD-4 | GPL-2.0 |
+
+Three bets:
+
+1. **Native beats emulated.** A Rust core with a Qt shell starts fast, keeps a
+   small memory footprint, and answers key presses and IPC without a framework
+   in between.
+2. **Desktop integration is the product.** MPRIS, a Waybar socket with
+   sub-millisecond latency, global media keys, and a real `.desktop`
+   integration are the difference between an application and a native citizen.
+3. **Permissive licensing.** MIT or Apache-2.0 lets distributors embed it.
+
+Where the competitors are still stronger - cross-platform reach and provider
+breadth - is stated plainly in the [roadmap](ROADMAP.md).
 
 ---
 
@@ -277,17 +309,18 @@ Full setup instructions, CSS, and Hyprland/Sway keybinding examples are in
 
 ## Roadmap
 
-The following are goals and ongoing areas of work; **do not assume every item is
-already implemented**:
+The full plan lives in **[ROADMAP.md](ROADMAP.md)**, including the honest list
+of where Melyar still lags the alternatives and the milestones that close the
+gap. The next steps:
 
-- Stabilize responsive layout, panel stacking, and Liquid Glass transitions.
-- Improve lyrics timing, active-line highlighting, and manual-scroll behavior.
-- Finish reliable queue, sharing, and context-menu interactions.
-- Refine local music library scanning and portable library import/export.
-- Build a provider/plugin architecture that allows optional integrations.
-- Investigate library import or migration workflows for Spotify, Apple Music, and
-  Yandex Music where supported by legitimate export formats or documented APIs.
-- Improve performance, accessibility, error handling, and automated testing.
+- **M1 - Solid Linux citizen:** persistent settings, keyboard-first navigation,
+  an accessibility pass, crash-safe database writes.
+- **M2 - Library that works:** portable import/export, local music folders,
+  smart playlists, playlist editing.
+- **M3 - Provider breadth:** Spotify and Apple Music library import where
+  permitted, and a documented provider plugin interface.
+- **M4 - Cross-platform, if it earns its place:** an honest evaluation of
+  extending the shell beyond Linux.
 
 Third-party services may require their own accounts, subscriptions, authorization,
 or API access. Melyar does not make paid features of another service free, and
@@ -351,7 +384,14 @@ database-free operation.
 
 ## Contributing
 
-Contributions, bug reports, and focused pull requests are welcome.
+Contributions, bug reports, and focused pull requests are welcome. **New
+contributors are actively wanted** - see the
+[good first issues](ROADMAP.md#good-first-issues) for scoped starting points.
+
+The full guide is in **[CONTRIBUTING.md](CONTRIBUTING.md)**: build setup, the
+commit and branch conventions, the pull request process, and how the three
+layers of the codebase fit together. The system design is documented in
+**[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
 
 Before submitting a change:
 
@@ -370,17 +410,19 @@ secrets removed.
 
 ## Bug reports
 
-When reporting a bug, include:
-
-- Operating system and desktop environment.
-- Melyar version or commit.
-- Steps to reproduce the issue.
-- Expected behavior and actual behavior.
-- Relevant logs, with tokens and private data removed.
+Use the **bug report template** - it asks for the version, the desktop
+environment, the expected and actual behavior, and reproducible steps, which
+saves a round trip.
 
 For layout issues, include the window size and whether the queue or expanded
 player was open. For lyrics issues, include the track, playback position, and
 whether the lyrics are timestamped or plain text.
+
+**Security problems** are not public issues - see
+[.github/SECURITY.md](.github/SECURITY.md).
+
+Participation is governed by the
+[Code of Conduct](.github/CODE_OF_CONDUCT.md).
 
 ---
 

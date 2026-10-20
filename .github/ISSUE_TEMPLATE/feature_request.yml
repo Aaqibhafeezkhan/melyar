@@ -1,0 +1,74 @@
+name: Feature request
+description: Suggest an improvement or a new capability
+labels: ["enhancement", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check the [existing issues](https://github.com/MAKHMUDuz/melyar/issues)
+        and the [roadmap](../blob/master/ROADMAP.md) first, so we do not
+        duplicate work.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the problem, not the solution you have in mind. This is the part that matters.
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+      description: |
+        A rough sketch is welcome. If you have tried something already,
+        a branch or a patch helps a lot.
+      render: markdown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area does this touch?
+      options:
+        - Playback / audio
+        - Lyrics
+        - Library / local data
+        - Interface / Liquid Glass
+        - MPRIS / desktop integration
+        - Waybar / status bar
+        - Provider / InnerTube
+        - Build / packaging
+        - Documentation
+        - Something else
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: How large is this change?
+      options:
+        - Small - a fix or a small addition
+        - Medium - a new component or a refactor of one area
+        - Large - a subsystem or an architectural change
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: Including alternatives that already exist in other clients.
+      render: markdown
+
+  - type: checkboxes
+    id: willing
+    attributes:
+      label: Contribution
+      options:
+        - label: I would be willing to implement this myself
+        - label: I would be willing to review a pull request for this

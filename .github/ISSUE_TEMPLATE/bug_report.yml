@@ -1,0 +1,96 @@
+name: Bug report
+description: Something is not working as expected
+labels: ["bug", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this.
+
+        Please check the [existing issues](https://github.com/MAKHMUDuz/melyar/issues)
+        first - if it is already reported, adding a comment with your
+        reproduction details is more useful than opening a duplicate.
+
+        **Never paste access tokens, cookies, or credentials here.** If a log
+        contains them, remove them first.
+
+  - type: input
+    id: version
+    attributes:
+      label: Melyar version or commit
+      description: The output of `melyar --version`, or the commit SHA you are running.
+      placeholder: v0.1.0 / 22acf2d
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Arch Linux
+        - Manjaro
+        - Ubuntu
+        - Debian
+        - Fedora
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: desktop
+    attributes:
+      label: Desktop environment
+      description: For example GNOME 47 on Wayland, KDE Plasma 6 under X11.
+      placeholder: GNOME 47 / Wayland
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+      description: What should the application have done?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+      description: What did the application actually do? Include the exact message or symptom.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: |
+        1.
+        2.
+        3.
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Output of `RUST_LOG=debug ./build/melyar` if the app starts.
+        Remove tokens, cookies, and personal data before pasting.
+      render: shell
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: |
+        Screenshots or a recording help for visual problems.
+        For layout issues, include the window size and whether the queue
+        or the expanded player was open.
+        For lyrics issues, include the track, the playback position, and
+        whether the lyrics are timestamped or plain text.
+      render: markdown

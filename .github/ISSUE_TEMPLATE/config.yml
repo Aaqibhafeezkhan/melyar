@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/MAKHMUDuz/melyar/security/advisories/new
+    about: Report a security problem privately. Please do not open a public issue.
+  - name: Question or discussion
+    url: https://github.com/MAKHMUDuz/melyar/discussions
+    about: Ask a question, share an idea, or show what you built.
+  - name: Contribution guide
+    url: https://github.com/MAKHMUDuz/melyar/blob/master/CONTRIBUTING.md
+    about: Build setup, commit conventions, and the pull request process.

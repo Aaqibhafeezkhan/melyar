@@ -8,6 +8,8 @@
 
 [![CI](https://github.com/MAKHMUDuz/melyar/actions/workflows/ci.yml/badge.svg)](https://github.com/MAKHMUDuz/melyar/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-APACHE)
+[![Contributors](https://img.shields.io/github/contributors/MAKHMUDuz/melyar.svg)](https://github.com/MAKHMUDuz/melyar/graphs/contributors)
+[![Discussions](https://img.shields.io/github/discussions/MAKHMUDuz/melyar?label=discussions&logo=github)](https://github.com/MAKHMUDuz/melyar/discussions)
 
 </div>
 
@@ -19,6 +21,29 @@ kabuğu ve React tabanlı web arayüzünden oluşur.
 
 Proje **C++20 + Rust + Qt6 + React/TypeScript** yığınıyla yazılmıştır. Çalma motoru
 olarak `libmpv`, ağ katmanı olarak YouTube'un resmi `InnerTube` API'si kullanılır.
+
+> **Proje durumu: geliştirme aşamasında.** Melyar aktif olarak geliştirilmektedir.
+> Bazı arayüz etkileşimleri ve sağlayıcı entegrasyonları hâlâ olgunlaşma aşamasında.
+> **[Katkıda bulunmak isterseniz: katkı rehberi](CONTRIBUTING.md)**
+
+---
+
+## Neden Melyar
+
+Başka YouTube Music istemcileri var ve ikisi de iyi. Melyar'ın amacı en taşınabilir
+istemci olmak değil, **Linux'ta en iyi** istemci olmak.
+
+| | Melyar | Spotube | BloomeeTunes |
+|---|---|---|---|
+| Yığın | **Rust + Qt6/QML + React** | Flutter/Dart | Flutter/Dart |
+| Platformlar | Linux | Win, macOS, mobil, web | Win, macOS, mobil, web |
+| Çalışma zamanı | Küçük - Flutter motoru/Electron ağacı yok | Büyük | Büyük |
+| MPRIS (GNOME, KDE, i3) | Tam | Kısmi | Kısmi |
+| Waybar / Polybar IPC | Yerleşik | Yok | Yok |
+| Lisans | **MIT OR Apache-2.0** | BSD-4 | GPL-2.0 |
+
+Rakiplerin hâlâ daha güçlü olduğu alanlar - çok platformluluk ve sağlayıcı çeşitliliği -
+[roadmap](ROADMAP.md) içinde açıkça yazılıdır.
 
 ---
 
@@ -235,6 +260,22 @@ melyar/
 |---|---|
 | Veritabanı (favoriler, geçmiş, söz cache) | `~/.local/share/melyar/melyar.db` |
 | IPC soketi | `$XDG_RUNTIME_DIR/melyar.sock` |
+
+---
+
+## Katılım
+
+Katkılara, hata raporlarına ve odaklı pull request'lere açığız. **Yeni
+katkıcılar arıyoruz** - başlangıç için kapsamlı işler
+[good first issues](ROADMAP.md#good-first-issues) listesinde.
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — derleme kurulumu, commit/branch
+  konvansiyonları, pull request süreci
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — üç katmanın nasıl birleştiği
+- [ROADMAP.md](ROADMAP.md) — plan ve "good first issue" listesi
+- [docs/WAYBAR.md](docs/WAYBAR.md) — durum çubuğu entegrasyonu
+- [Code of Conduct](.github/CODE_OF_CONDUCT.md) — [.github/SECURITY.md](.github/SECURITY.md)
+  güvenlik raporlama
 
 ---
 
