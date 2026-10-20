@@ -74,10 +74,30 @@ impl MelyarAudioEngine {
             let pause = CString::new("pause").unwrap();
             let eof_reached = CString::new("eof-reached").unwrap();
 
-            mpv_sys::mpv_observe_property(handle, 1, time_pos.as_ptr(), mpv_sys::mpv_format_MPV_FORMAT_DOUBLE);
-            mpv_sys::mpv_observe_property(handle, 2, duration.as_ptr(), mpv_sys::mpv_format_MPV_FORMAT_DOUBLE);
-            mpv_sys::mpv_observe_property(handle, 3, pause.as_ptr(), mpv_sys::mpv_format_MPV_FORMAT_FLAG);
-            mpv_sys::mpv_observe_property(handle, 4, eof_reached.as_ptr(), mpv_sys::mpv_format_MPV_FORMAT_FLAG);
+            mpv_sys::mpv_observe_property(
+                handle,
+                1,
+                time_pos.as_ptr(),
+                mpv_sys::mpv_format_MPV_FORMAT_DOUBLE,
+            );
+            mpv_sys::mpv_observe_property(
+                handle,
+                2,
+                duration.as_ptr(),
+                mpv_sys::mpv_format_MPV_FORMAT_DOUBLE,
+            );
+            mpv_sys::mpv_observe_property(
+                handle,
+                3,
+                pause.as_ptr(),
+                mpv_sys::mpv_format_MPV_FORMAT_FLAG,
+            );
+            mpv_sys::mpv_observe_property(
+                handle,
+                4,
+                eof_reached.as_ptr(),
+                mpv_sys::mpv_format_MPV_FORMAT_FLAG,
+            );
         }
 
         let mpv_wrapper = Arc::new(MpvHandleWrapper { raw: handle });
@@ -107,36 +127,43 @@ impl MelyarAudioEngine {
 
                     if event.event_id == mpv_sys::mpv_event_id_MPV_EVENT_PROPERTY_CHANGE {
                         if !event.data.is_null() {
-                            let prop = unsafe { &*(event.data as *const mpv_sys::mpv_event_property) };
+                            let prop =
+                                unsafe { &*(event.data as *const mpv_sys::mpv_event_property) };
                             if !prop.name.is_null() {
                                 let name = unsafe { CStr::from_ptr(prop.name) }.to_string_lossy();
                                 match name.as_ref() {
                                     "time-pos" => {
-                                        if prop.format == mpv_sys::mpv_format_MPV_FORMAT_DOUBLE && !prop.data.is_null() {
+                                        if prop.format == mpv_sys::mpv_format_MPV_FORMAT_DOUBLE
+                                            && !prop.data.is_null()
+                                        {
                                             current_pos = unsafe { *(prop.data as *const f64) };
                                             handler.on_progress(current_pos, current_dur);
 
                                             // Gapless prefetch trigger: 5 seconds before end
-                                            if current_dur > 10.0 && (current_dur - current_pos) <= 5.0 {
-                                                if !prefetched_clone.load(Ordering::Relaxed) {
-                                                    prefetched_clone.store(true, Ordering::Relaxed);
-                                                    handler.on_gapless_prefetch_needed();
-                                                }
+                                            if current_dur > 10.0
+                                                && (current_dur - current_pos) <= 5.0
+                                                && !prefetched_clone.load(Ordering::Relaxed)
+                                            {
+                                                prefetched_clone.store(true, Ordering::Relaxed);
+                                                handler.on_gapless_prefetch_needed();
                                             }
                                         }
                                     }
                                     "duration" => {
-                                        if prop.format == mpv_sys::mpv_format_MPV_FORMAT_DOUBLE && !prop.data.is_null() {
+                                        if prop.format == mpv_sys::mpv_format_MPV_FORMAT_DOUBLE
+                                            && !prop.data.is_null()
+                                        {
                                             current_dur = unsafe { *(prop.data as *const f64) };
                                             handler.on_progress(current_pos, current_dur);
                                         }
                                     }
-                                    "pause" => {
-                                        if prop.format == mpv_sys::mpv_format_MPV_FORMAT_FLAG && !prop.data.is_null() {
-                                            let paused = unsafe { *(prop.data as *const i32) } != 0;
-                                            is_playing_clone.store(!paused, Ordering::Relaxed);
-                                            handler.on_state_changed(!paused);
-                                        }
+                                    "pause"
+                                        if prop.format == mpv_sys::mpv_format_MPV_FORMAT_FLAG
+                                            && !prop.data.is_null() =>
+                                    {
+                                        let paused = unsafe { *(prop.data as *const i32) } != 0;
+                                        is_playing_clone.store(!paused, Ordering::Relaxed);
+                                        handler.on_state_changed(!paused);
                                     }
                                     _ => {}
                                 }

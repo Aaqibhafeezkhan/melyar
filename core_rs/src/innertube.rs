@@ -1,4 +1,4 @@
-pub mod client;
-pub mod parser;
 pub mod cipher;
+pub mod client;
 pub mod lyrics;
+pub mod parser;

@@ -52,9 +52,16 @@ file(GLOB_RECURSE MELYAR_QML_FILES CONFIGURE_DEPENDS
     "ui_cpp/qml/**/qmldir"
 )
 
+# Application resources (icons) embedded into the binary
+file(GLOB MELYAR_RESOURCE_FILES CONFIGURE_DEPENDS
+    RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+    "resources/*.svg"
+    "resources/*.png"
+)
+
 qt6_add_resources(melyar "melyar_qml"
     PREFIX "/melyar"
-    FILES ${MELYAR_QML_FILES}
+    FILES ${MELYAR_QML_FILES} ${MELYAR_RESOURCE_FILES}
 )
 
 target_include_directories(melyar PRIVATE
@@ -85,3 +92,18 @@ set_target_properties(melyar PROPERTIES
 install(TARGETS melyar DESTINATION bin)
 install(FILES resources/melyar.desktop DESTINATION share/applications)
 install(FILES resources/melyar.svg DESTINATION share/icons/hicolor/scalable/apps)
+
+# -----------------------------------------------------------------------------
+# Web UI bundle (ui_web/dist) - built separately with `pnpm build`
+# -----------------------------------------------------------------------------
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/ui_web/dist/index.html")
+    install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ui_web/dist/"
+            DESTINATION share/melyar/web
+            FILES_MATCHING
+            PATTERN "*.html"
+            PATTERN "*.js"
+            PATTERN "*.css"
+            PATTERN "*.svg"
+            PATTERN "*.woff"
+            PATTERN "*.woff2")
+endif()

@@ -87,7 +87,11 @@ mod tests {
         let client = reqwest::Client::new();
         let res = fetch_lyrics(&client, "Let It Happen", "Tame Impala", Some(468.0)).await;
         match res {
-            Ok(lrc) => println!("LYRICS OK len={} preview={:?}", lrc.len(), &lrc[..lrc.len().min(80)]),
+            Ok(lrc) => println!(
+                "LYRICS OK len={} preview={:?}",
+                lrc.len(),
+                &lrc[..lrc.len().min(80)]
+            ),
             Err(e) => println!("LYRICS ERR: {e:#}"),
         }
     }

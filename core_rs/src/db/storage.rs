@@ -5,7 +5,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::ffi::{CxxTrackMetadata, CxxLibraryAlbum, CxxLibraryArtist, CxxLibraryPlaylist};
+use crate::ffi::{CxxLibraryAlbum, CxxLibraryArtist, CxxLibraryPlaylist, CxxTrackMetadata};
 
 pub struct DbStorage {
     conn: Mutex<Connection>,
@@ -169,7 +169,10 @@ impl DbStorage {
         let exists = check_stmt.exists(params![track.id])?;
 
         if exists {
-            conn.execute("DELETE FROM favorites WHERE track_id = ?1", params![track.id])?;
+            conn.execute(
+                "DELETE FROM favorites WHERE track_id = ?1",
+                params![track.id],
+            )?;
             Ok(false)
         } else {
             let now = Self::current_timestamp();
@@ -408,13 +411,10 @@ impl DbStorage {
 
     pub fn get_search_history(&self, limit: usize) -> Result<Vec<String>> {
         let conn = self.conn.lock();
-        let mut stmt = conn.prepare(
-            "SELECT query FROM search_history ORDER BY searched_at DESC LIMIT ?1",
-        )?;
+        let mut stmt =
+            conn.prepare("SELECT query FROM search_history ORDER BY searched_at DESC LIMIT ?1")?;
 
-        let rows = stmt.query_map(params![limit as i64], |row| {
-            Ok(row.get(0)?)
-        })?;
+        let rows = stmt.query_map(params![limit as i64], |row| row.get(0))?;
 
         let mut result = Vec::new();
         for r in rows {
@@ -431,7 +431,10 @@ impl DbStorage {
 
     pub fn remove_from_search_history(&self, query: &str) -> Result<bool> {
         let conn = self.conn.lock();
-        conn.execute("DELETE FROM search_history WHERE query = ?1", params![query])?;
+        conn.execute(
+            "DELETE FROM search_history WHERE query = ?1",
+            params![query],
+        )?;
         Ok(true)
     }
 
@@ -536,7 +539,9 @@ mod tests {
         let storage = DbStorage::new_in_memory().unwrap();
         assert!(storage.get_cached_lyrics("song123").unwrap().is_none());
 
-        storage.cache_lyrics("song123", "[00:10.00] Line 1").unwrap();
+        storage
+            .cache_lyrics("song123", "[00:10.00] Line 1")
+            .unwrap();
         let lyrics = storage.get_cached_lyrics("song123").unwrap();
         assert_eq!(lyrics, Some("[00:10.00] Line 1".to_string()));
     }

@@ -1,8 +1,8 @@
+use crate::ffi::CxxTrackMetadata;
 use std::collections::HashMap;
 use std::sync::Arc;
-use zbus::{connection::Builder, interface};
 use zbus::zvariant::Value;
-use crate::ffi::CxxTrackMetadata;
+use zbus::{connection::Builder, interface};
 
 pub trait MprisCommandHandler: Send + Sync + 'static {
     fn on_play_pause(&self);
@@ -99,7 +99,11 @@ impl MediaPlayer2Player {
 
     #[zbus(property)]
     fn playback_status(&self) -> &str {
-        if self.state.is_playing.load(std::sync::atomic::Ordering::Relaxed) {
+        if self
+            .state
+            .is_playing
+            .load(std::sync::atomic::Ordering::Relaxed)
+        {
             "Playing"
         } else {
             "Paused"
@@ -120,13 +124,25 @@ impl MediaPlayer2Player {
     fn metadata(&self) -> HashMap<String, Value<'static>> {
         let mut map = HashMap::new();
         if let Some(ref track) = *self.state.current_track.read() {
-            map.insert("mpris:trackid".to_string(), Value::from(format!("/org/mpris/MediaPlayer2/track/{}", track.id)));
+            map.insert(
+                "mpris:trackid".to_string(),
+                Value::from(format!("/org/mpris/MediaPlayer2/track/{}", track.id)),
+            );
             map.insert("xesam:title".to_string(), Value::from(track.title.clone()));
-            map.insert("xesam:artist".to_string(), Value::from(vec![track.artist.clone()]));
+            map.insert(
+                "xesam:artist".to_string(),
+                Value::from(vec![track.artist.clone()]),
+            );
             map.insert("xesam:album".to_string(), Value::from(track.album.clone()));
-            map.insert("mpris:length".to_string(), Value::from((track.duration_secs * 1_000_000.0) as i64));
+            map.insert(
+                "mpris:length".to_string(),
+                Value::from((track.duration_secs * 1_000_000.0) as i64),
+            );
             if !track.thumbnail_url.is_empty() {
-                map.insert("mpris:artUrl".to_string(), Value::from(track.thumbnail_url.clone()));
+                map.insert(
+                    "mpris:artUrl".to_string(),
+                    Value::from(track.thumbnail_url.clone()),
+                );
             }
         }
         map
@@ -168,7 +184,10 @@ pub struct MprisManager {
 }
 
 impl MprisManager {
-    pub fn new(handler: Arc<dyn MprisCommandHandler>, runtime: Arc<tokio::runtime::Runtime>) -> Self {
+    pub fn new(
+        handler: Arc<dyn MprisCommandHandler>,
+        runtime: Arc<tokio::runtime::Runtime>,
+    ) -> Self {
         let state = Arc::new(MprisState {
             handler,
             current_track: parking_lot::RwLock::new(None),
@@ -200,7 +219,9 @@ impl MprisManager {
     }
 
     pub fn update_playback_state(&self, is_playing: bool) {
-        self.state.is_playing.store(is_playing, std::sync::atomic::Ordering::Relaxed);
+        self.state
+            .is_playing
+            .store(is_playing, std::sync::atomic::Ordering::Relaxed);
     }
 
     pub fn update_position(&self, position_secs: f64) {

@@ -137,12 +137,20 @@ impl WaybarIpc {
 
             WaybarPayload {
                 text: format!("{} - {}", track.artist, track.title),
-                alt: if is_playing { "Playing".into() } else { "Paused".into() },
+                alt: if is_playing {
+                    "Playing".into()
+                } else {
+                    "Paused".into()
+                },
                 tooltip: format!(
                     "<b>{}</b>\n{}\nAlbum: {}\n[{:02}:{:02} / {:02}:{:02}]",
                     track.title, track.artist, track.album, cur_min, cur_sec, dur_min, dur_sec
                 ),
-                class: if is_playing { "playing".into() } else { "paused".into() },
+                class: if is_playing {
+                    "playing".into()
+                } else {
+                    "paused".into()
+                },
                 percentage,
             }
         } else {

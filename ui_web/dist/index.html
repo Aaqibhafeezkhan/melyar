@@ -7,8 +7,8 @@
     <title>Melyar</title>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <script src="./qwebchannel.js"></script>
-    <script type="module" crossorigin src="./assets/index-CqXN9SOo.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DBk1Dujx.css">
+    <script type="module" crossorigin src="./assets/index-BKBlenWx.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-C4UO021U.css">
   </head>
   <body>
     <div id="root"></div>
@@ -35,7 +35,9 @@
         <filter id="glass-specular" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur" />
           <feSpecularLighting surfaceScale="5" specularConstant="1" specularExponent="20" lighting-color="#ffffff" result="specOut">
-            <fePointLight x="50%" y="-100%" z="200" />
+            <!-- fePointLight does not accept percentages (SVG filter primitives
+                 use unitless numbers in objectBoundingBox units) -->
+            <fePointLight x="0.5" y="-1" z="200" />
           </feSpecularLighting>
           <feComposite in="specOut" in2="SourceAlpha" operator="in" result="specOut" />
           <feComposite in="SourceGraphic" in2="specOut" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" />

@@ -1,9 +1,11 @@
 [package]
 name = "melyar_core"
-version = "0.1.0"
+version.workspace = true
 edition = "2021"
 description = "Melyar ultra-lightweight music client core engine"
-license = "MIT OR Apache-2.0"
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
 
 [lib]
 name = "melyar_core"

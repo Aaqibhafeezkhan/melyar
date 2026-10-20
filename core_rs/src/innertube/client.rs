@@ -66,8 +66,10 @@ static YTDLP_PATH: Lazy<Option<PathBuf>> = Lazy::new(|| {
     ];
     if let Ok(home) = std::env::var("HOME") {
         for py in ["3.14", "3.13", "3.12", "3.11", "3.10"] {
-            candidates.push(PathBuf::from(&home)
-                .join(format!(".local/lib/python{}/site-packages/bin/yt-dlp", py)));
+            candidates.push(
+                PathBuf::from(&home)
+                    .join(format!(".local/lib/python{}/site-packages/bin/yt-dlp", py)),
+            );
         }
     }
     candidates.into_iter().find(|p| p.exists() && p.is_file())
@@ -100,7 +102,11 @@ fn yt_dlp_json_blocking(video_id: &str) -> Result<ResolvedVideo> {
 
     if !output.status.success() {
         let err = String::from_utf8_lossy(&output.stderr);
-        return Err(anyhow!("yt-dlp -J failed for {}: {}", video_id, err.lines().next().unwrap_or("")));
+        return Err(anyhow!(
+            "yt-dlp -J failed for {}: {}",
+            video_id,
+            err.lines().next().unwrap_or("")
+        ));
     }
 
     let data: Value = serde_json::from_slice(&output.stdout).context("yt-dlp -J invalid JSON")?;
@@ -152,7 +158,7 @@ fn parse_ytdlp_json(data: &Value, video_id: &str) -> Result<ResolvedVideo> {
             let abr = f.get("abr").and_then(|v| v.as_f64()).unwrap_or(0.0) as i64;
             let is_mp4a = acodec.starts_with("mp4a");
             let score = abr + if is_mp4a { 1000 } else { 0 };
-            if best.as_ref().map_or(true, |(s, _)| score > *s) {
+            if best.as_ref().is_none_or(|(s, _)| score > *s) {
                 best = Some((score, url.to_string()));
             }
         }
@@ -181,7 +187,10 @@ fn parse_ytdlp_json(data: &Value, video_id: &str) -> Result<ResolvedVideo> {
             thumbnail,
             stream_url: url,
         }),
-        None => Err(anyhow!("no usable audio stream in yt-dlp output for {}", video_id)),
+        None => Err(anyhow!(
+            "no usable audio stream in yt-dlp output for {}",
+            video_id
+        )),
     }
 }
 
@@ -193,10 +202,22 @@ pub struct InnerTubeClient {
 impl InnerTubeClient {
     pub fn new() -> Result<Self> {
         let mut headers = header::HeaderMap::new();
-        headers.insert(header::USER_AGENT, header::HeaderValue::from_static(USER_AGENT));
-        headers.insert(header::ORIGIN, header::HeaderValue::from_static("https://music.youtube.com"));
-        headers.insert(header::REFERER, header::HeaderValue::from_static("https://music.youtube.com/"));
-        headers.insert(header::CONTENT_TYPE, header::HeaderValue::from_static("application/json"));
+        headers.insert(
+            header::USER_AGENT,
+            header::HeaderValue::from_static(USER_AGENT),
+        );
+        headers.insert(
+            header::ORIGIN,
+            header::HeaderValue::from_static("https://music.youtube.com"),
+        );
+        headers.insert(
+            header::REFERER,
+            header::HeaderValue::from_static("https://music.youtube.com/"),
+        );
+        headers.insert(
+            header::CONTENT_TYPE,
+            header::HeaderValue::from_static("application/json"),
+        );
 
         let http = Client::builder()
             .default_headers(headers)
@@ -237,7 +258,10 @@ impl InnerTubeClient {
 
         let resp = self.http.post(&url).json(&payload).send().await?;
         if !resp.status().is_success() {
-            return Err(anyhow!("Search request failed with status {}", resp.status()));
+            return Err(anyhow!(
+                "Search request failed with status {}",
+                resp.status()
+            ));
         }
 
         let json_data: Value = resp.json().await?;
@@ -297,9 +321,15 @@ impl InnerTubeClient {
             "videoId": video_id
         });
 
-        let android_url = format!("https://www.youtube.com/youtubei/v1/player?key={INNERTUBE_API_KEY}");
-        if let Ok(resp) = self.http.post(&android_url)
-            .header(header::USER_AGENT, "com.google.android.youtube/21.26.364 (Linux; U; Android 11) gzip")
+        let android_url =
+            format!("https://www.youtube.com/youtubei/v1/player?key={INNERTUBE_API_KEY}");
+        if let Ok(resp) = self
+            .http
+            .post(&android_url)
+            .header(
+                header::USER_AGENT,
+                "com.google.android.youtube/21.26.364 (Linux; U; Android 11) gzip",
+            )
             .json(&android_payload)
             .send()
             .await
@@ -321,20 +351,34 @@ impl InnerTubeClient {
         ];
 
         for fallback in fallback_apis {
-            if let Ok(resp) = self.http.get(&fallback).timeout(Duration::from_secs(5)).send().await {
+            if let Ok(resp) = self
+                .http
+                .get(&fallback)
+                .timeout(Duration::from_secs(5))
+                .send()
+                .await
+            {
                 if resp.status().is_success() {
                     if let Ok(data) = resp.json::<Value>().await {
-                        if let Some(audio_streams) = data.get("audioStreams").and_then(|v| v.as_array()) {
+                        if let Some(audio_streams) =
+                            data.get("audioStreams").and_then(|v| v.as_array())
+                        {
                             for s in audio_streams {
                                 if let Some(stream_url) = s.get("url").and_then(|u| u.as_str()) {
                                     return Ok(stream_url.to_string());
                                 }
                             }
                         }
-                        if let Some(adaptive) = data.get("adaptiveFormats").and_then(|v| v.as_array()) {
+                        if let Some(adaptive) =
+                            data.get("adaptiveFormats").and_then(|v| v.as_array())
+                        {
                             for f in adaptive {
-                                if f.get("type").and_then(|t| t.as_str()).map_or(false, |t| t.starts_with("audio")) {
-                                    if let Some(stream_url) = f.get("url").and_then(|u| u.as_str()) {
+                                if f.get("type")
+                                    .and_then(|t| t.as_str())
+                                    .is_some_and(|t| t.starts_with("audio"))
+                                {
+                                    if let Some(stream_url) = f.get("url").and_then(|u| u.as_str())
+                                    {
                                         return Ok(stream_url.to_string());
                                     }
                                 }
@@ -345,20 +389,25 @@ impl InnerTubeClient {
             }
         }
 
-        Err(anyhow!("Failed to extract audio stream for video {video_id}"))
+        Err(anyhow!(
+            "Failed to extract audio stream for video {video_id}"
+        ))
     }
 
     async fn extract_best_audio_stream(&self, player_json: &Value) -> Option<String> {
         let streaming_data = player_json.get("streamingData")?;
 
         // 1. Check adaptive formats first (Opus itag 251 / AAC audio streams)
-        if let Some(formats) = streaming_data.get("adaptiveFormats").and_then(|v| v.as_array()) {
+        if let Some(formats) = streaming_data
+            .get("adaptiveFormats")
+            .and_then(|v| v.as_array())
+        {
             let mut audio_formats: Vec<&Value> = formats
                 .iter()
                 .filter(|f| {
                     f.get("mimeType")
                         .and_then(|m| m.as_str())
-                        .map_or(false, |m| m.starts_with("audio/"))
+                        .is_some_and(|m| m.starts_with("audio/"))
                 })
                 .collect();
 

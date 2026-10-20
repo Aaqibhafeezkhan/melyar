@@ -1,6 +1,6 @@
+use crate::ffi::CxxTrackMetadata;
 use anyhow::Result;
 use serde_json::Value;
-use crate::ffi::CxxTrackMetadata;
 
 pub fn parse_search_results(json: &Value) -> Result<Vec<CxxTrackMetadata>> {
     let mut tracks = Vec::new();
@@ -45,7 +45,7 @@ fn parse_list_item(item: &Value) -> Option<CxxTrackMetadata> {
     let flex_columns = renderer.get("flexColumns")?.as_array()?;
 
     let title = flex_columns
-        .get(0)?
+        .first()?
         .pointer("/musicResponsiveListItemFlexColumnRenderer/text/runs/0/text")
         .and_then(|v| v.as_str())
         .unwrap_or("Unknown Title")

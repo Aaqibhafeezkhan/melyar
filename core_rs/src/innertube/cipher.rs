@@ -111,14 +111,16 @@ impl CipherSolver {
             (?:var\s+)?[a-zA-Z0-9_$]+\s*=\s*[a-zA-Z0-9_$]+\.split\(""\);\s*
             (?P<body>[^}]+?)\s*
             return\s+[a-zA-Z0-9_$]+\.join\(""\)
-            "#
+            "#,
         )?;
 
         let body = if let Some(caps) = fn_regex.captures(js) {
             caps.name("body").map(|m| m.as_str()).unwrap_or("")
         } else {
             // Alternative pattern without backreferences
-            let alt_re = Regex::new(r#"[a-zA-Z0-9_$]+\.split\(""\);([a-zA-Z0-9_$.,()\[\]]+?);return\s+[a-zA-Z0-9_$]+\.join\(""\)"#)?;
+            let alt_re = Regex::new(
+                r#"[a-zA-Z0-9_$]+\.split\(""\);([a-zA-Z0-9_$.,()\[\]]+?);return\s+[a-zA-Z0-9_$]+\.join\(""\)"#,
+            )?;
             if let Some(caps) = alt_re.captures(js) {
                 caps.get(1).map(|m| m.as_str()).unwrap_or("")
             } else {
@@ -128,7 +130,8 @@ impl CipherSolver {
 
         // Extract object name and operations from body
         // E.g. "vx.sE(a, 2); vx.re(a, 3); vx.tq(a)"
-        let call_re = Regex::new(r#"([a-zA-Z0-9_$]+)\.([a-zA-Z0-9_$]+)\([a-zA-Z0-9_$]+(?:,\s*(\d+))?\)"#)?;
+        let call_re =
+            Regex::new(r#"([a-zA-Z0-9_$]+)\.([a-zA-Z0-9_$]+)\([a-zA-Z0-9_$]+(?:,\s*(\d+))?\)"#)?;
 
         let mut actions = Vec::new();
         // Look up object definition in JS to map method names to Reverse, Swap, Slice
@@ -137,7 +140,10 @@ impl CipherSolver {
         for cap in call_re.captures_iter(body) {
             let _obj_name = cap.get(1).map(|m| m.as_str()).unwrap_or("");
             let method_name = cap.get(2).map(|m| m.as_str()).unwrap_or("");
-            let arg_val = cap.get(3).and_then(|m| m.as_str().parse::<usize>().ok()).unwrap_or(0);
+            let arg_val = cap
+                .get(3)
+                .and_then(|m| m.as_str().parse::<usize>().ok())
+                .unwrap_or(0);
 
             // If method type not discovered yet, find definition in JS
             if !method_map.contains_key(method_name) {
@@ -185,6 +191,12 @@ impl CipherSolver {
     }
 }
 
+impl Default for CipherSolver {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -214,9 +226,9 @@ mod tests {
     fn test_cipher_combined() {
         let input = "abcdef";
         let actions = vec![
-            CipherAction::Reverse,   // "fedcba"
-            CipherAction::Swap(1),   // 'e' and 'f' swap -> "efdcba"
-            CipherAction::Slice(2),  // removes "ef" -> "dcba"
+            CipherAction::Reverse,  // "fedcba"
+            CipherAction::Swap(1),  // 'e' and 'f' swap -> "efdcba"
+            CipherAction::Slice(2), // removes "ef" -> "dcba"
         ];
         let res = CipherSolver::apply_actions(input, &actions);
         assert_eq!(res, "dcba");
@@ -245,4 +257,3 @@ mod tests {
         assert_eq!(actions[2], CipherAction::Slice(2));
     }
 }
-

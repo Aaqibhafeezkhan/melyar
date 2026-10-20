@@ -1,11 +1,11 @@
-pub mod innertube;
 pub mod audio;
 pub mod db;
+pub mod innertube;
 pub mod linux;
 
-use std::sync::Arc;
 use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
+use std::sync::Arc;
 use tokio::runtime::Runtime;
 
 use crate::audio::engine::{AudioEventHandler, MelyarAudioEngine};
@@ -76,8 +76,20 @@ pub mod ffi {
         fn next_track() -> bool;
         fn previous_track() -> bool;
         fn fetch_lyrics(track_id: String) -> String;
-        fn fetch_lyrics_live(track_id: String, title: String, artist: String, duration: f64) -> String;
-        fn toggle_favorite(track_id: String, title: String, artist: String, album: String, duration: f64, thumb: String) -> bool;
+        fn fetch_lyrics_live(
+            track_id: String,
+            title: String,
+            artist: String,
+            duration: f64,
+        ) -> String;
+        fn toggle_favorite(
+            track_id: String,
+            title: String,
+            artist: String,
+            album: String,
+            duration: f64,
+            thumb: String,
+        ) -> bool;
         fn is_favorite(track_id: String) -> bool;
         fn get_favorites() -> Vec<CxxTrackMetadata>;
         fn get_history() -> Vec<CxxTrackMetadata>;
@@ -158,7 +170,14 @@ impl AudioEventHandler for EngineEvents {
                         ffi::on_track_changed(next.clone());
 
                         // Fetch lyrics
-                        if let Ok(lrc) = innertube::lyrics::fetch_lyrics(&reqwest::Client::new(), &next.title, &next.artist, Some(next.duration_secs)).await {
+                        if let Ok(lrc) = innertube::lyrics::fetch_lyrics(
+                            &reqwest::Client::new(),
+                            &next.title,
+                            &next.artist,
+                            Some(next.duration_secs),
+                        )
+                        .await
+                        {
                             let _ = storage.cache_lyrics(&next.id, &lrc);
                             ffi::on_lyrics_loaded(next.id.clone(), lrc);
                         }
@@ -256,7 +275,8 @@ static CORE: OnceCell<Arc<MelyarCore>> = OnceCell::new();
 fn get_core() -> &'static Arc<MelyarCore> {
     CORE.get_or_init(|| {
         let runtime = Arc::new(Runtime::new().expect("Failed to create tokio runtime"));
-        let innertube = Arc::new(InnerTubeClient::new().expect("Failed to initialize InnerTube client"));
+        let innertube =
+            Arc::new(InnerTubeClient::new().expect("Failed to initialize InnerTube client"));
         let queue = Arc::new(TrackQueue::new());
         let storage = Arc::new(DbStorage::new().expect("Failed to initialize SQLite storage"));
 
@@ -319,9 +339,9 @@ pub fn search(query: String) -> Vec<ffi::CxxTrackMetadata> {
     let client = core.innertube.clone();
     let q_clone = query.clone();
 
-    let res = core.runtime.block_on(async move {
-        client.search_tracks(&q_clone).await
-    });
+    let res = core
+        .runtime
+        .block_on(async move { client.search_tracks(&q_clone).await });
 
     match res {
         Ok(tracks) => {
@@ -357,7 +377,9 @@ pub fn play_track(track_id: String) -> bool {
                 let innertube_meta = innertube.clone();
                 let tid = track_id_clone.clone();
                 match tokio::task::spawn_blocking(move || {
-                    innertube::client::with_ytdlp_lock(|| innertube_meta.resolve_video_blocking(&tid))
+                    innertube::client::with_ytdlp_lock(|| {
+                        innertube_meta.resolve_video_blocking(&tid)
+                    })
                 })
                 .await
                 {
@@ -398,7 +420,14 @@ pub fn play_track(track_id: String) -> bool {
                         tokio::spawn(async move {
                             if let Ok(Some(cached)) = st.get_cached_lyrics(&tid) {
                                 ffi::on_lyrics_loaded(tid, cached);
-                            } else if let Ok(lrc) = innertube::lyrics::fetch_lyrics(&reqwest::Client::new(), &title, &artist, Some(dur)).await {
+                            } else if let Ok(lrc) = innertube::lyrics::fetch_lyrics(
+                                &reqwest::Client::new(),
+                                &title,
+                                &artist,
+                                Some(dur),
+                            )
+                            .await
+                            {
                                 let _ = st.cache_lyrics(&tid, &lrc);
                                 ffi::on_lyrics_loaded(tid, lrc);
                             }
@@ -480,7 +509,8 @@ pub fn fetch_lyrics_live(track_id: String, title: String, artist: String, durati
         return String::new();
     }
     let res = core.runtime.block_on(async {
-        innertube::lyrics::fetch_lyrics(&reqwest::Client::new(), &title, &artist, Some(duration)).await
+        innertube::lyrics::fetch_lyrics(&reqwest::Client::new(), &title, &artist, Some(duration))
+            .await
     });
     match res {
         Ok(lrc) => {
@@ -493,7 +523,14 @@ pub fn fetch_lyrics_live(track_id: String, title: String, artist: String, durati
     }
 }
 
-pub fn toggle_favorite(track_id: String, title: String, artist: String, album: String, duration: f64, thumb: String) -> bool {
+pub fn toggle_favorite(
+    track_id: String,
+    title: String,
+    artist: String,
+    album: String,
+    duration: f64,
+    thumb: String,
+) -> bool {
     let core = get_core();
     let track = ffi::CxxTrackMetadata {
         id: track_id,
@@ -582,5 +619,7 @@ pub fn clear_search_history() -> bool {
 
 pub fn remove_from_search_history(query: String) -> bool {
     let core = get_core();
-    core.storage.remove_from_search_history(&query).unwrap_or(false)
+    core.storage
+        .remove_from_search_history(&query)
+        .unwrap_or(false)
 }

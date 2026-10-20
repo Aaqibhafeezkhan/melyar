@@ -2,6 +2,12 @@
 resolver = "2"
 members = ["core_rs"]
 
+[workspace.package]
+version = "0.1.0"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/MAKHMUDuz/melyar"
+homepage = "https://github.com/MAKHMUDuz/melyar"
+
 [workspace.dependencies]
 # Async runtime
 tokio = { version = "1.38", features = ["full", "rt-multi-thread", "macros"] }

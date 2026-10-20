@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
     app.setOrganizationName("Melyar");
     app.setOrganizationDomain("melyar.org");
     QIcon appIcon;
-    appIcon.addFile(":/melyar/ui_cpp/resources/melyar.svg");
+    appIcon.addFile(":/melyar/resources/melyar.svg");
     app.setWindowIcon(appIcon);
 
     qmlRegisterSingletonType(QUrl(QStringLiteral("qrc:/melyar/ui_cpp/qml/theme/Style.qml")), "Melyar.Theme", 1, 0, "Style");
@@ -55,8 +55,9 @@ int main(int argc, char *argv[]) {
             QDir::currentPath() + "/ui_web/dist/index.html",
             QCoreApplication::applicationDirPath() + "/../ui_web/dist/index.html",
             QCoreApplication::applicationDirPath() + "/ui_web/dist/index.html",
-            "/home/mahmud/melyar/ui_web/dist/index.html",
-            "/usr/share/melyar/web/index.html"
+            QCoreApplication::applicationDirPath() + "/../share/melyar/web/index.html",
+            "/usr/share/melyar/web/index.html",
+            "/usr/local/share/melyar/web/index.html"
         };
         for (const auto &cand : candidates) {
             if (QFile::exists(cand)) {

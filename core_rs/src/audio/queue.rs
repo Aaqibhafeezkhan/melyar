@@ -26,9 +26,9 @@ impl TrackQueue {
         let mut t = self.tracks.write();
         let mut orig = self.original_tracks.write();
         let mut idx = self.current_index.write();
-        
+
         *orig = tracks.clone();
-        
+
         if *self.shuffle.read() {
             let mut shuffled = tracks.clone();
             shuffled.shuffle(&mut thread_rng());
@@ -36,7 +36,7 @@ impl TrackQueue {
         } else {
             *t = tracks;
         }
-        
+
         *idx = if !t.is_empty() && start_index < t.len() {
             start_index
         } else {
@@ -57,7 +57,7 @@ impl TrackQueue {
         }
         let mut idx = self.current_index.write();
         let repeat = *self.repeat_mode.read();
-        
+
         if repeat == 2 {
             // Repeat one - stay on current track
             t.get(*idx).cloned()
@@ -67,7 +67,7 @@ impl TrackQueue {
         } else if repeat == 1 {
             // Repeat all - go to first
             *idx = 0;
-            t.get(0).cloned()
+            t.first().cloned()
         } else {
             None
         }
@@ -80,13 +80,13 @@ impl TrackQueue {
         }
         let idx = *self.current_index.read();
         let repeat = *self.repeat_mode.read();
-        
+
         if repeat == 2 {
             t.get(idx).cloned()
         } else if idx + 1 < t.len() {
             t.get(idx + 1).cloned()
         } else if repeat == 1 {
-            t.get(0).cloned()
+            t.first().cloned()
         } else {
             None
         }
@@ -102,7 +102,7 @@ impl TrackQueue {
             *idx -= 1;
             t.get(*idx).cloned()
         } else {
-            t.get(0).cloned()
+            t.first().cloned()
         }
     }
 
@@ -111,49 +111,55 @@ impl TrackQueue {
     }
 
     pub fn set_shuffle(&self, enabled: bool) {
-            let mut shuffle = self.shuffle.write();
-            *shuffle = enabled;
+        let mut shuffle = self.shuffle.write();
+        *shuffle = enabled;
 
-            if enabled {
-                // Shuffle the current queue
-                let mut t = self.tracks.write();
-                let current_idx = *self.current_index.read();
-                let current_track = t.get(current_idx).cloned();
+        if enabled {
+            // Shuffle the current queue
+            let mut t = self.tracks.write();
+            let current_idx = *self.current_index.read();
+            let current_track = t.get(current_idx).cloned();
 
-                let mut orig = self.original_tracks.read().clone();
-                orig.shuffle(&mut thread_rng());
+            let mut orig = self.original_tracks.read().clone();
+            orig.shuffle(&mut thread_rng());
 
-                // Keep current track at current position
-                if let Some(current) = current_track {
-                    if let Some(pos) = orig.iter().position(|t| t.id == current.id) {
-                        if pos != current_idx {
-                            orig.swap(pos, current_idx);
-                        }
-                    }
-                }
-
-                *t = orig;
-            } else {
-                // Restore original order
-                let mut t = self.tracks.write();
-                let orig = self.original_tracks.read().clone();
-                let current_idx = *self.current_index.read();
-                let current_track = t.get(current_idx).cloned();
-
-                *t = orig;
-
-                // Find current track in original order
-                if let Some(current) = current_track {
-                    if let Some(pos) = t.iter().position(|t| t.id == current.id) {
-                        let mut idx = self.current_index.write();
-                        *idx = pos;
+            // Keep current track at current position
+            if let Some(current) = current_track {
+                if let Some(pos) = orig.iter().position(|t| t.id == current.id) {
+                    if pos != current_idx {
+                        orig.swap(pos, current_idx);
                     }
                 }
             }
+
+            *t = orig;
+        } else {
+            // Restore original order
+            let mut t = self.tracks.write();
+            let orig = self.original_tracks.read().clone();
+            let current_idx = *self.current_index.read();
+            let current_track = t.get(current_idx).cloned();
+
+            *t = orig;
+
+            // Find current track in original order
+            if let Some(current) = current_track {
+                if let Some(pos) = t.iter().position(|t| t.id == current.id) {
+                    let mut idx = self.current_index.write();
+                    *idx = pos;
+                }
+            }
         }
+    }
 
     pub fn set_repeat_mode(&self, mode: i32) {
         let mut repeat = self.repeat_mode.write();
         *repeat = mode.clamp(0, 2);
+    }
+}
+
+impl Default for TrackQueue {
+    fn default() -> Self {
+        Self::new()
     }
 }
