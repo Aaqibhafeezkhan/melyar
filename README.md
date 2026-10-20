@@ -7,6 +7,7 @@
 [English](README.md) · [Türkçe](README.tr.md)
 
 [![CI](https://github.com/MAKHMUDuz/melyar/actions/workflows/ci.yml/badge.svg)](https://github.com/MAKHMUDuz/melyar/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/MAKHMUDuz/melyar.svg)](https://github.com/MAKHMUDuz/melyar/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-APACHE)
 [![Contributors](https://img.shields.io/github/contributors/MAKHMUDuz/melyar.svg)](https://github.com/MAKHMUDuz/melyar/graphs/contributors)
 [![Discussions](https://img.shields.io/github/discussions/MAKHMUDuz/melyar?label=discussions&logo=github)](https://github.com/MAKHMUDuz/melyar/discussions)
@@ -248,6 +249,25 @@ path reported by CMake.
 ---
 
 ## Installation
+
+### Release tarball
+
+Prebuilt packages are attached to the
+[releases](https://github.com/MAKHMUDuz/melyar/releases/latest). No build
+toolchain is needed:
+
+```bash
+tar xf melyar-v0.1.0-linux-x86_64.tar.gz
+cd melyar-0.1.0
+sudo cp bin/melyar /usr/local/bin/
+sudo cp -r share/melyar /usr/local/share/
+sudo cp share/applications/melyar.desktop /usr/local/share/applications/
+sudo cp share/icons/hicolor/scalable/apps/melyar.svg \
+  /usr/local/share/icons/hicolor/scalable/apps/
+melyar
+```
+
+### From source
 
 ```bash
 sudo cmake --install build
