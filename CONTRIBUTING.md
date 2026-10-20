@@ -173,6 +173,40 @@ Explain **why** in the body, not what - the diff already shows what changed.
 
 ## Pull request process
 
+### Working from a fork
+
+External contributors usually work from a fork rather than a branch in this
+repository.
+
+```bash
+# 1. Fork the repository on GitHub, then clone your fork
+git clone https://github.com/<your-username>/melyar.git
+cd melyar
+
+# 2. Add the upstream repository as a second remote
+git remote add upstream https://github.com/MAKHMUDuz/melyar.git
+
+# 3. Create a branch
+git checkout -b feat/short-description
+
+# 4. ... make your changes ...
+
+# 5. Rebase onto the latest upstream before pushing
+git fetch upstream
+git rebase upstream/master
+
+# 6. Push to your fork
+git push -u origin feat/short-description
+```
+
+Then open the pull request against `MAKHMUDuz/melyar` from your fork. GitHub
+will offer a "Compare & pull request" link on the branch page.
+
+If you have push access to this repository, work on a branch here directly
+instead - the rebase step is the same.
+
+### The process
+
 1. **Branch** off `master` with a prefixed name.
 2. **Rebase** onto the latest base branch before opening the PR:
    ```bash
