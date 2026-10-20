@@ -87,6 +87,12 @@ impl DbStorage {
              CREATE TABLE IF NOT EXISTS search_history (
                  query TEXT PRIMARY KEY,
                  searched_at INTEGER NOT NULL
+             );
+
+             CREATE TABLE IF NOT EXISTS settings (
+                 key TEXT PRIMARY KEY,
+                 value TEXT NOT NULL,
+                 updated_at INTEGER NOT NULL
              );",
         )?;
 
@@ -438,6 +444,50 @@ impl DbStorage {
         Ok(true)
     }
 
+    // Settings
+    pub fn set_setting(&self, key: &str, value: &str) -> Result<()> {
+        let conn = self.conn.lock();
+        let now = Self::current_timestamp();
+        conn.execute(
+            "INSERT INTO settings (key, value, updated_at)
+             VALUES (?1, ?2, ?3)
+             ON CONFLICT(key) DO UPDATE SET
+                 value = ?2,
+                 updated_at = ?3",
+            params![key, value, now],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_setting(&self, key: &str) -> Result<Option<String>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = ?1")?;
+        let mut rows = stmt.query(params![key])?;
+        match rows.next()? {
+            Some(row) => Ok(Some(row.get(0)?)),
+            None => Ok(None),
+        }
+    }
+
+    /// Every stored setting as a key/value list.
+    pub fn all_settings(&self) -> Result<Vec<(String, String)>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare("SELECT key, value FROM settings ORDER BY key")?;
+        let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?;
+
+        let mut result = Vec::new();
+        for r in rows {
+            result.push(r?);
+        }
+        Ok(result)
+    }
+
+    pub fn delete_setting(&self, key: &str) -> Result<bool> {
+        let conn = self.conn.lock();
+        conn.execute("DELETE FROM settings WHERE key = ?1", params![key])?;
+        Ok(true)
+    }
+
     /// In-memory storage for unit tests.
     pub fn new_in_memory() -> Result<Self> {
         let conn = Connection::open_in_memory()?;
@@ -471,6 +521,12 @@ impl DbStorage {
                      track_id TEXT PRIMARY KEY,
                      lrc TEXT NOT NULL,
                      cached_at INTEGER NOT NULL
+                 );
+
+                 CREATE TABLE IF NOT EXISTS settings (
+                     key TEXT PRIMARY KEY,
+                     value TEXT NOT NULL,
+                     updated_at INTEGER NOT NULL
                  );",
         )?;
 
@@ -483,6 +539,76 @@ impl DbStorage {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_storage_settings() {
+        let storage = DbStorage::new_in_memory().unwrap();
+
+        assert_eq!(storage.get_setting("theme").unwrap(), None);
+
+        storage.set_setting("theme", "dark").unwrap();
+        storage.set_setting("language", "tr").unwrap();
+        assert_eq!(
+            storage.get_setting("theme").unwrap().as_deref(),
+            Some("dark")
+        );
+
+        // Writing the same key again updates rather than duplicating.
+        storage.set_setting("theme", "light").unwrap();
+        assert_eq!(
+            storage.get_setting("theme").unwrap().as_deref(),
+            Some("light")
+        );
+
+        let all = storage.all_settings().unwrap();
+        assert_eq!(all.len(), 2);
+        assert!(all.contains(&("theme".to_string(), "light".to_string())));
+        assert!(all.contains(&("language".to_string(), "tr".to_string())));
+
+        storage.delete_setting("theme").unwrap();
+        assert_eq!(storage.get_setting("theme").unwrap(), None);
+        assert_eq!(storage.all_settings().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_storage_settings_survive_a_restart() {
+        // Settings must still be there the next time the application starts,
+        // so the check uses a real file rather than an in-memory database.
+        let dir = std::env::temp_dir().join(format!("melyar-settings-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("melyar.db");
+
+        {
+            let conn = Connection::open(&path).unwrap();
+            conn.execute_batch(
+                "CREATE TABLE IF NOT EXISTS settings (
+                     key TEXT PRIMARY KEY,
+                     value TEXT NOT NULL,
+                     updated_at INTEGER NOT NULL
+                 );",
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO settings (key, value, updated_at) VALUES (?1, ?2, ?3)",
+                params!["theme", "light", 1_i64],
+            )
+            .unwrap();
+        }
+
+        // Reopen the same file: the value has to still be there.
+        let conn = Connection::open(&path).unwrap();
+        let value: String = conn
+            .query_row(
+                "SELECT value FROM settings WHERE key = ?1",
+                params!["theme"],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(value, "light");
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn test_storage_history() {

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { Toolbar } from "@/components/Toolbar";
 import { ContextMenu } from "@/components/ContextMenu";
+import { SettingsPanel } from "@/components/SettingsPanel";
 import { QueuePanel } from "@/components/QueuePanel";
 import { LyricsOverlay } from "@/components/LyricsOverlay";
 import { ExpandedPlayer } from "@/components/ExpandedPlayer";
@@ -17,6 +18,7 @@ import {
   SongsView,
 } from "@/components/views/LibraryViews";
 import { usePlayer } from "@/store";
+import { useSettings } from "@/lib/settings";
 import { cn } from "@/lib/cn";
 
 function Stage() {
@@ -106,7 +108,8 @@ export default function App() {
           break;
         case "Escape":
           st.closeMenu();
-          if (st.expandedPlayerOpen) st.setExpandedPlayerOpen(false);
+          if (useSettings.getState().open) useSettings.getState().setOpen(false);
+          else if (st.expandedPlayerOpen) st.setExpandedPlayerOpen(false);
           else if (st.lyricsOpen) st.setLyricsOpen(false);
           else if (st.queueOpen) st.setQueueOpen(false);
           break;
@@ -144,6 +147,7 @@ export default function App() {
         {expandedPlayerOpen && <ExpandedPlayer />}
         {lyricsOpen && <LyricsOverlay />}
         <ContextMenu />
+        <SettingsPanel />
         <Toast />
       </OverlayPortal>
     </div>

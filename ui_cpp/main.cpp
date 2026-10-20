@@ -122,6 +122,17 @@ int main(int argc, char *argv[]) {
     webViewObj->setProperty("url", webUrlStr);
     std::cout << "[C++] webView url set: " << webUrlStr.toStdString() << std::endl;
 
+    // A melyar:// link passed on the command line, for example
+    // "melyar://settings" or "melyar://track/<id>". The desktop entry
+    // declares the handler, so the application has to honour it.
+    QString startupUri;
+    for (const QString &arg : QCoreApplication::arguments()) {
+        if (arg.startsWith("melyar://", Qt::CaseInsensitive)) {
+            startupUri = arg;
+            break;
+        }
+    }
+
     QObject::connect(&engine, &QQmlApplicationEngine::warnings,
                      [](const QList<QQmlError> &warnings) {
         if (!warnings.isEmpty()) {
@@ -132,8 +143,7 @@ int main(int argc, char *argv[]) {
         }
     });
 
-    // One-shot screenshot: MELYAR_SCREENSHOT=/path/to.png renders the window,
-    // writes it and exits. Handy for attaching a visual to a bug report.
+    // One-shot screenshot: MELYAR_SCREENSHOT=/path/to.png renders the window,    // writes it and exits. Handy for attaching a visual to a bug report.
     // MELYAR_SCREENSHOT_DELAY (ms) controls how long to wait before grabbing,
     // which gives the web interface time to paint.
     const QString shotPath = qEnvironmentVariable("MELYAR_SCREENSHOT");
@@ -172,6 +182,29 @@ int main(int argc, char *argv[]) {
                 std::cout << "[C++] screenshot written to " << shotPath.toStdString() << std::endl;
                 qApp->exit(0);
             });
+        });
+    }
+
+    // MELYAR_EVAL_JS runs a script inside the interface once it has booted.
+    // It is a debugging aid: it lets you drive the interface from the
+    // command line, for example to reproduce a state or to check that a
+    // setting is written.
+    const QString evalJs = qEnvironmentVariable("MELYAR_EVAL_JS").trimmed();
+    if (!evalJs.isEmpty()) {
+        QTimer::singleShot(2500, webViewObj, [webViewObj, evalJs]() {
+            const QJSValue undefined;
+            QMetaObject::invokeMethod(webViewObj, "runJavaScript", Qt::DirectConnection,
+                                      Q_ARG(QString, evalJs),
+                                      Q_ARG(QJSValue, undefined));
+            std::cout << "[C++] evaluated: " << evalJs.toStdString() << std::endl;
+        });
+    }
+
+    // Hand the startup link to the interface once it has booted, and keep
+    // listening for links that arrive while the application is running.
+    if (!startupUri.isEmpty()) {
+        QTimer::singleShot(1500, bridgePtr, [bridgePtr, startupUri]() {
+            bridgePtr->openUri(startupUri);
         });
     }
 

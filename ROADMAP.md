@@ -72,10 +72,12 @@ client to switch to".
 - [x] `.desktop` entry, scalable SVG icon, AUR packaging
 - [x] **Internationalisation** - the interface is English and Turkish, with a
       language switcher and a translation system new contributors can extend
+- [x] **Settings persist across restarts** - a settings panel backed by the
+      core's SQLite database: theme, accent colour, language, compact mode,
+      animations, crossfade, gapless, streaming quality and the playback
+      preferences
 - [ ] **More languages** - the string table is ready, only the translation is
       missing. See the translation task below.
-- [ ] **Settings persist across restarts** - the settings view is functional
-      but preferences do not survive a restart
 - [ ] **Keyboard-first navigation** - full focus traversal, visible focus rings
 - [ ] **Accessibility pass** - screen reader labels, contrast in the light
       theme, respect for the reduced-motion preference everywhere

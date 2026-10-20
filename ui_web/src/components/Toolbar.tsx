@@ -223,7 +223,7 @@ export function Toolbar() {
           step={0.01}
           showTooltip
           formatTooltip={(v) => `${Math.round(v * 100)}%`}
-          aria-label="Ses Seviyesi"
+          aria-label={t("toolbar.volume")}
         />
       </div>
     </header>

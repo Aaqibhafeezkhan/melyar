@@ -105,6 +105,31 @@ bool MelyarBridge::isFavorite(const QString &trackId) {
     return melyar::is_favorite(rust::String(trackId.toStdString()));
 }
 
+QVariantMap MelyarBridge::getTrackMetadata(const QString &trackId) {
+    // The core resolves the metadata, which may involve a blocking yt-dlp
+    // call, so it runs on a worker thread and the result comes back through
+    // the track metadata changed signal.
+    auto trackIdCopy = trackId;
+    (void)QtConcurrent::run([this, trackIdCopy]() {
+        auto meta = melyar::get_track_metadata(rust::String(trackIdCopy.toStdString()));
+
+        QVariantMap map;
+        map["id"] = QString::fromStdString(std::string(meta.id));
+        map["title"] = QString::fromStdString(std::string(meta.title));
+        map["artist"] = QString::fromStdString(std::string(meta.artist));
+        map["album"] = QString::fromStdString(std::string(meta.album));
+        map["duration"] = meta.duration_secs;
+        map["thumbnail"] = QString::fromStdString(std::string(meta.thumbnail_url));
+
+        QMetaObject::invokeMethod(this, [this, map]() {
+            m_pendingTrackMeta = map;
+            emit trackMetadataChanged();
+        }, Qt::QueuedConnection);
+    });
+
+    return QVariantMap();
+}
+
 void MelyarBridge::loadFavorites() {
     (void)QtConcurrent::run([this]() {
         auto favs = melyar::get_favorites();
@@ -273,6 +298,21 @@ void MelyarBridge::cycleRepeat() {
     emit repeatModeChanged();
 }
 
+void MelyarBridge::setShuffleMode(bool enabled) {
+    if (m_shuffleMode == enabled) return;
+    m_shuffleMode = enabled;
+    melyar::set_shuffle(m_shuffleMode);
+    emit shuffleModeChanged();
+}
+
+void MelyarBridge::setRepeatMode(int mode) {
+    const int clamped = qBound(0, mode, 2);
+    if (m_repeatMode == clamped) return;
+    m_repeatMode = clamped;
+    melyar::set_repeat_mode(m_repeatMode);
+    emit repeatModeChanged();
+}
+
 void MelyarBridge::addToQueue(const QString &trackId) {
     (void)QtConcurrent::run([this, trackId]() {
         rust::String r_id(trackId.toStdString());
@@ -363,6 +403,24 @@ void MelyarBridge::removeFromSearchHistory(const QString &query) {
     m_searchHistory.removeAll(query);
     melyar::remove_from_search_history(rust::String(query.toStdString()));
     emit searchHistoryChanged();
+}
+
+QString MelyarBridge::loadSettings() const {
+    return QString::fromStdString(std::string(melyar::get_settings_json()));
+}
+
+bool MelyarBridge::saveSetting(const QString &key, const QString &value) {
+    return melyar::set_setting(rust::String(key.toStdString()), rust::String(value.toStdString()));
+}
+
+bool MelyarBridge::removeSetting(const QString &key) {
+    return melyar::delete_setting(rust::String(key.toStdString()));
+}
+
+void MelyarBridge::openUri(const QString &uri) {
+    if (uri.trimmed().isEmpty()) return;
+    m_pendingUri = uri;
+    emit uriChanged();
 }
 
 void MelyarBridge::handleProgressUpdate(double current, double total) {

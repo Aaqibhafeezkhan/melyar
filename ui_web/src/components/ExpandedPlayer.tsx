@@ -27,6 +27,7 @@ import { activeLineIndex, parseLyrics } from "@/lib/lyrics";
 import { GlassSlider, PlayPauseMorph } from "@/components/GlassComponents";
 import type { TrackMeta } from "@/lib/types";
 import { t, useLocale } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 
 const VOLUME_BAR_H = 4;
 
@@ -63,6 +64,7 @@ export function ExpandedPlayer() {
   const queueOpen = usePlayer((s) => s.queueOpen);
   const queue = usePlayer((s) => s.queue);
   const liked = usePlayer((s) => s.liked);
+  const setSettingsOpen = useSettings((s) => s.setOpen);
 
   const toggle = usePlayer((s) => s.toggle);
   const next = usePlayer((s) => s.next);
@@ -418,7 +420,7 @@ export function ExpandedPlayer() {
                 <SkipForward className="size-7 fill-current" />
               </button>
               <div className="flex flex-col items-center gap-1">
-                <button className="btn-glass text-white/60 hover:bg-white/10 hover:text-white p-1.5" aria-label="Ayarlar">
+                <button className="btn-glass text-white/60 hover:bg-white/10 hover:text-white p-1.5" aria-label={t("settings.title")} onClick={() => setSettingsOpen(true)}>
                   <Settings className="size-5" />
                 </button>
                 <button className="btn-glass text-white/60 hover:bg-white/10 hover:text-white p-1.5" aria-label={t("expanded.shuffle")} onClick={toggleShuffle}>

@@ -765,7 +765,7 @@ interface GlassSearchProps extends Omit<React.InputHTMLAttributes<HTMLInputEleme
 export const GlassSearch = forwardRef<HTMLInputElement, GlassSearchProps>(
   (props, ref) => {
     const {
-      placeholder = "Ara...",
+      placeholder = t("common.search"),
       onSearch,
       debounceMs = 300,
       className,
@@ -873,7 +873,7 @@ export const GlassSearch = forwardRef<HTMLInputElement, GlassSearchProps>(
               "opacity-0 pointer-events-none group-focus-within:opacity-100 group-focus-within:pointer-events-auto",
               "transition-opacity"
             )}
-            aria-label="Temizle"
+            aria-label={t("common.clear")}
           >
             <svg className="size-4 text-text-tertiary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -1002,7 +1002,7 @@ export const GlassPanel = forwardRef<HTMLDivElement, GlassPanelProps>(
                   <button
                     onClick={onClose}
                     className="icon-btn"
-                    aria-label="Kapat"
+                    aria-label={t("common.close")}
                   >
                     <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <line x1="18" y1="6" x2="6" y2="18" />

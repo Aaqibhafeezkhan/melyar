@@ -41,7 +41,7 @@ export function ContextMenu() {
           <button
             className="icon-btn text-white/60 hover:bg-white/10 hover:text-white"
             onClick={closeMenu}
-            aria-label="Kapat"
+            aria-label={t("common.close")}
           >
             <X className="size-5" />
           </button>

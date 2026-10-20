@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { register } from "@/lib/registry";
+import { useSettings } from "@/lib/settings";
 import type { RepeatMode, TrackMeta, View } from "@/lib/types";
 import { t } from "@/lib/i18n";
 
@@ -168,6 +169,7 @@ export const usePlayer = create<State & Actions>()((set, get) => ({
     if (volume > 0) lastVolume = volume;
     b.setVolume(volume * 100);
     set({ volume, muted: volume === 0 });
+    useSettings.getState().set("volume", volume);
   },
 
   toggleMute: () => {
@@ -185,8 +187,20 @@ export const usePlayer = create<State & Actions>()((set, get) => ({
     }
   },
 
-  toggleShuffle: () => bridge()?.toggleShuffle(),
-  cycleRepeat: () => bridge()?.cycleRepeat(),
+  toggleShuffle: () => {
+    // Compute the next value before calling the bridge: the QWebChannel
+    // signal arrives asynchronously, so reading it back right after the call
+    // would still return the old mode.
+    const next = !get().shuffle;
+    bridge()?.toggleShuffle();
+    useSettings.getState().set("shuffle", next);
+  },
+
+  cycleRepeat: () => {
+    const next = (get().repeat + 1) % 3;
+    bridge()?.cycleRepeat();
+    useSettings.getState().set("repeat", next);
+  },
 
   toggleLike: (track) => {
     const b = bridge();

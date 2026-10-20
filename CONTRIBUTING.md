@@ -113,7 +113,43 @@ The Rust core logs to stderr. Set `RUST_LOG=debug` for verbose output.
 | `MELYAR_LANG` | Force the interface language (`en` or `tr`), overriding browser detection. |
 | `MELYAR_SCREENSHOT` | Write a PNG of the window to this path, then exit. |
 | `MELYAR_SCREENSHOT_DELAY` | How long to wait before the capture, in milliseconds. Default 6000. |
+| `MELYAR_EVAL_JS` | Run a script inside the interface once it has booted. A debugging aid. |
 | `RUST_LOG` | Rust log level, for example `debug`. |
+
+### Deep links
+
+The desktop entry registers the `melyar://` handler, and the application acts
+on these links:
+
+| Link | Effect |
+|---|---|
+| `melyar://settings` | Opens the settings panel. |
+| `melyar://search/<query>` | Runs a search. |
+| `melyar://track/<id>` | Plays a track by its YouTube video id. |
+
+```bash
+melyar://settings
+```
+
+---
+
+## Settings
+
+The settings live in the core's SQLite database, in a `settings` table, so
+they survive a restart.
+
+- **Rust:** `core_rs/src/db/storage.rs` holds the table and the accessors.
+- **Bridge:** `loadSettings`, `saveSetting` and `removeSetting` in
+  `ui_cpp/bridge/bridge.cpp` move them between the core and the interface.
+- **Interface:** `ui_web/src/lib/settings.ts` holds the store and applies the
+  settings to the document.
+
+Adding a setting means touching all three, plus a default in
+`DEFAULT_SETTINGS` and a type rule in `coerce`.
+
+> QWebChannel calls are asynchronous. A method that returns a value gives you
+> a promise, not the value itself - `await` it. This is the single most
+> common mistake when adding a bridge method.
 
 ---
 

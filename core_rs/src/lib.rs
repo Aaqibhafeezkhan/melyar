@@ -103,6 +103,9 @@ pub mod ffi {
         fn get_library_playlists() -> Vec<CxxLibraryPlaylist>;
         fn clear_search_history() -> bool;
         fn remove_from_search_history(query: String) -> bool;
+        fn get_settings_json() -> String;
+        fn set_setting(key: String, value: String) -> bool;
+        fn delete_setting(key: String) -> bool;
     }
 }
 
@@ -622,4 +625,27 @@ pub fn remove_from_search_history(query: String) -> bool {
     core.storage
         .remove_from_search_history(&query)
         .unwrap_or(false)
+}
+
+/// Every stored setting as a JSON object, so the bridge can hand the whole
+/// set to the interface in one call.
+pub fn get_settings_json() -> String {
+    let core = get_core();
+    let mut map = serde_json::Map::new();
+    if let Ok(entries) = core.storage.all_settings() {
+        for (key, value) in entries {
+            map.insert(key, serde_json::Value::String(value));
+        }
+    }
+    serde_json::Value::Object(map).to_string()
+}
+
+pub fn set_setting(key: String, value: String) -> bool {
+    let core = get_core();
+    core.storage.set_setting(&key, &value).is_ok()
+}
+
+pub fn delete_setting(key: String) -> bool {
+    let core = get_core();
+    core.storage.delete_setting(&key).unwrap_or(false)
 }

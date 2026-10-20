@@ -33,6 +33,8 @@ class MelyarBridge : public QObject {
     Q_PROPERTY(bool isPlaying READ isPlaying NOTIFY playbackStateChanged)
     Q_PROPERTY(double volume READ volume WRITE setVolume NOTIFY volumeChanged)
     Q_PROPERTY(QString currentLyrics READ currentLyrics NOTIFY lyricsChanged)
+    Q_PROPERTY(QString pendingUri READ pendingUri NOTIFY uriChanged)
+    Q_PROPERTY(QVariantMap pendingTrackMeta READ pendingTrackMeta NOTIFY trackMetadataChanged)
     Q_PROPERTY(QVariantList searchResults READ searchResults NOTIFY searchResultsChanged)
     Q_PROPERTY(QVariantList favorites READ favorites NOTIFY favoritesChanged)
     Q_PROPERTY(QVariantList history READ history NOTIFY historyChanged)
@@ -62,6 +64,8 @@ public:
     bool isPlaying() const { return m_isPlaying; }
     double volume() const { return m_volume; }
     QString currentLyrics() const { return m_currentLyrics; }
+    QString pendingUri() const { return m_pendingUri; }
+    QVariantMap pendingTrackMeta() const { return m_pendingTrackMeta; }
     QVariantList searchResults() const { return m_searchResults; }
     QVariantList favorites() const { return m_favorites; }
     QVariantList history() const { return m_history; }
@@ -94,6 +98,8 @@ public:
     Q_INVOKABLE void fetchLyrics(const QString &trackId);
     Q_INVOKABLE void toggleShuffle();
     Q_INVOKABLE void cycleRepeat();
+    Q_INVOKABLE void setShuffleMode(bool enabled);
+    Q_INVOKABLE void setRepeatMode(int mode);
     Q_INVOKABLE void replaceQueue(const QVariantList &tracks, int startIndex);
     Q_INVOKABLE void addToQueue(const QString &trackId);
     Q_INVOKABLE void removeFromQueue(int index);
@@ -104,6 +110,11 @@ public:
     Q_INVOKABLE void loadLibrary();
     Q_INVOKABLE void clearSearchHistory();
     Q_INVOKABLE void removeFromSearchHistory(const QString &query);
+    Q_INVOKABLE QString loadSettings() const;
+    Q_INVOKABLE bool saveSetting(const QString &key, const QString &value);
+    Q_INVOKABLE bool removeSetting(const QString &key);
+    Q_INVOKABLE void openUri(const QString &uri);
+    Q_INVOKABLE QVariantMap getTrackMetadata(const QString &trackId);
 
 signals:
     void currentTrackChanged();
@@ -122,6 +133,8 @@ signals:
     void libraryArtistsChanged();
     void libraryPlaylistsChanged();
     void searchHistoryChanged();
+    void uriChanged();
+    void trackMetadataChanged();
 
 public slots:
     void handleProgressUpdate(double current, double total);
@@ -145,6 +158,8 @@ private:
     bool m_isPlaying{false};
     double m_volume{100.0};
     QString m_currentLyrics{""};
+    QString m_pendingUri{""};
+    QVariantMap m_pendingTrackMeta;
     QVariantList m_searchResults;
     QVariantList m_favorites;
     QVariantList m_history;

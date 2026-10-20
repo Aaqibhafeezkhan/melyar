@@ -2012,3 +2012,44 @@
     animation: none !important;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* User settings                                                       */
+/* ------------------------------------------------------------------ */
+
+/* Compact mode: tighter rows and less padding around the content. */
+[data-compact="true"] .track-row {
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
+}
+
+[data-compact="true"] .content-scroll {
+  font-size: 14px;
+}
+
+[data-compact="true"] .side-section {
+  margin-top: 0.75rem;
+}
+
+/* Animations turned off: the motion settings already respect the reduced
+   motion preference, this covers the CSS side as well. */
+[data-animations="false"] *,
+[data-animations="false"] *::before,
+[data-animations="false"] *::after {
+  transition-duration: 0.01ms !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+}
+
+/* The settings dialog is a modal, so it needs a readable backdrop. The
+   glass treatment relies on backdrop-filter, which does not always apply
+   inside the overlay stacking context, so the panel is drawn opaque. */
+.settings-panel {
+  background: var(--bg-content);
+  border: 1px solid var(--line);
+}
+
+.settings-overlay {
+  background: rgba(0, 0, 0, 0.55);
+}

@@ -83,7 +83,7 @@ export function QueuePanel() {
               onClick={(e) => { e.stopPropagation(); clearQueue(); }}
               aria-label={t("queue.clear")}
             >
-              Temizle
+              {t("queue.clearButton")}
             </button>
           ) : null}
           <button
@@ -140,7 +140,7 @@ export function QueuePanel() {
                 <button
                   data-menu-btn="true"
                   className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 icon-btn text-white/50 hover:text-white"
-                  aria-label="Daha fazla"
+                  aria-label={t("track.options")}
                   onClick={(e) => handleMenuClick(track, (e.currentTarget as HTMLElement).getBoundingClientRect(), e)}
                 >
                   <MoreHorizontal className="size-4" />
