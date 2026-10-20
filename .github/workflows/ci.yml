@@ -45,7 +45,9 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          # pnpm 10+ is required: the project uses the `allowBuilds` setting
+          # in pnpm-workspace.yaml to permit esbuild's postinstall script.
+          version: 12
 
       - uses: actions/setup-node@v4
         with:

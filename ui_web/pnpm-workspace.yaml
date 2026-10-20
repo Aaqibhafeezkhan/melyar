@@ -1,2 +1,9 @@
+# pnpm requires a `packages` field as soon as this file exists.
+# The project is a single package, so the workspace root itself is the package.
+packages:
+  - .
+
+# Allow esbuild's postinstall script (required by vite / tailwind).
+# `allowBuilds` is a pnpm 10+ setting; older pnpm versions ignore it.
 allowBuilds:
   esbuild: true

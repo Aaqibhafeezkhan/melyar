@@ -81,6 +81,14 @@ target_link_libraries(melyar PRIVATE
     ${MPV_LIBRARIES}
 )
 
+# CMake emits `-lmpv` *before* libmelyar_core.a, because the Rust core
+# declares libmpv as an interface dependency. Distributions that link with
+# `--as-needed` by default (Ubuntu/Debian) then drop libmpv from the link
+# line, since no mpv_* symbol is undefined yet at that point, which breaks
+# the final link with "undefined reference to mpv_create".
+# Disabling --as-needed for this target keeps libmpv on the link line.
+target_link_options(melyar PRIVATE "LINKER:--no-as-needed")
+
 set_target_properties(melyar PROPERTIES
     CXX_STANDARD 20
     CMAKE_CXX_STANDARD_REQUIRED ON
