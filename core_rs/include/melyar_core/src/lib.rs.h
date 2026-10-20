@@ -746,6 +746,9 @@ std::size_t align_of() {
 
 namespace melyar {
   struct CxxTrackMetadata;
+  struct CxxLibraryAlbum;
+  struct CxxLibraryArtist;
+  struct CxxLibraryPlaylist;
 }
 
 namespace melyar {
@@ -763,6 +766,46 @@ struct CxxTrackMetadata final {
   using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_melyar$CxxTrackMetadata
+
+#ifndef CXXBRIDGE1_STRUCT_melyar$CxxLibraryAlbum
+#define CXXBRIDGE1_STRUCT_melyar$CxxLibraryAlbum
+struct CxxLibraryAlbum final {
+  ::rust::String id;
+  ::rust::String title;
+  ::rust::String artist;
+  ::rust::String thumbnail_url;
+  ::rust::String year;
+  ::std::int32_t track_count CXX_DEFAULT_VALUE(0);
+  double duration_secs CXX_DEFAULT_VALUE(0);
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_melyar$CxxLibraryAlbum
+
+#ifndef CXXBRIDGE1_STRUCT_melyar$CxxLibraryArtist
+#define CXXBRIDGE1_STRUCT_melyar$CxxLibraryArtist
+struct CxxLibraryArtist final {
+  ::rust::String id;
+  ::rust::String name;
+  ::rust::String thumbnail_url;
+  ::std::int64_t follower_count CXX_DEFAULT_VALUE(0);
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_melyar$CxxLibraryArtist
+
+#ifndef CXXBRIDGE1_STRUCT_melyar$CxxLibraryPlaylist
+#define CXXBRIDGE1_STRUCT_melyar$CxxLibraryPlaylist
+struct CxxLibraryPlaylist final {
+  ::rust::String id;
+  ::rust::String name;
+  ::rust::String thumbnail_url;
+  ::std::int32_t track_count CXX_DEFAULT_VALUE(0);
+  bool is_owner CXX_DEFAULT_VALUE(false);
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_melyar$CxxLibraryPlaylist
 
 bool init_melyar_core() noexcept;
 
@@ -782,6 +825,8 @@ bool previous_track() noexcept;
 
 ::rust::String fetch_lyrics(::rust::String track_id) noexcept;
 
+::rust::String fetch_lyrics_live(::rust::String track_id, ::rust::String title, ::rust::String artist, double duration) noexcept;
+
 bool toggle_favorite(::rust::String track_id, ::rust::String title, ::rust::String artist, ::rust::String album, double duration, ::rust::String thumb) noexcept;
 
 bool is_favorite(::rust::String track_id) noexcept;
@@ -789,6 +834,26 @@ bool is_favorite(::rust::String track_id) noexcept;
 ::rust::Vec<::melyar::CxxTrackMetadata> get_favorites() noexcept;
 
 ::rust::Vec<::melyar::CxxTrackMetadata> get_history() noexcept;
+
+bool set_shuffle(bool enabled) noexcept;
+
+bool set_repeat_mode(::std::int32_t mode) noexcept;
+
+bool replace_queue(::rust::Vec<::melyar::CxxTrackMetadata> tracks, ::std::int32_t start_index) noexcept;
+
+::rust::Vec<::melyar::CxxTrackMetadata> get_queue() noexcept;
+
+::melyar::CxxTrackMetadata get_track_metadata(::rust::String track_id) noexcept;
+
+::rust::Vec<::melyar::CxxLibraryAlbum> get_library_albums() noexcept;
+
+::rust::Vec<::melyar::CxxLibraryArtist> get_library_artists() noexcept;
+
+::rust::Vec<::melyar::CxxLibraryPlaylist> get_library_playlists() noexcept;
+
+bool clear_search_history() noexcept;
+
+bool remove_from_search_history(::rust::String query) noexcept;
 } // namespace melyar
 
 #ifdef __clang__

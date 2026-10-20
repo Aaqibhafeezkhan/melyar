@@ -5,7 +5,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::ffi::CxxTrackMetadata;
+use crate::ffi::{CxxTrackMetadata, CxxLibraryAlbum, CxxLibraryArtist, CxxLibraryPlaylist};
 
 pub struct DbStorage {
     conn: Mutex<Connection>,
@@ -54,6 +54,39 @@ impl DbStorage {
                  track_id TEXT PRIMARY KEY,
                  lrc TEXT NOT NULL,
                  cached_at INTEGER NOT NULL
+             );
+
+             CREATE TABLE IF NOT EXISTS library_albums (
+                 album_id TEXT PRIMARY KEY,
+                 title TEXT NOT NULL,
+                 artist TEXT NOT NULL,
+                 thumbnail TEXT NOT NULL,
+                 year TEXT NOT NULL,
+                 track_count INTEGER NOT NULL,
+                 duration REAL NOT NULL,
+                 added_at INTEGER NOT NULL
+             );
+
+             CREATE TABLE IF NOT EXISTS library_artists (
+                 artist_id TEXT PRIMARY KEY,
+                 name TEXT NOT NULL,
+                 thumbnail TEXT NOT NULL,
+                 follower_count INTEGER NOT NULL,
+                 added_at INTEGER NOT NULL
+             );
+
+             CREATE TABLE IF NOT EXISTS library_playlists (
+                 playlist_id TEXT PRIMARY KEY,
+                 name TEXT NOT NULL,
+                 thumbnail TEXT NOT NULL,
+                 track_count INTEGER NOT NULL,
+                 is_owner INTEGER NOT NULL,
+                 added_at INTEGER NOT NULL
+             );
+
+             CREATE TABLE IF NOT EXISTS search_history (
+                 query TEXT PRIMARY KEY,
+                 searched_at INTEGER NOT NULL
              );",
         )?;
 
@@ -212,40 +245,230 @@ impl DbStorage {
         Ok(())
     }
 
-    #[cfg(test)]
+    // Library functions
+    pub fn add_library_album(&self, album: &CxxLibraryAlbum) -> Result<()> {
+        let conn = self.conn.lock();
+        let now = Self::current_timestamp();
+        conn.execute(
+            "INSERT INTO library_albums (album_id, title, artist, thumbnail, year, track_count, duration, added_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+             ON CONFLICT(album_id) DO UPDATE SET
+                 title = ?2,
+                 artist = ?3,
+                 thumbnail = ?4,
+                 year = ?5,
+                 track_count = ?6,
+                 duration = ?7,
+                 added_at = ?8",
+            params![
+                album.id,
+                album.title,
+                album.artist,
+                album.thumbnail_url,
+                album.year,
+                album.track_count,
+                album.duration_secs,
+                now
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_library_albums(&self) -> Result<Vec<CxxLibraryAlbum>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT album_id, title, artist, thumbnail, year, track_count, duration
+             FROM library_albums ORDER BY added_at DESC",
+        )?;
+
+        let rows = stmt.query_map([], |row| {
+            Ok(CxxLibraryAlbum {
+                id: row.get(0)?,
+                title: row.get(1)?,
+                artist: row.get(2)?,
+                thumbnail_url: row.get(3)?,
+                year: row.get(4)?,
+                track_count: row.get(5)?,
+                duration_secs: row.get(6)?,
+            })
+        })?;
+
+        let mut result = Vec::new();
+        for r in rows {
+            result.push(r?);
+        }
+        Ok(result)
+    }
+
+    pub fn add_library_artist(&self, artist: &CxxLibraryArtist) -> Result<()> {
+        let conn = self.conn.lock();
+        let now = Self::current_timestamp();
+        conn.execute(
+            "INSERT INTO library_artists (artist_id, name, thumbnail, follower_count, added_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT(artist_id) DO UPDATE SET
+                 name = ?2,
+                 thumbnail = ?3,
+                 follower_count = ?4,
+                 added_at = ?5",
+            params![
+                artist.id,
+                artist.name,
+                artist.thumbnail_url,
+                artist.follower_count,
+                now
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_library_artists(&self) -> Result<Vec<CxxLibraryArtist>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT artist_id, name, thumbnail, follower_count
+             FROM library_artists ORDER BY added_at DESC",
+        )?;
+
+        let rows = stmt.query_map([], |row| {
+            Ok(CxxLibraryArtist {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                thumbnail_url: row.get(2)?,
+                follower_count: row.get(3)?,
+            })
+        })?;
+
+        let mut result = Vec::new();
+        for r in rows {
+            result.push(r?);
+        }
+        Ok(result)
+    }
+
+    pub fn add_library_playlist(&self, playlist: &CxxLibraryPlaylist) -> Result<()> {
+        let conn = self.conn.lock();
+        let now = Self::current_timestamp();
+        conn.execute(
+            "INSERT INTO library_playlists (playlist_id, name, thumbnail, track_count, is_owner, added_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+             ON CONFLICT(playlist_id) DO UPDATE SET
+                 name = ?2,
+                 thumbnail = ?3,
+                 track_count = ?4,
+                 is_owner = ?5,
+                 added_at = ?6",
+            params![
+                playlist.id,
+                playlist.name,
+                playlist.thumbnail_url,
+                playlist.track_count,
+                playlist.is_owner as i32,
+                now
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_library_playlists(&self) -> Result<Vec<CxxLibraryPlaylist>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT playlist_id, name, thumbnail, track_count, is_owner
+             FROM library_playlists ORDER BY added_at DESC",
+        )?;
+
+        let rows = stmt.query_map([], |row| {
+            Ok(CxxLibraryPlaylist {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                thumbnail_url: row.get(2)?,
+                track_count: row.get(3)?,
+                is_owner: row.get::<_, i32>(4)? != 0,
+            })
+        })?;
+
+        let mut result = Vec::new();
+        for r in rows {
+            result.push(r?);
+        }
+        Ok(result)
+    }
+
+    // Search history
+    pub fn add_search_history(&self, query: &str) -> Result<()> {
+        let conn = self.conn.lock();
+        let now = Self::current_timestamp();
+        conn.execute(
+            "INSERT INTO search_history (query, searched_at)
+             VALUES (?1, ?2)
+             ON CONFLICT(query) DO UPDATE SET searched_at = ?2",
+            params![query, now],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_search_history(&self, limit: usize) -> Result<Vec<String>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT query FROM search_history ORDER BY searched_at DESC LIMIT ?1",
+        )?;
+
+        let rows = stmt.query_map(params![limit as i64], |row| {
+            Ok(row.get(0)?)
+        })?;
+
+        let mut result = Vec::new();
+        for r in rows {
+            result.push(r?);
+        }
+        Ok(result)
+    }
+
+    pub fn clear_search_history(&self) -> Result<bool> {
+        let conn = self.conn.lock();
+        conn.execute("DELETE FROM search_history", [])?;
+        Ok(true)
+    }
+
+    pub fn remove_from_search_history(&self, query: &str) -> Result<bool> {
+        let conn = self.conn.lock();
+        conn.execute("DELETE FROM search_history WHERE query = ?1", params![query])?;
+        Ok(true)
+    }
+
+    /// In-memory storage for unit tests.
     pub fn new_in_memory() -> Result<Self> {
         let conn = Connection::open_in_memory()?;
         let _ = conn.query_row("PRAGMA journal_mode = WAL;", [], |_| Ok(()));
         conn.execute_batch(
             "PRAGMA synchronous = NORMAL;
-             PRAGMA foreign_keys = ON;
-             PRAGMA temp_store = MEMORY;
+                 PRAGMA foreign_keys = ON;
+                 PRAGMA temp_store = MEMORY;
 
-             CREATE TABLE IF NOT EXISTS history (
-                 track_id TEXT PRIMARY KEY,
-                 title TEXT NOT NULL,
-                 artist TEXT NOT NULL,
-                 album TEXT NOT NULL,
-                 duration REAL NOT NULL,
-                 thumbnail TEXT NOT NULL,
-                 played_at INTEGER NOT NULL
-             );
+                 CREATE TABLE IF NOT EXISTS history (
+                     track_id TEXT PRIMARY KEY,
+                     title TEXT NOT NULL,
+                     artist TEXT NOT NULL,
+                     album TEXT NOT NULL,
+                     duration REAL NOT NULL,
+                     thumbnail TEXT NOT NULL,
+                     played_at INTEGER NOT NULL
+                 );
 
-             CREATE TABLE IF NOT EXISTS favorites (
-                 track_id TEXT PRIMARY KEY,
-                 title TEXT NOT NULL,
-                 artist TEXT NOT NULL,
-                 album TEXT NOT NULL,
-                 duration REAL NOT NULL,
-                 thumbnail TEXT NOT NULL,
-                 added_at INTEGER NOT NULL
-             );
+                 CREATE TABLE IF NOT EXISTS favorites (
+                     track_id TEXT PRIMARY KEY,
+                     title TEXT NOT NULL,
+                     artist TEXT NOT NULL,
+                     album TEXT NOT NULL,
+                     duration REAL NOT NULL,
+                     thumbnail TEXT NOT NULL,
+                     added_at INTEGER NOT NULL
+                 );
 
-             CREATE TABLE IF NOT EXISTS lyrics_cache (
-                 track_id TEXT PRIMARY KEY,
-                 lrc TEXT NOT NULL,
-                 cached_at INTEGER NOT NULL
-             );",
+                 CREATE TABLE IF NOT EXISTS lyrics_cache (
+                     track_id TEXT PRIMARY KEY,
+                     lrc TEXT NOT NULL,
+                     cached_at INTEGER NOT NULL
+                 );",
         )?;
 
         Ok(Self {

@@ -7,6 +7,9 @@ Item {
     property alias model: listView.model
     property string emptyMessage: "No tracks found"
 
+    signal trackClicked(string trackId)
+    signal trackContextMenu(variant mouse)
+
     // Header row
     Rectangle {
         id: headerRow
@@ -25,7 +28,9 @@ Item {
                 text: "#"
                 width: 40
                 color: Style.textMuted
-                font.pixelSize: 12
+                font.pixelSize: Style.fontSizeXs
+                font.bold: true
+                font.letterSpacing: 1
                 anchors.verticalCenter: parent.verticalCenter
             }
 
@@ -33,7 +38,9 @@ Item {
                 text: "TITLE"
                 width: parent.width * 0.45
                 color: Style.textMuted
-                font.pixelSize: 12
+                font.pixelSize: Style.fontSizeXs
+                font.bold: true
+                font.letterSpacing: 1
                 anchors.verticalCenter: parent.verticalCenter
             }
 
@@ -41,7 +48,9 @@ Item {
                 text: "ALBUM"
                 width: parent.width * 0.35
                 color: Style.textMuted
-                font.pixelSize: 12
+                font.pixelSize: Style.fontSizeXs
+                font.bold: true
+                font.letterSpacing: 1
                 anchors.verticalCenter: parent.verticalCenter
             }
 
@@ -49,7 +58,9 @@ Item {
                 text: "⏱"
                 width: 50
                 color: Style.textMuted
-                font.pixelSize: 12
+                font.pixelSize: Style.fontSizeXs
+                font.bold: true
+                font.letterSpacing: 1
                 horizontalAlignment: Text.AlignRight
                 anchors.verticalCenter: parent.verticalCenter
             }
@@ -135,7 +146,7 @@ Item {
                     Rectangle {
                         width: 40
                         height: 40
-                        radius: 4
+                        radius: Style.radiusSmall
                         color: Style.surface
                         anchors.verticalCenter: parent.verticalCenter
                         clip: true
@@ -156,7 +167,7 @@ Item {
                         Text {
                             text: rowItem.trackData ? rowItem.trackData.title : ""
                             color: rowItem.isCurrent ? Style.primary : Style.textPrimary
-                            font.pixelSize: 14
+                            font.pixelSize: Style.fontSizeBase
                             font.bold: true
                             elide: Text.ElideRight
                             width: parent.width
@@ -165,7 +176,7 @@ Item {
                         Text {
                             text: rowItem.trackData ? rowItem.trackData.artist : ""
                             color: Style.textSecondary
-                            font.pixelSize: 12
+                            font.pixelSize: Style.fontSizeSm
                             elide: Text.ElideRight
                             width: parent.width
                         }
@@ -178,7 +189,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     text: rowItem.trackData ? (rowItem.trackData.album || "") : ""
                     color: Style.textSecondary
-                    font.pixelSize: 13
+                    font.pixelSize: Style.fontSizeSm
                     elide: Text.ElideRight
                 }
 
@@ -188,7 +199,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     text: rowItem.trackData ? Style.formatTime(rowItem.trackData.duration) : "0:00"
                     color: Style.textMuted
-                    font.pixelSize: 13
+                    font.pixelSize: Style.fontSizeSm
                     horizontalAlignment: Text.AlignRight
                 }
             }
@@ -200,12 +211,12 @@ Item {
                 cursorShape: Qt.PointingHandCursor
                 onDoubleClicked: {
                     if (rowItem.trackData) {
-                        bridge.playTrack(rowItem.trackData.id);
+                        root.trackClicked(rowItem.trackData.id)
                     }
                 }
                 onClicked: {
                     if (rowItem.trackData) {
-                        bridge.playTrack(rowItem.trackData.id);
+                        root.trackClicked(rowItem.trackData.id)
                     }
                 }
             }
@@ -216,7 +227,7 @@ Item {
             anchors.centerIn: parent
             text: root.emptyMessage
             color: Style.textMuted
-            font.pixelSize: 16
+            font.pixelSize: Style.fontSizeLg
             visible: listView.count === 0
         }
     }

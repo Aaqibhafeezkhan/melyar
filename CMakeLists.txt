@@ -28,7 +28,7 @@ corrosion_import_crate(
 # -----------------------------------------------------------------------------
 # Qt6 Modules
 # -----------------------------------------------------------------------------
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml Concurrent)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml WebEngineQuick WebChannel)
 
 # -----------------------------------------------------------------------------
 # Libmpv
@@ -45,15 +45,16 @@ qt_add_executable(melyar
     ui_cpp/bridge/bridge.hpp
 )
 
+file(GLOB_RECURSE MELYAR_QML_FILES CONFIGURE_DEPENDS
+    RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+    "ui_cpp/qml/*.qml"
+    "ui_cpp/qml/**/*.qml"
+    "ui_cpp/qml/**/qmldir"
+)
+
 qt6_add_resources(melyar "melyar_qml"
     PREFIX "/melyar"
-    FILES
-        ui_cpp/qml/Main.qml
-        ui_cpp/qml/theme/Style.qml
-        ui_cpp/qml/components/PlayerBar.qml
-        ui_cpp/qml/components/VirtualTrackList.qml
-        ui_cpp/qml/components/Sidebar.qml
-        ui_cpp/qml/components/SyncedLyrics.qml
+    FILES ${MELYAR_QML_FILES}
 )
 
 target_include_directories(melyar PRIVATE
@@ -68,13 +69,14 @@ target_link_libraries(melyar PRIVATE
     Qt6::Gui
     Qt6::Quick
     Qt6::Qml
-    Qt6::Concurrent
+    Qt6::WebEngineQuick
+    Qt6::WebChannel
     ${MPV_LIBRARIES}
 )
 
 set_target_properties(melyar PROPERTIES
     CXX_STANDARD 20
-    CXX_STANDARD_REQUIRED ON
+    CMAKE_CXX_STANDARD_REQUIRED ON
     AUTOMOC ON
     AUTORCC ON
     AUTOUIC ON

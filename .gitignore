@@ -6,3 +6,4 @@ CMakeCache.txt
 cmake_install.cmake
 Makefile
 *.log
+ui_web/node_modules/

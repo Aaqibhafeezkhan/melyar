@@ -3,6 +3,7 @@
 #include <QMetaObject>
 #include <QtConcurrent/QtConcurrent>
 #include <iostream>
+#include <QTimer>
 
 #include "melyar_core/src/lib.rs.h"
 
@@ -17,6 +18,7 @@ MelyarBridge::MelyarBridge(QObject *parent) : QObject(parent) {
     melyar::init_melyar_core();
     loadFavorites();
     loadHistory();
+    loadLibrary();
 }
 
 MelyarBridge::~MelyarBridge() {
@@ -147,11 +149,220 @@ void MelyarBridge::loadHistory() {
     });
 }
 
+void MelyarBridge::loadLibrary() {
+    (void)QtConcurrent::run([this]() {
+        // Load library albums
+        auto albums = melyar::get_library_albums();
+        QVariantList q_albums;
+        for (const auto &item : albums) {
+            QVariantMap album;
+            album["id"] = QString::fromStdString(std::string(item.id));
+            album["title"] = QString::fromStdString(std::string(item.title));
+            album["artist"] = QString::fromStdString(std::string(item.artist));
+            album["artwork"] = QString::fromStdString(std::string(item.thumbnail_url));
+            album["year"] = QString::fromStdString(std::string(item.year));
+            album["trackCount"] = item.track_count;
+            album["duration"] = item.duration_secs;
+            q_albums.append(album);
+        }
+
+        // Load library artists
+        auto artists = melyar::get_library_artists();
+        QVariantList q_artists;
+        for (const auto &item : artists) {
+            QVariantMap artist;
+            artist["id"] = QString::fromStdString(std::string(item.id));
+            artist["name"] = QString::fromStdString(std::string(item.name));
+            artist["artwork"] = QString::fromStdString(std::string(item.thumbnail_url));
+            artist["followerCount"] = static_cast<qlonglong>(item.follower_count);
+            q_artists.append(artist);
+        }
+
+        // Load library playlists
+        auto playlists = melyar::get_library_playlists();
+        QVariantList q_playlists;
+        for (const auto &item : playlists) {
+            QVariantMap playlist;
+            playlist["id"] = QString::fromStdString(std::string(item.id));
+            playlist["name"] = QString::fromStdString(std::string(item.name));
+            playlist["artwork"] = QString::fromStdString(std::string(item.thumbnail_url));
+            playlist["trackCount"] = item.track_count;
+            playlist["isOwner"] = item.is_owner;
+            q_playlists.append(playlist);
+        }
+
+        QMetaObject::invokeMethod(this, [this, q_albums, q_artists, q_playlists]() {
+            m_libraryAlbums = q_albums;
+            m_libraryArtists = q_artists;
+            m_libraryPlaylists = q_playlists;
+            emit libraryAlbumsChanged();
+            emit libraryArtistsChanged();
+            emit libraryPlaylistsChanged();
+        }, Qt::QueuedConnection);
+    });
+}
+
 void MelyarBridge::fetchLyrics(const QString &trackId) {
-    rust::String r_id(trackId.toStdString());
-    auto lrc = melyar::fetch_lyrics(r_id);
-    m_currentLyrics = QString::fromStdString(std::string(lrc));
-    emit lyricsChanged();
+    // Async: cache first, then live lrclib fetch (uses current track title/artist)
+    const QString id = trackId;
+    const QString title = m_currentTitle;
+    const QString artist = m_currentArtist;
+    const double dur = m_currentDuration;
+    (void)QtConcurrent::run([this, id, title, artist, dur]() {
+        rust::String lrc = melyar::fetch_lyrics_live(
+            rust::String(id.toStdString()),
+            rust::String(title.toStdString()),
+            rust::String(artist.toStdString()),
+            dur);
+        QString q = QString::fromStdString(std::string(lrc));
+        QMetaObject::invokeMethod(this, [this, id, q]() {
+            if (m_currentTrackId == id) {
+                m_currentLyrics = q;
+                emit lyricsChanged();
+            }
+        }, Qt::QueuedConnection);
+    });
+}
+
+// New playback control functions
+void MelyarBridge::replaceQueue(const QVariantList &tracks, int startIndex) {
+    rust::Vec<melyar::CxxTrackMetadata> vec;
+    for (const auto &item : tracks) {
+        const QVariantMap t = item.toMap();
+        melyar::CxxTrackMetadata meta;
+        meta.id = t["id"].toString().toStdString();
+        meta.title = t["title"].toString().toStdString();
+        meta.artist = t["artist"].toString().toStdString();
+        meta.album = t["album"].toString().toStdString();
+        meta.duration_secs = t["duration"].toDouble();
+        meta.thumbnail_url = t["thumbnail"].toString().toStdString();
+        meta.lyrics = "";
+        vec.push_back(std::move(meta));
+    }
+    try {
+        melyar::replace_queue(vec, startIndex);
+        // Refresh the exposed queue property so the UI queue panel stays in sync
+        rust::Vec<melyar::CxxTrackMetadata> updated = melyar::get_queue();
+        QVariantList q_list;
+        for (const auto &item : updated) {
+            QVariantMap track;
+            track["id"] = QString::fromStdString(std::string(item.id));
+            track["title"] = QString::fromStdString(std::string(item.title));
+            track["artist"] = QString::fromStdString(std::string(item.artist));
+            track["album"] = QString::fromStdString(std::string(item.album));
+            track["duration"] = item.duration_secs;
+            track["thumbnail"] = QString::fromStdString(std::string(item.thumbnail_url));
+            q_list.append(track);
+        }
+        m_queue = q_list;
+        emit queueChanged();
+    } catch (const std::exception &e) {
+        std::cerr << "replaceQueue failed: " << e.what() << std::endl;
+    }
+}
+
+void MelyarBridge::toggleShuffle() {
+    m_shuffleMode = !m_shuffleMode;
+    melyar::set_shuffle(m_shuffleMode);
+    emit shuffleModeChanged();
+}
+
+void MelyarBridge::cycleRepeat() {
+    m_repeatMode = (m_repeatMode + 1) % 3; // 0 -> 1 -> 2 -> 0
+    melyar::set_repeat_mode(m_repeatMode);
+    emit repeatModeChanged();
+}
+
+void MelyarBridge::addToQueue(const QString &trackId) {
+    (void)QtConcurrent::run([this, trackId]() {
+        rust::String r_id(trackId.toStdString());
+        auto track = melyar::get_track_metadata(r_id);
+        if (!track.id.empty()) {
+            QVariantMap trackMap;
+            trackMap["id"] = QString::fromStdString(std::string(track.id));
+            trackMap["title"] = QString::fromStdString(std::string(track.title));
+            trackMap["artist"] = QString::fromStdString(std::string(track.artist));
+            trackMap["album"] = QString::fromStdString(std::string(track.album));
+            trackMap["duration"] = track.duration_secs;
+            trackMap["thumbnail"] = QString::fromStdString(std::string(track.thumbnail_url));
+
+            QMetaObject::invokeMethod(this, [this, trackMap]() {
+                m_queue.append(trackMap);
+                emit queueChanged();
+            }, Qt::QueuedConnection);
+        }
+    });
+}
+
+void MelyarBridge::removeFromQueue(int index) {
+    if (index >= 0 && index < m_queue.length()) {
+        m_queue.removeAt(index);
+        emit queueChanged();
+    }
+}
+
+void MelyarBridge::playFromQueue(int index) {
+    if (index >= 0 && index < m_queue.length()) {
+        auto track = m_queue[index].toMap();
+        QString trackId = track["id"].toString();
+        playTrack(trackId);
+
+        // Move played track to current position in queue
+        m_queue.removeAt(index);
+        m_queue.prepend(track);
+        emit queueChanged();
+    }
+}
+
+void MelyarBridge::clearQueue() {
+    m_queue.clear();
+    emit queueChanged();
+}
+
+void MelyarBridge::setSleepTimer(int seconds) {
+    if (seconds > 0) {
+        m_sleepTimerActive = true;
+        int mins = seconds / 60;
+        if (mins > 0) {
+            m_sleepTimerText = QString::number(mins) + " min";
+        } else {
+            m_sleepTimerText = QString::number(seconds) + " sec";
+        }
+    } else if (seconds == -1) {
+        m_sleepTimerActive = true;
+        m_sleepTimerText = "End of track";
+    } else {
+        m_sleepTimerActive = false;
+        m_sleepTimerText = "";
+    }
+    emit sleepTimerChanged();
+
+    if (seconds > 0) {
+        QTimer::singleShot(seconds * 1000, this, [this]() {
+            this->togglePlay();
+            m_sleepTimerActive = false;
+            m_sleepTimerText = "";
+            emit sleepTimerChanged();
+        });
+    }
+}
+
+void MelyarBridge::cancelSleepTimer() {
+    m_sleepTimerActive = false;
+    m_sleepTimerText = "";
+    emit sleepTimerChanged();
+}
+
+void MelyarBridge::clearSearchHistory() {
+    m_searchHistory.clear();
+    melyar::clear_search_history();
+    emit searchHistoryChanged();
+}
+
+void MelyarBridge::removeFromSearchHistory(const QString &query) {
+    m_searchHistory.removeAll(query);
+    melyar::remove_from_search_history(rust::String(query.toStdString()));
+    emit searchHistoryChanged();
 }
 
 void MelyarBridge::handleProgressUpdate(double current, double total) {

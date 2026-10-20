@@ -28,6 +28,34 @@ pub mod ffi {
         pub lyrics: String,
     }
 
+    #[derive(Clone, Debug, Default)]
+    pub struct CxxLibraryAlbum {
+        pub id: String,
+        pub title: String,
+        pub artist: String,
+        pub thumbnail_url: String,
+        pub year: String,
+        pub track_count: i32,
+        pub duration_secs: f64,
+    }
+
+    #[derive(Clone, Debug, Default)]
+    pub struct CxxLibraryArtist {
+        pub id: String,
+        pub name: String,
+        pub thumbnail_url: String,
+        pub follower_count: i64,
+    }
+
+    #[derive(Clone, Debug, Default)]
+    pub struct CxxLibraryPlaylist {
+        pub id: String,
+        pub name: String,
+        pub thumbnail_url: String,
+        pub track_count: i32,
+        pub is_owner: bool,
+    }
+
     unsafe extern "C++" {
         include!("bridge.hpp");
 
@@ -48,10 +76,21 @@ pub mod ffi {
         fn next_track() -> bool;
         fn previous_track() -> bool;
         fn fetch_lyrics(track_id: String) -> String;
+        fn fetch_lyrics_live(track_id: String, title: String, artist: String, duration: f64) -> String;
         fn toggle_favorite(track_id: String, title: String, artist: String, album: String, duration: f64, thumb: String) -> bool;
         fn is_favorite(track_id: String) -> bool;
         fn get_favorites() -> Vec<CxxTrackMetadata>;
         fn get_history() -> Vec<CxxTrackMetadata>;
+        fn set_shuffle(enabled: bool) -> bool;
+        fn set_repeat_mode(mode: i32) -> bool;
+        fn replace_queue(tracks: Vec<CxxTrackMetadata>, start_index: i32) -> bool;
+        fn get_queue() -> Vec<CxxTrackMetadata>;
+        fn get_track_metadata(track_id: String) -> CxxTrackMetadata;
+        fn get_library_albums() -> Vec<CxxLibraryAlbum>;
+        fn get_library_artists() -> Vec<CxxLibraryArtist>;
+        fn get_library_playlists() -> Vec<CxxLibraryPlaylist>;
+        fn clear_search_history() -> bool;
+        fn remove_from_search_history(query: String) -> bool;
     }
 }
 
@@ -311,37 +350,59 @@ pub fn play_track(track_id: String) -> bool {
     let track_id_clone = track_id.clone();
 
     rt.spawn(async move {
+        // Metadata: queue lookup first; otherwise resolve once via yt-dlp.
+        let meta = match current_meta {
+            Some(m) => m,
+            None => {
+                let innertube_meta = innertube.clone();
+                let tid = track_id_clone.clone();
+                match tokio::task::spawn_blocking(move || {
+                    innertube::client::with_ytdlp_lock(|| innertube_meta.resolve_video_blocking(&tid))
+                })
+                .await
+                {
+                    Ok(Ok(resolved)) => resolved.to_meta(),
+                    Ok(Err(e)) => {
+                        eprintln!("Metadata resolve failed for {}: {}", track_id_clone, e);
+                        innertube::client::ResolvedVideo::default().to_meta()
+                    }
+                    Err(e) => {
+                        eprintln!("Metadata resolve task failed for {}: {}", track_id_clone, e);
+                        innertube::client::ResolvedVideo::default().to_meta()
+                    }
+                }
+            }
+        };
+
         match innertube.get_stream_url(&track_id_clone).await {
             Ok(url) => {
                 if let Some(audio) = audio_opt {
                     if let Err(e) = audio.play_url(&url) {
                         eprintln!("Error playing stream URL: {}", e);
                     } else {
-                        if let Some(meta) = current_meta {
-                            let _ = storage.add_history(&meta);
-                            if let Some(ref mpris) = mpris_opt {
-                                mpris.update_track(Some(meta.clone()));
-                            }
-                            if let Some(ref waybar) = waybar_opt {
-                                waybar.update_track(Some(meta.clone()));
-                            }
-                            ffi::on_track_changed(meta.clone());
-
-                            let title = meta.title.clone();
-                            let artist = meta.artist.clone();
-                            let dur = meta.duration_secs;
-                            let tid = meta.id.clone();
-                            let st = storage.clone();
-
-                            tokio::spawn(async move {
-                                if let Ok(Some(cached)) = st.get_cached_lyrics(&tid) {
-                                    ffi::on_lyrics_loaded(tid, cached);
-                                } else if let Ok(lrc) = innertube::lyrics::fetch_lyrics(&reqwest::Client::new(), &title, &artist, Some(dur)).await {
-                                    let _ = st.cache_lyrics(&tid, &lrc);
-                                    ffi::on_lyrics_loaded(tid, lrc);
-                                }
-                            });
+                        let _ = storage.add_history(&meta);
+                        if let Some(ref mpris) = mpris_opt {
+                            mpris.update_track(Some(meta.clone()));
                         }
+                        if let Some(ref waybar) = waybar_opt {
+                            waybar.update_track(Some(meta.clone()));
+                        }
+                        ffi::on_track_changed(meta.clone());
+
+                        let title = meta.title.clone();
+                        let artist = meta.artist.clone();
+                        let dur = meta.duration_secs;
+                        let tid = meta.id.clone();
+                        let st = storage.clone();
+
+                        tokio::spawn(async move {
+                            if let Ok(Some(cached)) = st.get_cached_lyrics(&tid) {
+                                ffi::on_lyrics_loaded(tid, cached);
+                            } else if let Ok(lrc) = innertube::lyrics::fetch_lyrics(&reqwest::Client::new(), &title, &artist, Some(dur)).await {
+                                let _ = st.cache_lyrics(&tid, &lrc);
+                                ffi::on_lyrics_loaded(tid, lrc);
+                            }
+                        });
                     }
                 }
             }
@@ -407,6 +468,31 @@ pub fn fetch_lyrics(track_id: String) -> String {
     String::new()
 }
 
+/// Cache-first, then live lrclib fetch. Called from a Qt worker thread.
+pub fn fetch_lyrics_live(track_id: String, title: String, artist: String, duration: f64) -> String {
+    let core = get_core();
+    if let Ok(Some(cached)) = core.storage.get_cached_lyrics(&track_id) {
+        if !cached.trim().is_empty() {
+            return cached;
+        }
+    }
+    if title.trim().is_empty() {
+        return String::new();
+    }
+    let res = core.runtime.block_on(async {
+        innertube::lyrics::fetch_lyrics(&reqwest::Client::new(), &title, &artist, Some(duration)).await
+    });
+    match res {
+        Ok(lrc) => {
+            if !lrc.trim().is_empty() {
+                let _ = core.storage.cache_lyrics(&track_id, &lrc);
+            }
+            lrc
+        }
+        Err(_) => String::new(),
+    }
+}
+
 pub fn toggle_favorite(track_id: String, title: String, artist: String, album: String, duration: f64, thumb: String) -> bool {
     let core = get_core();
     let track = ffi::CxxTrackMetadata {
@@ -434,4 +520,67 @@ pub fn get_favorites() -> Vec<ffi::CxxTrackMetadata> {
 pub fn get_history() -> Vec<ffi::CxxTrackMetadata> {
     let core = get_core();
     core.storage.get_history(100).unwrap_or_default()
+}
+
+pub fn set_shuffle(enabled: bool) -> bool {
+    let core = get_core();
+    core.queue.set_shuffle(enabled);
+    true
+}
+
+pub fn set_repeat_mode(mode: i32) -> bool {
+    let core = get_core();
+    core.queue.set_repeat_mode(mode);
+    true
+}
+
+/// Web UI sends its playback context (a list/album/search page) so that
+/// media keys, MPRIS and auto-advance all follow the same queue.
+pub fn replace_queue(tracks: Vec<ffi::CxxTrackMetadata>, start_index: i32) -> bool {
+    let core = get_core();
+    core.queue.set_queue(tracks, start_index.max(0) as usize);
+    true
+}
+
+pub fn get_queue() -> Vec<ffi::CxxTrackMetadata> {
+    let core = get_core();
+    core.queue.list()
+}
+
+pub fn get_track_metadata(track_id: String) -> ffi::CxxTrackMetadata {
+    let core = get_core();
+    let queue = core.queue.list();
+    if let Some(m) = queue.into_iter().find(|t| t.id == track_id) {
+        return m;
+    }
+    // Fallback: resolve metadata via yt-dlp (blocking; caller runs on a worker thread).
+    match innertube::client::with_ytdlp_lock(|| core.innertube.resolve_video_blocking(&track_id)) {
+        Ok(resolved) => resolved.to_meta(),
+        Err(_) => ffi::CxxTrackMetadata::default(),
+    }
+}
+
+pub fn get_library_albums() -> Vec<ffi::CxxLibraryAlbum> {
+    let core = get_core();
+    core.storage.get_library_albums().unwrap_or_default()
+}
+
+pub fn get_library_artists() -> Vec<ffi::CxxLibraryArtist> {
+    let core = get_core();
+    core.storage.get_library_artists().unwrap_or_default()
+}
+
+pub fn get_library_playlists() -> Vec<ffi::CxxLibraryPlaylist> {
+    let core = get_core();
+    core.storage.get_library_playlists().unwrap_or_default()
+}
+
+pub fn clear_search_history() -> bool {
+    let core = get_core();
+    core.storage.clear_search_history().unwrap_or(false)
+}
+
+pub fn remove_from_search_history(query: String) -> bool {
+    let core = get_core();
+    core.storage.remove_from_search_history(&query).unwrap_or(false)
 }

@@ -1,4 +1,6 @@
 import QtQuick
+import QtQuick.Controls
+import components 1.0
 import Melyar.Theme
 
 Rectangle {
@@ -8,193 +10,315 @@ Rectangle {
 
     signal tabSelected(string tabName)
     property string activeTab: "search"
+    property bool collapsed: false
+
+    // Playlist model (will be populated from bridge)
+    property var playlists: []
+
+    // Animations for smooth transitions
+    Behavior on width {
+        NumberAnimation { duration: Style.durationNormal; easing.type: Easing.OutCubic }
+    }
 
     Column {
         anchors.fill: parent
-        anchors.margins: 18
-        spacing: 20
+        spacing: 0
 
-        // App Branding
-        Row {
-            spacing: 10
-            anchors.left: parent.left
-
-            Rectangle {
-                width: 34
-                height: 34
-                radius: 17
-                color: Style.primary
-                anchors.verticalCenter: parent.verticalCenter
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "M"
-                    color: "#000000"
-                    font.bold: true
-                    font.pixelSize: 18
-                }
-            }
-
-            Text {
-                text: "MELYAR"
-                color: Style.textPrimary
-                font.bold: true
-                font.pixelSize: 18
-                font.letterSpacing: 2
-                anchors.verticalCenter: parent.verticalCenter
-            }
-        }
-
-        // Navigation Menu
+        // -------------------------------------------------------------
+        // TOP SECTION: Branding & Main Navigation
+        // -------------------------------------------------------------
         Column {
             width: parent.width
-            spacing: 6
+            spacing: Style.space2
 
-            // Search Tab
+            // App Branding
             Rectangle {
+                id: brandingArea
                 width: parent.width
-                height: 42
-                radius: Style.radiusSmall
-                color: root.activeTab === "search" ? Style.surfaceHover : (searchMouse.containsMouse ? Style.surface : "transparent")
+                height: collapsed ? Style.sidebarWidthCollapsed : (Style.sidebarWidth - 36)
+                color: "transparent"
 
                 Row {
-                    anchors.fill: parent
-                    anchors.leftMargin: 12
-                    spacing: 14
+                    anchors.left: parent.left
+                    anchors.leftMargin: Style.space4
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: collapsed ? 0 : Style.space3
 
-                    Text {
-                        text: "🔍"
-                        font.pixelSize: 15
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: root.activeTab === "search" ? Style.primary : Style.textSecondary
+                    Rectangle {
+                        width: 34
+                        height: 34
+                        radius: 17
+                        color: Style.primary
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "M"
+                            color: Style.textOnPrimary
+                            font.bold: true
+                            font.pixelSize: 18
+                            visible: !collapsed
+                        }
                     }
 
                     Text {
-                        text: "Search"
-                        font.pixelSize: 14
-                        font.bold: root.activeTab === "search"
-                        color: root.activeTab === "search" ? Style.textPrimary : Style.textSecondary
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                }
-
-                MouseArea {
-                    id: searchMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        root.activeTab = "search";
-                        root.tabSelected("search");
-                    }
-                }
-            }
-
-            // Favorites Tab
-            Rectangle {
-                width: parent.width
-                height: 42
-                radius: Style.radiusSmall
-                color: root.activeTab === "favorites" ? Style.surfaceHover : (favMouse.containsMouse ? Style.surface : "transparent")
-
-                Row {
-                    anchors.fill: parent
-                    anchors.leftMargin: 12
-                    spacing: 14
-
-                    Text {
-                        text: "♥"
+                        text: "MELYAR"
+                        color: Style.textPrimary
+                        font.bold: true
                         font.pixelSize: 16
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: root.activeTab === "favorites" ? Style.primary : Style.textSecondary
-                    }
-
-                    Text {
-                        text: "Favorites"
-                        font.pixelSize: 14
-                        font.bold: root.activeTab === "favorites"
-                        color: root.activeTab === "favorites" ? Style.textPrimary : Style.textSecondary
+                        font.letterSpacing: 1.5
+                        visible: !collapsed
                         anchors.verticalCenter: parent.verticalCenter
                     }
                 }
 
                 MouseArea {
-                    id: favMouse
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        root.activeTab = "favorites";
-                        bridge.loadFavorites();
-                        root.tabSelected("favorites");
+                        root.collapsed = !root.collapsed
                     }
                 }
             }
 
-            // History Tab
-            Rectangle {
+            // Main Navigation Items
+            Column {
+                id: mainNav
                 width: parent.width
-                height: 42
-                radius: Style.radiusSmall
-                color: root.activeTab === "history" ? Style.surfaceHover : (histMouse.containsMouse ? Style.surface : "transparent")
+                spacing: Style.space1
+                anchors.leftMargin: Style.space3
+                anchors.rightMargin: Style.space3
 
-                Row {
-                    anchors.fill: parent
-                    anchors.leftMargin: 12
-                    spacing: 14
-
-                    Text {
-                        text: "⏱"
-                        font.pixelSize: 15
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: root.activeTab === "history" ? Style.primary : Style.textSecondary
-                    }
-
-                    Text {
-                        text: "History"
-                        font.pixelSize: 14
-                        font.bold: root.activeTab === "history"
-                        color: root.activeTab === "history" ? Style.textPrimary : Style.textSecondary
-                        anchors.verticalCenter: parent.verticalCenter
+                // Search
+                SidebarItem {
+                    id: searchItem
+                    width: parent.width
+                    icon: "🔍"
+                    text: "Search"
+                    active: root.activeTab === "search"
+                    collapsed: root.collapsed
+                    onClicked: {
+                        root.activeTab = "search"
+                        root.tabSelected("search")
                     }
                 }
 
-                MouseArea {
-                    id: histMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                // Home/Explore
+                SidebarItem {
+                    id: homeItem
+                    width: parent.width
+                    icon: "🏠"
+                    text: "Home"
+                    active: root.activeTab === "home"
+                    collapsed: root.collapsed
                     onClicked: {
-                        root.activeTab = "history";
-                        bridge.loadHistory();
-                        root.tabSelected("history");
+                        root.activeTab = "home"
+                        root.tabSelected("home")
+                    }
+                }
+
+                // Library
+                SidebarItem {
+                    id: libraryItem
+                    width: parent.width
+                    icon: "📁"
+                    text: "Library"
+                    active: root.activeTab === "library"
+                    collapsed: root.collapsed
+                    onClicked: {
+                        root.activeTab = "library"
+                        root.tabSelected("library")
                     }
                 }
             }
         }
 
-        Item {
-            // Spacer
-            width: parent.width
-            height: 20
-        }
-
-        // System specs pill
+        // Divider
         Rectangle {
             width: parent.width
-            height: 60
+            height: 1
+            color: Style.divider
+            anchors.leftMargin: Style.space3
+            anchors.rightMargin: Style.space3
+            visible: !collapsed
+        }
+
+        // -------------------------------------------------------------
+        // MIDDLE SECTION: Your Library - Playlists
+        // -------------------------------------------------------------
+        Column {
+            id: librarySection
+            width: parent.width
+            spacing: Style.space2
+            anchors.leftMargin: Style.space3
+            anchors.rightMargin: Style.space3
+            visible: !collapsed
+
+            // Section Header with "Create Playlist" button
+            Row {
+                width: parent.width
+                height: 32
+                spacing: Style.space2
+
+                Text {
+                    text: "YOUR LIBRARY"
+                    color: Style.textMuted
+                    font.pixelSize: Style.fontSizeXs
+                    font.bold: true
+                    font.letterSpacing: 1
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Item { width: 1 } // spacer
+
+                // Create playlist button
+                Rectangle {
+                    width: 24
+                    height: 24
+                    radius: 12
+                    color: "transparent"
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "+"
+                        color: Style.textSecondary
+                        font.pixelSize: 18
+                        font.bold: true
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onEntered: parent.color = Style.surfaceHover
+                        onExited: parent.color = "transparent"
+                        onClicked: {
+                            createPlaylistDialog.open()
+                        }
+                    }
+                }
+            }
+
+            // Liked Songs (special playlist)
+            SidebarItem {
+                id: likedSongsItem
+                width: parent.width
+                icon: "♥"
+                text: "Liked Songs"
+                subtitle: bridge.favorites.length + " songs"
+                active: root.activeTab === "favorites"
+                collapsed: false
+                onClicked: {
+                    root.activeTab = "favorites"
+                    bridge.loadFavorites()
+                    root.tabSelected("favorites")
+                }
+            }
+
+            // Divider before playlists
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: Style.divider
+                visible: root.playlists.length > 0
+            }
+
+            // Dynamic Playlists from model
+            ListView {
+                id: playlistList
+                width: parent.width
+                height: Math.min(root.playlists.length * 42, 300)
+                clip: true
+                model: root.playlists
+                spacing: 0
+
+                delegate: PlaylistItem {
+                    width: parent.width
+                    name: model.name
+                    trackCount: model.trackCount
+                    artwork: model.artwork
+                    active: root.activeTab === "playlist_" + model.id
+                    onClicked: {
+                        root.activeTab = "playlist_" + model.id
+                        root.tabSelected("playlist_" + model.id)
+                    }
+                    onContextMenu: {
+                        playlistContextMenu.popup(Qt.point(mouse.x, mouse.y))
+                    }
+                }
+            }
+        }
+
+        // Spacer
+        Item {
+            height: Style.space6
+        }
+
+        // -------------------------------------------------------------
+        // BOTTOM SECTION: Settings & System Info
+        // -------------------------------------------------------------
+        Column {
+            width: parent.width
+            spacing: Style.space1
+            anchors.leftMargin: Style.space3
+            anchors.rightMargin: Style.space3
+            visible: !collapsed
+
+            // History
+            SidebarItem {
+                id: historyItem
+                width: parent.width
+                icon: "⏱"
+                text: "History"
+                active: root.activeTab === "history"
+                onClicked: {
+                    root.activeTab = "history"
+                    bridge.loadHistory()
+                    root.tabSelected("history")
+                }
+            }
+
+            // Settings
+            SidebarItem {
+                id: settingsItem
+                width: parent.width
+                icon: "⚙"
+                text: "Settings"
+                active: root.activeTab === "settings"
+                onClicked: {
+                    root.activeTab = "settings"
+                    root.tabSelected("settings")
+                }
+            }
+        }
+
+        // System specs pill (always visible at bottom)
+        Item {
+            height: Style.space6
+        }
+
+        Rectangle {
+            width: parent.width
+            height: collapsed ? 0 : 60
             radius: Style.radiusMedium
             color: Style.surface
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: Style.space4
+            anchors.leftMargin: Style.space4
+            anchors.rightMargin: Style.space4
+            visible: !collapsed
+            clip: true
 
             Column {
                 anchors.centerIn: parent
-                spacing: 4
+                spacing: Style.space1
 
                 Text {
                     text: "PIPEWIRE AUDIO"
                     color: Style.primary
                     font.bold: true
-                    font.pixelSize: 10
+                    font.pixelSize: Style.fontSizeXs
                     font.letterSpacing: 1
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
@@ -202,10 +326,79 @@ Rectangle {
                 Text {
                     text: "Pure C++ & Rust | Zero-Web"
                     color: Style.textMuted
-                    font.pixelSize: 10
+                    font.pixelSize: Style.fontSizeXs
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
             }
+        }
+    }
+
+    // -------------------------------------------------------------
+    // DIALOGS & MENUS
+    // -------------------------------------------------------------
+
+    // Create Playlist Dialog
+    Dialog {
+        id: createPlaylistDialog
+        x: (parent.width - width) / 2
+        y: (parent.height - height) / 2
+        modal: true
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        title: "Create New Playlist"
+
+        Column {
+            spacing: Style.space3
+            width: 300
+
+            TextField {
+                id: playlistNameInput
+                width: parent.width
+                placeholderText: "Playlist name"
+                color: Style.textPrimary
+                background: Rectangle {
+                    color: Style.surface
+                    border.color: Style.border
+                    border.width: 1
+                    radius: Style.radiusSmall
+                }
+            }
+        }
+
+        onAccepted: {
+            if (playlistNameInput.text.trim() !== "") {
+                // TODO: Call bridge to create playlist
+                console.log("Create playlist:", playlistNameInput.text)
+                playlistNameInput.text = ""
+            }
+        }
+    }
+
+    // Playlist Context Menu
+    Menu {
+        id: playlistContextMenu
+        background: Rectangle {
+            color: Style.surface
+            border.color: Style.border
+            border.width: 1
+            radius: Style.radiusMedium
+        }
+
+        MenuItem {
+            text: "Play"
+            onTriggered: console.log("Play playlist")
+        }
+        MenuItem {
+            text: "Add to Queue"
+            onTriggered: console.log("Add to queue")
+        }
+        MenuSeparator {}
+        MenuItem {
+            text: "Rename"
+            onTriggered: console.log("Rename playlist")
+        }
+        MenuItem {
+            text: "Delete"
+            onTriggered: console.log("Delete playlist")
         }
     }
 }

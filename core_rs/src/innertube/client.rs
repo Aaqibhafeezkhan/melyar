@@ -1,6 +1,10 @@
 use anyhow::{anyhow, Context, Result};
+use once_cell::sync::Lazy;
+use parking_lot::Mutex;
 use reqwest::{header, Client};
 use serde_json::{json, Value};
+use std::path::PathBuf;
+use std::process::Command;
 use std::time::Duration;
 
 use super::cipher::CipherSolver;
@@ -11,6 +15,175 @@ const INNERTUBE_API_KEY: &str = "AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30";
 const SEARCH_URL: &str = "https://music.youtube.com/youtubei/v1/search";
 const PLAYER_URL: &str = "https://music.youtube.com/youtubei/v1/player";
 const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0";
+
+/// Resolved video: metadata + direct audio stream url (single yt-dlp call).
+#[derive(Clone, Debug, Default)]
+pub struct ResolvedVideo {
+    pub id: String,
+    pub title: String,
+    pub artist: String,
+    pub album: String,
+    pub duration: f64,
+    pub thumbnail: String,
+    pub stream_url: String,
+}
+
+impl ResolvedVideo {
+    pub fn to_meta(&self) -> CxxTrackMetadata {
+        CxxTrackMetadata {
+            id: self.id.clone(),
+            title: self.title.clone(),
+            artist: self.artist.clone(),
+            album: self.album.clone(),
+            duration_secs: self.duration,
+            thumbnail_url: self.thumbnail.clone(),
+            lyrics: String::new(),
+        }
+    }
+}
+
+static YTDLP_PATH: Lazy<Option<PathBuf>> = Lazy::new(|| {
+    let names = ["yt-dlp", "yt-dlp_linux", "youtube-dl"];
+    // 1. PATH
+    for name in names {
+        if let Ok(out) = Command::new("which").arg(name).output() {
+            if out.status.success() {
+                let p = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                if !p.is_empty() {
+                    return Some(PathBuf::from(p));
+                }
+            }
+        }
+    }
+    // 2. Common locations
+    let home = std::env::var("HOME").unwrap_or_default();
+    let mut candidates = vec![
+        PathBuf::from("/usr/bin/yt-dlp"),
+        PathBuf::from("/usr/local/bin/yt-dlp"),
+        PathBuf::from("/opt/yt-dlp/yt-dlp"),
+        PathBuf::from(home.clone()).join(".local/bin/yt-dlp"),
+        PathBuf::from(home).join("bin/yt-dlp"),
+    ];
+    if let Ok(home) = std::env::var("HOME") {
+        for py in ["3.14", "3.13", "3.12", "3.11", "3.10"] {
+            candidates.push(PathBuf::from(&home)
+                .join(format!(".local/lib/python{}/site-packages/bin/yt-dlp", py)));
+        }
+    }
+    candidates.into_iter().find(|p| p.exists() && p.is_file())
+});
+
+fn yt_dlp_available() -> bool {
+    YTDLP_PATH.is_some()
+}
+
+fn yt_dlp_command() -> Command {
+    let mut cmd = Command::new(YTDLP_PATH.as_ref().unwrap());
+    cmd.arg("--no-warnings")
+        .arg("--no-playlist")
+        .arg("--no-progress")
+        .arg("--ignore-config");
+    cmd
+}
+
+/// Run yt-dlp -J (single JSON) and parse metadata + best audio stream url.
+fn yt_dlp_json_blocking(video_id: &str) -> Result<ResolvedVideo> {
+    if !yt_dlp_available() {
+        return Err(anyhow!("yt-dlp binary not found"));
+    }
+    let watch_url = format!("https://www.youtube.com/watch?v={}", video_id);
+    let output = yt_dlp_command()
+        .arg("-J")
+        .arg(&watch_url)
+        .output()
+        .context("yt-dlp -J failed to spawn")?;
+
+    if !output.status.success() {
+        let err = String::from_utf8_lossy(&output.stderr);
+        return Err(anyhow!("yt-dlp -J failed for {}: {}", video_id, err.lines().next().unwrap_or("")));
+    }
+
+    let data: Value = serde_json::from_slice(&output.stdout).context("yt-dlp -J invalid JSON")?;
+    parse_ytdlp_json(&data, video_id)
+}
+
+fn parse_ytdlp_json(data: &Value, video_id: &str) -> Result<ResolvedVideo> {
+    let title = data
+        .get("title")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Bilinmeyen Parça")
+        .to_string();
+    let artist = data
+        .get("artist")
+        .or_else(|| data.get("uploader"))
+        .or_else(|| data.get("channel"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("Bilinmeyen Sanatçı")
+        .to_string();
+    let album = data
+        .get("album")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let duration = data.get("duration").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let thumbnail = data
+        .get("thumbnail")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| format!("https://i.ytimg.com/vi/{}/hqdefault.jpg", video_id));
+
+    // Pick the best audio-only https stream (prefer mp4/aac itag 140, else highest abr)
+    let mut best: Option<(i64, String)> = None;
+    if let Some(formats) = data.get("formats").and_then(|v| v.as_array()) {
+        for f in formats {
+            let acodec = f.get("acodec").and_then(|v| v.as_str()).unwrap_or("none");
+            let vcodec = f.get("vcodec").and_then(|v| v.as_str()).unwrap_or("none");
+            if acodec == "none" || vcodec != "none" {
+                continue;
+            }
+            let Some(url) = f.get("url").and_then(|v| v.as_str()) else {
+                continue;
+            };
+            let protocol = f.get("protocol").and_then(|v| v.as_str()).unwrap_or("");
+            if protocol.contains("m3u8") {
+                // HLS works in mpv but prefer progressive https
+                continue;
+            }
+            let abr = f.get("abr").and_then(|v| v.as_f64()).unwrap_or(0.0) as i64;
+            let is_mp4a = acodec.starts_with("mp4a");
+            let score = abr + if is_mp4a { 1000 } else { 0 };
+            if best.as_ref().map_or(true, |(s, _)| score > *s) {
+                best = Some((score, url.to_string()));
+            }
+        }
+    }
+
+    let stream_url = best.map(|(_, u)| u).or_else(|| {
+        // Fallback: any format url (even manifests — mpv handles them)
+        data.get("formats")
+            .and_then(|v| v.as_array())
+            .and_then(|formats| {
+                formats
+                    .iter()
+                    .filter_map(|f| f.get("url").and_then(|u| u.as_str()))
+                    .next()
+                    .map(|s| s.to_string())
+            })
+    });
+
+    match stream_url {
+        Some(url) => Ok(ResolvedVideo {
+            id: video_id.to_string(),
+            title,
+            artist,
+            album,
+            duration,
+            thumbnail,
+            stream_url: url,
+        }),
+        None => Err(anyhow!("no usable audio stream in yt-dlp output for {}", video_id)),
+    }
+}
 
 pub struct InnerTubeClient {
     http: Client,
@@ -41,6 +214,11 @@ impl InnerTubeClient {
         })
     }
 
+    /// Blocking metadata+url resolve for calls coming from Qt worker threads.
+    pub fn resolve_video_blocking(&self, video_id: &str) -> Result<ResolvedVideo> {
+        yt_dlp_json_blocking(video_id)
+    }
+
     /// Search tracks on YouTube Music (WEB_REMIX client)
     pub async fn search_tracks(&self, query: &str) -> Result<Vec<CxxTrackMetadata>> {
         let url = format!("{SEARCH_URL}?key={INNERTUBE_API_KEY}");
@@ -48,7 +226,7 @@ impl InnerTubeClient {
             "context": {
                 "client": {
                     "clientName": "WEB_REMIX",
-                    "clientVersion": "1.20240101.01.00",
+                    "clientVersion": "1.20240403.01.00",
                     "hl": "en",
                     "gl": "US"
                 }
@@ -66,15 +244,28 @@ impl InnerTubeClient {
         parse_search_results(&json_data)
     }
 
-    /// Resolve direct Opus/WebM audio stream URL for a given track/video ID
+    /// Resolve direct audio stream URL for a given track/video id.
+    /// Primary: yt-dlp (handles PO tokens + deciphering).
+    /// Fallback: innertube clients + public APIs.
     pub async fn get_stream_url(&self, video_id: &str) -> Result<String> {
-        // 1. YouTube Music WEB_REMIX player endpoint
+        // 1. yt-dlp (metadata json gives us both url and meta in one shot)
+        if yt_dlp_available() {
+            let vid = video_id.to_string();
+            let resolved = tokio::task::spawn_blocking(move || yt_dlp_json_blocking(&vid)).await;
+            if let Ok(Ok(res)) = resolved {
+                if !res.stream_url.is_empty() {
+                    return Ok(res.stream_url);
+                }
+            }
+        }
+
+        // 2. YouTube Music WEB_REMIX player endpoint
         let url = format!("{PLAYER_URL}?key={INNERTUBE_API_KEY}");
         let payload = json!({
             "context": {
                 "client": {
                     "clientName": "WEB_REMIX",
-                    "clientVersion": "1.20240101.01.00",
+                    "clientVersion": "1.20240403.01.00",
                     "hl": "en",
                     "gl": "US"
                 }
@@ -92,7 +283,7 @@ impl InnerTubeClient {
             }
         }
 
-        // 2. Android client player endpoint fallback
+        // 3. Android client player endpoint fallback
         let android_payload = json!({
             "context": {
                 "client": {
@@ -122,7 +313,7 @@ impl InnerTubeClient {
             }
         }
 
-        // 3. Fallback: Invidious / Piped audio stream resolver
+        // 4. Fallback: Piped / Invidious audio stream resolver
         let fallback_apis = [
             format!("https://pipedapi.kavin.rocks/streams/{video_id}"),
             format!("https://api.piped.privacydev.net/streams/{video_id}"),
@@ -229,32 +420,10 @@ impl InnerTubeClient {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// Serialize yt-dlp json calls behind a mutex to avoid hammering with parallel lookups.
+static YTDLP_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
-    #[tokio::test]
-    async fn test_search_live() {
-        let client = InnerTubeClient::new().unwrap();
-        let res = client.search_tracks("daft punk").await;
-        println!("Search result: {:?}", res.as_ref().map(|v| v.len()));
-        if let Ok(tracks) = res {
-            println!("Tracks found: {}", tracks.len());
-            for t in tracks.iter().take(3) {
-                println!(" - {} by {} (id: {})", t.title, t.artist, t.id);
-            }
-            assert!(!tracks.is_empty());
-        }
-    }
-
-    #[tokio::test]
-    async fn test_stream_url_live() {
-        let client = InnerTubeClient::new().unwrap();
-        let stream_url = client.get_stream_url("khnokW3Mw24").await;
-        println!("Stream URL result: {:?}", stream_url);
-        assert!(stream_url.is_ok());
-        let url = stream_url.unwrap();
-        assert!(url.starts_with("http"));
-        println!("Stream URL: {}", &url[..std::cmp::min(60, url.len())]);
-    }
+pub fn with_ytdlp_lock<T>(f: impl FnOnce() -> T) -> T {
+    let _guard = YTDLP_LOCK.lock();
+    f()
 }

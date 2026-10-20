@@ -1,0 +1,171 @@
+import { Heart, Clock3 } from "lucide-react";
+import { usePlayer } from "@/store";
+import { libraryTracks } from "@/lib/registry";
+import { Artwork } from "@/components/Toolbar";
+import { TrackTable } from "@/components/TrackTable";
+import type { TrackMeta, View } from "@/lib/types";
+
+const GENRES = ["Pop", "Rock", "Türkçe Pop", "Jazz", "Lo-fi", "Hip-Hop", "Elektronik", "Klasik", "Arabesk", "Indie"];
+
+export function greeting() {
+  const h = new Date().getHours();
+  if (h < 6) return "İyi geceler";
+  if (h < 12) return "Günaydın";
+  if (h < 18) return "İyi günler";
+  return "İyi akşamlar";
+}
+
+function CardTile({
+  track,
+  onOpen,
+  round = false,
+  label,
+  sub,
+}: {
+  track?: TrackMeta;
+  onOpen: () => void;
+  round?: boolean;
+  label: string;
+  sub: string;
+}) {
+  return (
+    <button className="grid-item group flex flex-col gap-3" onClick={onOpen}>
+      <div className="relative">
+        <Artwork src={track?.thumbnail} className={round ? "aspect-square w-full rounded-full" : "aspect-square w-full"} />
+        <div className="absolute inset-0 grid place-items-center opacity-0 transition-opacity group-hover:opacity-100">
+          <span className="grid size-11 place-items-center rounded-full bg-accent text-white shadow-xl">
+            <svg viewBox="0 0 24 24" className="ml-0.5 size-5 fill-current"><path d="M8 5v14l11-7z" /></svg>
+          </span>
+        </div>
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-[13.5px] font-semibold">{label}</p>
+        <p className="truncate text-[12px] text-text-tertiary">{sub}</p>
+      </div>
+    </button>
+  );
+}
+
+export function HomeView() {
+  const history = usePlayer((s) => s.history);
+  const liked = usePlayer((s) => s.liked);
+  const playTrack = usePlayer((s) => s.playTrack);
+  const navigate = usePlayer((s) => s.navigate);
+  const setQuery = usePlayer((s) => s.setQuery);
+
+  const library = libraryTracks(liked, history);
+  const featured = history[0];
+
+  return (
+    <div className="px-6 pb-10 pt-6 lg:px-9">
+      <header className="mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{greeting()}</h1>
+        {featured ? (
+          <p className="mt-1.5 text-sm text-text-tertiary">
+            Kaldığın yerden: <span className="font-medium text-text-secondary">{featured.artist}</span>
+          </p>
+        ) : (
+          <p className="mt-1.5 text-sm text-text-tertiary">YouTube Music'te milyonlarca parça seni bekliyor.</p>
+        )}
+      </header>
+
+      {featured ? (
+        <button
+          className="mb-8 card flex w-full items-center gap-5 overflow-hidden"
+          onClick={() => playTrack(featured, history)}
+        >
+          <Artwork src={featured.thumbnail} className="size-24 lg:size-28" />
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-wider text-accent">Son çalınan</p>
+            <p className="mt-1 truncate text-2xl md:text-3xl font-bold tracking-tight">{featured.title}</p>
+            <p className="truncate text-sm text-text-tertiary">{featured.artist}</p>
+          </div>
+        </button>
+      ) : null}
+
+      {history.length > 0 ? (
+        <section className="mb-10">
+          <div className="mb-4 flex items-end justify-between">
+            <h2 className="text-xl font-bold tracking-tight">Son Çalınanlar</h2>
+            <button className="text-sm font-medium text-text-tertiary hover:text-text-secondary hover:underline" onClick={() => navigate({ name: "history" })}>
+              Tümünü gör
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+            {history.slice(0, 6).map((t) => (
+              <CardTile key={t.id} track={t} label={t.title} sub={t.artist} onOpen={() => playTrack(t, history)} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {liked.length > 0 ? (
+        <section className="mb-10">
+          <div className="mb-4 flex items-end justify-between">
+            <h2 className="text-xl font-bold tracking-tight">Beğenilenler</h2>
+            <button className="text-sm font-medium text-text-tertiary hover:text-text-secondary hover:underline" onClick={() => navigate({ name: "liked" })}>
+              Tümünü gör
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+            {liked.slice(0, 6).map((t) => (
+              <CardTile key={t.id} track={t} label={t.title} sub={t.artist} onOpen={() => playTrack(t, liked)} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {library.length === 0 ? (
+        <section className="card rounded-xl border border-glass-border p-8 text-center">
+          <h2 className="text-lg font-bold">Kitaplığın burada görünecek</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-text-tertiary">
+            Yukarıdaki arama kutusundan bir şey bul ve çal. Çaldığın parçalar burada listelenir; kalp ikonuyla beğendiklerini kaydedebilirsin.
+          </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            {GENRES.slice(0, 6).map((g) => (
+              <button
+                key={g}
+                className="chip"
+                onClick={() => {
+                  setQuery(g);
+                  navigate({ name: "search" });
+                }}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : (
+        <section>
+          <h2 className="mb-4 text-xl font-bold tracking-tight">Türleri Keşfet</h2>
+          <div className="flex flex-wrap gap-2">
+            {GENRES.map((g) => (
+              <button
+                key={g}
+                className="chip"
+                onClick={() => {
+                  setQuery(g);
+                  navigate({ name: "search" });
+                }}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+export function HistoryBadge() {
+  return <Clock3 className="size-4" />;
+}
+
+export function LikedBadge() {
+  return <Heart className="size-4" />;
+}
+
+export { TrackTable };
+export type { View };
