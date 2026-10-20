@@ -26,6 +26,7 @@ import { Artwork } from "@/components/Toolbar";
 import { activeLineIndex, parseLyrics } from "@/lib/lyrics";
 import { GlassSlider, PlayPauseMorph } from "@/components/GlassComponents";
 import type { TrackMeta } from "@/lib/types";
+import { t, useLocale } from "@/lib/i18n";
 
 const VOLUME_BAR_H = 4;
 
@@ -46,6 +47,7 @@ function LyricLine({ text, isActive, isPast, onClick }: { text: string; isActive
 }
 
 export function ExpandedPlayer() {
+  useLocale();
   const open = usePlayer((s) => s.expandedPlayerOpen);
   const setOpen = usePlayer((s) => s.setExpandedPlayerOpen);
   const current = usePlayer((s) => s.current);
@@ -172,7 +174,7 @@ export function ExpandedPlayer() {
     if (share) {
       share({ title: current.title, text, url: `melyar://track/${current.id}` }).catch(() => {});
     }
-    navigator.clipboard.writeText(text).then(() => toastNote("Paylaşım bağlantısı kopyalandı"));
+    navigator.clipboard.writeText(text).then(() => toastNote(t("expanded.linkCopied")));
   };
 
   const VolIcon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
@@ -186,7 +188,7 @@ export function ExpandedPlayer() {
       onClick={() => setOpen(false)}
       role="dialog"
       aria-modal="true"
-      aria-label="Genişletilmiş Oynatıcı"
+      aria-label={t("expanded.aria")}
     >
       {/* Ambient shadow from artwork */}
       {current?.thumbnail && (
@@ -206,26 +208,26 @@ export function ExpandedPlayer() {
         <header className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/10 bg-black/20 backdrop-blur-md z-20">
           <button
             className="btn-glass text-white/90 hover:bg-white/10 hover:text-white"
-            aria-label="Küçült"
+            aria-label={t("expanded.minimize")}
             onClick={() => setOpen(false)}
           >
             <ChevronDown className="size-6" />
           </button>
           <div className="min-w-0 flex-1 mx-4">
             <p className="truncate text-[12px] font-medium text-white/60 uppercase tracking-wider">
-              Şimdi Çalıyor
+              {t("expanded.nowPlaying")}
             </p>
             <p className="truncate text-[18px] font-bold text-white">
               {current?.title ?? "Melyar"}
             </p>
             <p className="truncate text-[14px] text-white/70">
-              {current?.artist ?? "Bilinmeyen Sanatçı"}
+              {current?.artist ?? t("expanded.unknownArtist")}
             </p>
           </div>
           <button
             ref={moreBtnRef}
             className="btn-glass text-white/90 hover:bg-white/10 hover:text-white"
-            aria-label="Diğer İşlemler"
+            aria-label={t("expanded.moreActions")}
             onClick={handleMoreClick}
           >
             <MoreHorizontal className="size-6" />
@@ -277,20 +279,20 @@ export function ExpandedPlayer() {
               {current?.title ?? "Melyar"}
             </h1>
             <p className="text-[15px] font-medium text-white/80 mb-6">
-              {current?.artist ?? "Bilinmeyen Sanatçı"}
+              {current?.artist ?? t("expanded.unknownArtist")}
             </p>
 
             <div className="flex items-center justify-center gap-4">
               <button
                 className="btn-glass text-white/90 hover:bg-white/10 hover:text-white transition-all"
-                aria-label={isLiked ? "Beğeniyi Kaldır" : "Beğen"}
+                aria-label={isLiked ? t("menu.unlike") : t("menu.like")}
                 onClick={() => current && toggleLike(current)}
               >
                 <Heart className={cn("size-6", isLiked && "fill-accent text-accent scale-110 transition-transform")} />
               </button>
               <button
                 className="btn-glass text-white/90 hover:bg-white/10 hover:text-white transition-all"
-                aria-label="Paylaş"
+                aria-label={t("expanded.share")}
                 onClick={handleShareClick}
               >
                 <Share2 className="size-6" />
@@ -368,7 +370,7 @@ export function ExpandedPlayer() {
             </div>
           )}
           {parsed.synced && parsed.lines.length > 0 && active < 0 && (
-            <p className="text-center text-white/40 text-sm mt-4">Sözler yükleniyor…</p>
+            <p className="text-center text-white/40 text-sm mt-4">{t("expanded.lyricsLoading")}</p>
           )}
 
           {/* Controls row */}
@@ -376,7 +378,7 @@ export function ExpandedPlayer() {
             {/* Left: timer + loop */}
             <div className="flex items-center gap-3">
               <div className="flex flex-col items-center gap-1">
-                <button className="btn-glass text-white/60 hover:bg-white/10 hover:text-white p-1.5" aria-label="Döngü" onClick={cycleRepeat}>
+                <button className="btn-glass text-white/60 hover:bg-white/10 hover:text-white p-1.5" aria-label={t("expanded.repeat")} onClick={cycleRepeat}>
                   {repeat === 2 ? (
                     <Repeat1 className="size-5 text-accent" />
                   ) : (
@@ -386,7 +388,7 @@ export function ExpandedPlayer() {
               </div>
               <button
                 className="btn-glass text-white/90 hover:bg-white/10 hover:text-white"
-                aria-label="Önceki"
+                aria-label={t("toolbar.prev")}
                 onClick={prev}
               >
                 <SkipBack className="size-7 fill-current" />
@@ -396,7 +398,7 @@ export function ExpandedPlayer() {
             {/* Center: Play/Pause */}
             <button
               className="play-pause-main"
-              aria-label={playing ? "Duraklat" : "Çal"}
+              aria-label={playing ? t("toolbar.pause") : t("toolbar.play")}
               onClick={toggle}
             >
               {playing ? (
@@ -419,7 +421,7 @@ export function ExpandedPlayer() {
                 <button className="btn-glass text-white/60 hover:bg-white/10 hover:text-white p-1.5" aria-label="Ayarlar">
                   <Settings className="size-5" />
                 </button>
-                <button className="btn-glass text-white/60 hover:bg-white/10 hover:text-white p-1.5" aria-label="Karışık" onClick={toggleShuffle}>
+                <button className="btn-glass text-white/60 hover:bg-white/10 hover:text-white p-1.5" aria-label={t("expanded.shuffle")} onClick={toggleShuffle}>
                   <Shuffle className={cn("size-5", shuffle && "text-accent")} />
                 </button>
               </div>
@@ -430,21 +432,21 @@ export function ExpandedPlayer() {
           <div className="mt-8 flex items-center justify-center gap-4">
             <button
               className="btn-glass text-white/80 hover:bg-white/10 hover:text-white"
-              aria-label={lyricsOpen ? "Sözleri Kapat" : "Sözleri Aç"}
+              aria-label={lyricsOpen ? t("toolbar.lyrics.close") : t("toolbar.lyrics.open")}
               onClick={() => setLyricsOpen(!lyricsOpen)}
             >
               <Mic2 className={cn("size-5", lyricsOpen && "text-accent")} />
             </button>
             <button
               className="btn-glass text-white/80 hover:bg-white/10 hover:text-white"
-              aria-label={queueOpen ? "Kuyruğu Kapat" : "Kuyruğu Aç"}
+              aria-label={queueOpen ? t("lyrics.queue.close") : t("lyrics.queue.open")}
               onClick={() => setQueueOpen(!queueOpen)}
             >
               <ListMusic className={cn("size-5", queueOpen && "text-accent")} />
             </button>
             <button
               className="btn-glass text-white/80 hover:bg-white/10 hover:text-white"
-              aria-label="Harici Bağlantı"
+              aria-label={t("expanded.externalLink")}
               onClick={handleShareClick}
             >
               <ExternalLink className="size-5" />

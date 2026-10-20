@@ -8,9 +8,13 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QUrl>
+#include <QUrlQuery>
 #include <iostream>
 #include <QWebChannel>
 #include <QtWebEngineQuick/qtwebenginequickglobal.h>
+#include <QTimer>
+#include <QImage>
+#include <QJSValue>
 
 #include "bridge/bridge.hpp"
 
@@ -69,6 +73,19 @@ int main(int argc, char *argv[]) {
     if (webUrlStr.isEmpty()) {
         webUrlStr = QUrl::fromLocalFile(QDir::currentPath() + "/ui_web/dist/index.html").toString();
     }
+
+    // MELYAR_LANG forces the interface language, overriding the browser
+    // locale detection. The web layer reads it from the ?lang= parameter.
+    const QString forcedLang = qEnvironmentVariable("MELYAR_LANG").trimmed().toLower();
+    if (!forcedLang.isEmpty()) {
+        QUrl url(webUrlStr);
+        QUrlQuery query(url);
+        query.removeAllQueryItems("lang");
+        query.addQueryItem("lang", forcedLang);
+        url.setQuery(query);
+        webUrlStr = url.toString();
+    }
+
     std::cout << "Loading Web UI from: " << webUrlStr.toStdString() << std::endl;
 
     // Race-free WebChannel protocol:
@@ -114,6 +131,49 @@ int main(int argc, char *argv[]) {
             }
         }
     });
+
+    // One-shot screenshot: MELYAR_SCREENSHOT=/path/to.png renders the window,
+    // writes it and exits. Handy for attaching a visual to a bug report.
+    // MELYAR_SCREENSHOT_DELAY (ms) controls how long to wait before grabbing,
+    // which gives the web interface time to paint.
+    const QString shotPath = qEnvironmentVariable("MELYAR_SCREENSHOT");
+    if (!shotPath.isEmpty()) {
+        auto *window = qobject_cast<QQuickWindow *>(rootObject);
+        if (!window) {
+            std::cerr << "MELYAR_SCREENSHOT: the QML root object is not a window" << std::endl;
+            return -1;
+        }
+        int delay = qEnvironmentVariableIntValue("MELYAR_SCREENSHOT_DELAY");
+        if (delay <= 0) {
+            delay = 6000;
+        }
+        QTimer::singleShot(delay, window, [window, webViewObj, shotPath]() {
+            // The web view may have scrolled itself; reset it so the capture
+            // starts at the top of the interface. runJavaScript is a public
+            // slot on QQuickWebEngineView, reached through the meta object so
+            // that the private header is not needed.
+            const QJSValue undefined;
+            QMetaObject::invokeMethod(webViewObj, "runJavaScript", Qt::DirectConnection,
+                                      Q_ARG(QString, QStringLiteral("window.scrollTo(0, 0)")),
+                                      Q_ARG(QJSValue, undefined));
+
+            QTimer::singleShot(600, window, [window, shotPath]() {
+                const QImage image = window->grabWindow();
+                if (image.isNull()) {
+                    std::cerr << "MELYAR_SCREENSHOT: the window grab returned nothing" << std::endl;
+                    qApp->exit(1);
+                    return;
+                }
+                if (!image.save(shotPath)) {
+                    std::cerr << "MELYAR_SCREENSHOT: could not write " << shotPath.toStdString() << std::endl;
+                    qApp->exit(1);
+                    return;
+                }
+                std::cout << "[C++] screenshot written to " << shotPath.toStdString() << std::endl;
+                qApp->exit(0);
+            });
+        });
+    }
 
     return app.exec();
 }

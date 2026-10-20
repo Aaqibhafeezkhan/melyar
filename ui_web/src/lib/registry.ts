@@ -1,4 +1,5 @@
 import type { AlbumGroup, ArtistGroup, TrackMeta } from "./types";
+import { t } from "./i18n";
 
 const trackMap = new Map<string, TrackMeta>();
 
@@ -6,8 +7,8 @@ export function register(item: Partial<TrackMeta> & { id: string }): TrackMeta {
   const existing = trackMap.get(item.id);
   const merged: TrackMeta = {
     id: item.id,
-    title: item.title?.trim() || existing?.title || "Bilinmeyen Parça",
-    artist: item.artist?.trim() || existing?.artist || "Bilinmeyen Sanatçı",
+    title: item.title?.trim() || existing?.title || t("common.unknownTrack"),
+    artist: item.artist?.trim() || existing?.artist || t("common.unknownArtist"),
     album: item.album?.trim() || existing?.album || "",
     duration: Number(item.duration) > 0 ? Number(item.duration) : existing?.duration || 0,
     thumbnail:

@@ -5,8 +5,10 @@ import { cn } from "@/lib/cn";
 import { formatTime } from "@/lib/lyrics";
 import { usePlayer } from "@/store";
 import { Artwork } from "@/components/Toolbar";
+import { t, useLocale } from "@/lib/i18n";
 
 export function QueuePanel() {
+  useLocale();
   const open = usePlayer((s) => s.queueOpen);
   const setOpen = usePlayer((s) => s.setQueueOpen);
   const queue = usePlayer((s) => s.queue);
@@ -61,7 +63,7 @@ export function QueuePanel() {
         open && "open",
       )}
       aria-hidden={!open}
-      aria-label="Çalma sırası"
+      aria-label={t("queue.title")}
       role="region"
     >
       <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-glass-border shrink-0">
@@ -70,8 +72,8 @@ export function QueuePanel() {
             <ListMusic className="size-5 text-accent" />
           </div>
           <div>
-            <h2 className="text-[15px] font-bold tracking-tight text-white">Çalma Sırası</h2>
-            <p className="text-[11px] text-white/50">{queue.length} parça</p>
+            <h2 className="text-[15px] font-bold tracking-tight text-white">{t("queue.title")}</h2>
+            <p className="text-[11px] text-white/50">{t("queue.count", { n: queue.length })}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -79,14 +81,14 @@ export function QueuePanel() {
             <button
               className="btn-glass chip text-xs"
               onClick={(e) => { e.stopPropagation(); clearQueue(); }}
-              aria-label="Sırayı temizle"
+              aria-label={t("queue.clear")}
             >
               Temizle
             </button>
           ) : null}
           <button
             className="btn-glass icon-btn text-white/80 hover:bg-white/10 hover:text-white"
-            aria-label="Kuyruğu kapat"
+            aria-label={t("queue.close")}
             onClick={(e) => { e.stopPropagation(); setOpen(false); }}
           >
             <X className="size-4" />
@@ -98,7 +100,7 @@ export function QueuePanel() {
         {queue.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <ListMusic className="size-12 text-white/10 mb-3" />
-            <p className="text-sm text-white/50">Sıra boş. Bir parça çaldığında burada listelenir.</p>
+            <p className="text-sm text-white/50">{t("queue.empty")}</p>
           </div>
         ) : (
           queue.map((track, i) => {

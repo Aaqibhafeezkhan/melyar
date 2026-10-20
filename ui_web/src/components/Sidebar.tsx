@@ -3,6 +3,7 @@ import { Heart, Home, Library, ListMusic, SearchIcon, Clock3 } from "lucide-reac
 import { usePlayer } from "@/store";
 import { GlassMorphIndicator } from "@/components/GlassComponents";
 import { cn } from "@/lib/cn";
+import { t, useLocale, setLocale, LOCALES } from "@/lib/i18n";
 import type { View } from "@/lib/types";
 
 function SideItem({
@@ -34,6 +35,7 @@ function SideItem({
 }
 
 export function Sidebar() {
+  const locale = useLocale();
   const query = usePlayer((s) => s.query);
   const setQuery = usePlayer((s) => s.setQuery);
   const navigate = usePlayer((s) => s.navigate);
@@ -49,7 +51,7 @@ export function Sidebar() {
   const keyOf = (v: View) => (v.name === "album" || v.name === "artist" ? `${v.name}:${v.key}` : v.name);
   const activeKey = keyOf(current);
 
-  // Track whether the active item lives in the "DİNLE" or "KİTAPLIK" group.
+  // Track whether the active item lives in the "listen" or "library" group.
   const listenKeys = ["home", "search"];
   const isListenGroup = listenKeys.includes(activeKey);
 
@@ -93,7 +95,7 @@ export function Sidebar() {
               setQuery(e.target.value);
               navigate({ name: "search" });
             }}
-            placeholder="Sanatçı, şarkı, albüm ara"
+            placeholder={t("nav.search.placeholder")}
             className="w-full bg-transparent text-[13.5px] outline-none placeholder:text-text-tertiary"
             spellCheck={false}
           />
@@ -101,7 +103,7 @@ export function Sidebar() {
       </div>
 
       <div className="scroll-thin min-h-0 flex-1 overflow-y-auto px-3 pb-4">
-        <p className="side-section">DİNLE</p>
+        <p className="side-section">{t("nav.section.listen")}</p>
         <nav ref={listenNavRef} className="flex flex-col gap-0.5 relative" role="navigation" aria-label="Ana navigasyon">
           <GlassMorphIndicator
             targetRef={activeRef}
@@ -111,12 +113,12 @@ export function Sidebar() {
             targetKey={activeKey}
             isVisible={isListenGroup && activeRef.current !== null}
           />
-          <SideItem ref={createRef("home")} icon={Home} label="Ana Sayfa" view={{ name: "home" }} />
-          <SideItem ref={createRef("search")} icon={SearchIcon} label="Ara" view={{ name: "search" }} />
+          <SideItem ref={createRef("home")} icon={Home} label={t("nav.home")} view={{ name: "home" }} />
+          <SideItem ref={createRef("search")} icon={SearchIcon} label={t("nav.search")} view={{ name: "search" }} />
         </nav>
 
-        <p className="side-section">KİTAPLIK</p>
-        <nav ref={libraryNavRef} className="flex flex-col gap-0.5 relative" role="navigation" aria-label="Kitaplık navigasyonu">
+        <p className="side-section">{t("nav.section.library")}</p>
+        <nav ref={libraryNavRef} className="flex flex-col gap-0.5 relative" role="navigation" aria-label={t("nav.aria.library")}>
           <GlassMorphIndicator
             targetRef={activeRef}
             containerRef={libraryNavRef}
@@ -125,10 +127,10 @@ export function Sidebar() {
             targetKey={activeKey}
             isVisible={!isListenGroup && activeRef.current !== null}
           />
-          <SideItem ref={createRef("songs")} icon={Library} label="Şarkılar" view={{ name: "songs" }} />
-          <SideItem ref={createRef("liked")} icon={Heart} label="Beğenilenler" view={{ name: "liked" }} />
-          <SideItem ref={createRef("history")} icon={Clock3} label="Son Çalınanlar" view={{ name: "history" }} />
-          <SideItem ref={createRef("albums")} icon={ListMusic} label="Albümler" view={{ name: "albums" }} />
+          <SideItem ref={createRef("songs")} icon={Library} label={t("nav.songs")} view={{ name: "songs" }} />
+          <SideItem ref={createRef("liked")} icon={Heart} label={t("nav.liked")} view={{ name: "liked" }} />
+          <SideItem ref={createRef("history")} icon={Clock3} label={t("nav.history")} view={{ name: "history" }} />
+          <SideItem ref={createRef("albums")} icon={ListMusic} label={t("nav.albums")} view={{ name: "albums" }} />
           <button
             ref={createRef("queue")}
             className="text-btn relative z-10"
@@ -136,9 +138,37 @@ export function Sidebar() {
             onClick={() => setQueueOpen(!queueOpen)}
           >
             <ListMusic className="size-[17px]" />
-            <span className="truncate">Çalma Sırası</span>
+            <span className="truncate">{t("nav.queue")}</span>
           </button>
         </nav>
+      </div>
+
+      <div className="px-3 pb-3 pt-2 border-t border-glass-border">
+        <div
+          className="flex items-center gap-1 rounded-lg p-0.5 bg-white/[0.03]"
+          role="group"
+          aria-label={t("settings.language")}
+        >
+          {LOCALES.map((entry) => {
+            const active = entry.code === locale;
+            return (
+              <button
+                key={entry.code}
+                type="button"
+                className={cn(
+                  "flex-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
+                  active
+                    ? "bg-accent/20 text-accent"
+                    : "text-text-tertiary hover:text-text-secondary hover:bg-white/5",
+                )}
+                aria-pressed={active}
+                onClick={() => setLocale(entry.code)}
+              >
+                {entry.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </aside>
   );

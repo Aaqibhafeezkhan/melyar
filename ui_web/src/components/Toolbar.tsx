@@ -18,6 +18,7 @@ import { formatTime } from "@/lib/lyrics";
 import { usePlayer } from "@/store";
 import { PlayPauseMorph, GlassSlider } from "@/components/GlassComponents";
 import type { TrackMeta } from "@/lib/types";
+import { t, useLocale } from "@/lib/i18n";
 
 export function Artwork({ src, alt, className }: { src?: string; alt?: string; className?: string }) {
   return (
@@ -99,6 +100,7 @@ function MiniTimeline() {
 }
 
 function Transport() {
+  useLocale();
   const playing = usePlayer((s) => s.playing);
   const shuffle = usePlayer((s) => s.shuffle);
   const repeat = usePlayer((s) => s.repeat);
@@ -110,10 +112,10 @@ function Transport() {
 
   return (
     <div className="flex items-center gap-1">
-      <button className="btn-glass transport-btn" data-active={shuffle} aria-label="Karıştır" onClick={toggleShuffle}>
+      <button className="btn-glass transport-btn" data-active={shuffle} aria-label={t("toolbar.shuffle")} onClick={toggleShuffle}>
         <Shuffle className={cn("size-[17px]", shuffle && "text-accent")} />
       </button>
-      <button className="btn-glass transport-btn" aria-label="Önceki" onClick={prev}>
+      <button className="btn-glass transport-btn" aria-label={t("toolbar.prev")} onClick={prev}>
         <SkipBack className="size-[19px] fill-current" />
       </button>
       <PlayPauseMorph
@@ -132,6 +134,7 @@ function Transport() {
 }
 
 function MiniTrackCapsule() {
+  useLocale();
   const current = usePlayer((s) => s.current);
   const position = usePlayer((s) => s.position);
   const duration = usePlayer((s) => s.duration);
@@ -154,12 +157,12 @@ function MiniTrackCapsule() {
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpandedPlayerOpen(true); } }}
-      aria-label="Genişletilmiş oynatıcıyı aç"
+      aria-label={t("toolbar.expand")}
     >
       <Artwork src={track?.thumbnail} className="mini-track-artwork" />
       <div className="mini-track-info">
         <p className="mini-track-title">{track ? track.title : "Melyar"}</p>
-        <p className="mini-track-artist">{track ? track.artist : "Çalmaya başlamak için bir parça seç"}</p>
+        <p className="mini-track-artist">{track ? track.artist : t("toolbar.noTrack")}</p>
         <WaveBars />
       </div>
       <div className="flex items-center gap-2">
@@ -171,6 +174,7 @@ function MiniTrackCapsule() {
 }
 
 export function Toolbar() {
+  useLocale();
   const volume = usePlayer((s) => s.volume);
   const muted = usePlayer((s) => s.muted);
   const setVolume = usePlayer((s) => s.setVolume);
@@ -194,7 +198,7 @@ export function Toolbar() {
         <button
           className="btn-glass icon-btn"
           data-active={lyricsOpen}
-          aria-label={lyricsOpen ? "Sözleri Kapat" : "Sözleri Aç"}
+          aria-label={lyricsOpen ? t("toolbar.lyrics.close") : t("toolbar.lyrics.open")}
           onClick={() => setLyricsOpen(!lyricsOpen)}
         >
           <Mic2 className="size-5" />
@@ -202,12 +206,12 @@ export function Toolbar() {
         <button
           className="btn-glass icon-btn"
           data-active={queueOpen}
-          aria-label="Sıra"
+          aria-label={t("toolbar.queue")}
           onClick={() => setQueueOpen(!queueOpen)}
         >
           <ListMusic className="size-5" />
         </button>
-        <button className="btn-glass icon-btn hidden sm:grid" aria-label={muted ? "Sesi Aç" : "Sessize Al"} onClick={toggleMute}>
+        <button className="btn-glass icon-btn hidden sm:grid" aria-label={muted ? t("toolbar.mute.off") : t("toolbar.mute.on")} onClick={toggleMute}>
           <VolIcon className="size-5" />
         </button>
         <GlassSlider

@@ -70,6 +70,10 @@ client to switch to".
 - [x] Waybar / Polybar / i3status socket IPC
 - [x] Global media and application shortcuts
 - [x] `.desktop` entry, scalable SVG icon, AUR packaging
+- [x] **Internationalisation** - the interface is English and Turkish, with a
+      language switcher and a translation system new contributors can extend
+- [ ] **More languages** - the string table is ready, only the translation is
+      missing. See the translation task below.
 - [ ] **Settings persist across restarts** - the settings view is functional
       but preferences do not survive a restart
 - [ ] **Keyboard-first navigation** - full focus traversal, visible focus rings
@@ -131,6 +135,10 @@ understand the whole system.
 - [ ] Add a `vitest` job to the `web-ui` workflow
 - [ ] Extract the duplicated glass surface styling into one shared component
 - [ ] Add a reduced-motion audit for the `LiquidLyricsView` animations
+- [ ] **Translate Melyar into your language** - the easiest first contribution
+      there is. Copy `ui_web/src/locales/en.ts`, translate the values, register
+      the locale in `ui_web/src/lib/i18n.ts`, and add a flag to `LOCALES`.
+      No TypeScript knowledge is needed, only the language.
 
 **Qt / QML**
 - [ ] Move the web UI path resolution into a small helper with unit tests

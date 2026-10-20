@@ -2,8 +2,10 @@ import { Heart, ListEnd, ListPlus, Mic2, Share2, Download, ExternalLink, X, Tras
 import { cn } from "@/lib/cn";
 import { usePlayer } from "@/store";
 import { Artwork } from "@/components/Toolbar";
+import { t, useLocale } from "@/lib/i18n";
 
 export function ContextMenu() {
+  useLocale();
   const menu = usePlayer((s) => s.menu);
   const closeMenu = usePlayer((s) => s.closeMenu);
   const liked = usePlayer((s) => s.liked);
@@ -65,14 +67,14 @@ export function ContextMenu() {
             onClick={(e) => { e.stopPropagation(); playNextInQueue(track); closeMenu(); }}
           >
             <Play className="size-4" />
-            Sonra Çal
+            {t("menu.playNext")}
           </button>
           <button
             className="flex-1 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition-colors"
             onClick={(e) => { e.stopPropagation(); addToQueue(track); closeMenu(); }}
           >
             <ListPlus className="size-4" />
-            Sıraya Ekle
+            {t("menu.addToQueue")}
           </button>
         </div>
 
@@ -85,7 +87,7 @@ export function ContextMenu() {
             <div className="flex items-center gap-3">
               <Heart className={cn("size-4", isLiked && "fill-accent text-accent")} />
               <span className="text-sm font-medium text-white/90">
-                {isLiked ? "Beğeniyi Kaldır" : "Beğen"}
+                {isLiked ? t("menu.unlike") : t("menu.like")}
               </span>
             </div>
             <div className="size-6 rounded-full bg-white/5 flex items-center justify-center text-white/50">
@@ -98,7 +100,7 @@ export function ContextMenu() {
           >
             <div className="flex items-center gap-3">
               <ListEnd className="size-4 text-white/60" />
-              <span className="text-sm font-medium text-white/90">Çalma Listesine Ekle</span>
+              <span className="text-sm font-medium text-white/90">{t("menu.addToPlaylist")}</span>
             </div>
             <div className="size-6 rounded-full bg-white/5 flex items-center justify-center text-white/50">
               <ChevronIcon className="size-3" />
@@ -110,7 +112,7 @@ export function ContextMenu() {
           >
             <div className="flex items-center gap-3">
               <Download className="size-4 text-white/60" />
-              <span className="text-sm font-medium text-white/90">İndir (Çevrimdışı)</span>
+              <span className="text-sm font-medium text-white/90">{t("menu.download")}</span>
             </div>
             <div className="size-6 rounded-full bg-white/5 flex items-center justify-center text-white/50">
               <ChevronIcon className="size-3" />
@@ -122,7 +124,7 @@ export function ContextMenu() {
           >
             <div className="flex items-center gap-3">
               <Mic2 className="size-4 text-white/60" />
-              <span className="text-sm font-medium text-white/90">Sözlere Git</span>
+              <span className="text-sm font-medium text-white/90">{t("menu.goToLyrics")}</span>
             </div>
             <div className="size-6 rounded-full bg-white/5 flex items-center justify-center text-white/50">
               <ChevronIcon className="size-3" />
@@ -130,11 +132,11 @@ export function ContextMenu() {
           </button>
           <button
             className="compact-tile flex items-center justify-between gap-3 px-5 py-2.5 rounded-lg hover:bg-white/5 transition-colors border-t border-glass-border/50"
-            onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`${track.title} - ${track.artist}`).then(() => toastNote("Bağlantı kopyalandı")); closeMenu(); }}
+            onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`${track.title} - ${track.artist}`).then(() => toastNote(t("toast.linkCopied"))); closeMenu(); }}
           >
             <div className="flex items-center gap-3">
               <Share2 className="size-4 text-white/60" />
-              <span className="text-sm font-medium text-white/90">Bağlantıyı Kopyala</span>
+              <span className="text-sm font-medium text-white/90">{t("menu.copyLink")}</span>
             </div>
             <div className="size-6 rounded-full bg-white/5 flex items-center justify-center text-white/50">
               <ChevronIcon className="size-3" />
@@ -149,7 +151,7 @@ export function ContextMenu() {
                 <circle cx="12" cy="8" r="4" />
                 <path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" />
               </svg>
-              <span className="text-sm font-medium text-white/90">Sanatçıya Git</span>
+              <span className="text-sm font-medium text-white/90">{t("menu.goToArtist")}</span>
             </div>
             <div className="size-6 rounded-full bg-white/5 flex items-center justify-center text-white/50">
               <ChevronIcon className="size-3" />
@@ -161,7 +163,7 @@ export function ContextMenu() {
           >
             <div className="flex items-center gap-3">
               <Trash2 className="size-4" />
-              <span className="text-sm font-medium text-red-400">Çaldan Kaldır</span>
+              <span className="text-sm font-medium text-red-400">{t("menu.removeFromQueue")}</span>
             </div>
           </button>
         </div>

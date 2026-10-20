@@ -47,6 +47,23 @@ Rakiplerin hâlâ daha güçlü olduğu alanlar - çok platformluluk ve sağlay�
 
 ---
 
+## Ekran görüntüleri
+
+Melyar (İngilizce):
+
+![Melyar ana sayfa](docs/screenshots/home-en.png)
+
+Arayüz İngilizce ve Türkçe olarak sunuluyor; dil, kenar çubuğundaki seçiciden
+değiştirilebilir:
+
+![Melyar ana sayfa (Türkçe)](docs/screenshots/home-tr.png)
+
+> Ekran görüntüleri örnek bir kütüphaneye karşı alınmıştır, kişisel dinleme
+> verisi görünmez. Kendi görüntünüzü almak için:
+> `MELYAR_SCREENSHOT=/tmp/melyar.png ./build/melyar`
+
+---
+
 ## Özellikler
 
 **Çalma**

@@ -82,7 +82,19 @@ behavior. See [Roadmap](#roadmap) for integrations that are not yet complete.
 
 ## Screenshots
 
-Screenshots will be added as the interface stabilizes.
+Melyar in English:
+
+![Melyar home view](docs/screenshots/home-en.png)
+
+The interface is available in English and Turkish, and the language is
+switchable from the sidebar:
+
+![Melyar home view in Turkish](docs/screenshots/home-tr.png)
+
+> The screenshots were taken against a seeded sample library, so no personal
+> listening data is shown. Use `MELYAR_SCREENSHOT=/path/to.png ./build/melyar`
+> to capture the window yourself - see the
+> [contributing guide](CONTRIBUTING.md#capturing-a-screenshot).
 
 ---
 

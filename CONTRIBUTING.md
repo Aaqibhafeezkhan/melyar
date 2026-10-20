@@ -105,6 +105,34 @@ cd ../ && MELYAR_DEV_URL=http://localhost:5173 ./build/melyar   # terminal 2
 
 The Rust core logs to stderr. Set `RUST_LOG=debug` for verbose output.
 
+### Environment variables
+
+| Variable | Effect |
+|---|---|
+| `MELYAR_DEV_URL` | Load the interface from a live dev server instead of `ui_web/dist/`. |
+| `MELYAR_LANG` | Force the interface language (`en` or `tr`), overriding browser detection. |
+| `MELYAR_SCREENSHOT` | Write a PNG of the window to this path, then exit. |
+| `MELYAR_SCREENSHOT_DELAY` | How long to wait before the capture, in milliseconds. Default 6000. |
+| `RUST_LOG` | Rust log level, for example `debug`. |
+
+---
+
+## Capturing a screenshot
+
+The issue template asks for a visual when a problem is visual. You do not need
+a screenshot tool for this:
+
+```bash
+MELYAR_SCREENSHOT=/tmp/melyar.png MELYAR_SCREENSHOT_DELAY=8000 ./build/melyar
+```
+
+The application renders, scrolls the interface back to the top, writes the PNG
+and exits. Combine it with `MELYAR_LANG` to capture a specific language:
+
+```bash
+MELYAR_LANG=tr MELYAR_SCREENSHOT=/tmp/melyar-tr.png ./build/melyar
+```
+
 ---
 
 ## Checks

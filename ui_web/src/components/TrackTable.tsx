@@ -4,6 +4,7 @@ import { formatTime } from "@/lib/lyrics";
 import { usePlayer } from "@/store";
 import { Artwork } from "@/components/Toolbar";
 import type { TrackMeta } from "@/lib/types";
+import { t, useLocale } from "@/lib/i18n";
 
 function Row({
   track,
@@ -16,6 +17,7 @@ function Row({
   context: TrackMeta[];
   showAlbum?: boolean;
 }) {
+  useLocale();
   const current = usePlayer((s) => s.current);
   const playing = usePlayer((s) => s.playing);
   const likedIds = usePlayer((s) => s.liked);
@@ -38,7 +40,7 @@ function Row({
     >
       <button
         className="grid size-7 shrink-0 place-items-center text-[12px] tabular-nums text-text-tertiary"
-        aria-label={isCurrent && playing ? "Duraklat" : "Çal"}
+        aria-label={isCurrent && playing ? t("track.pause") : t("track.play")}
         onClick={() => (isCurrent ? usePlayer.getState().toggle() : playTrack(track, context))}
       >
         {isCurrent && playing ? (
@@ -79,7 +81,7 @@ function Row({
 
       <button
         className="row-extra grid size-9 place-items-center rounded-full"
-        aria-label={isLiked ? "Beğeniyi kaldır" : "Beğen"}
+        aria-label={isLiked ? t("track.unlike") : t("track.like")}
         aria-pressed={isLiked}
         onClick={() => toggleLike(track)}
       >
@@ -88,7 +90,7 @@ function Row({
 
       <button
         className={cn("grid size-9 place-items-center rounded-full", menuOpen ? "text-white" : "text-text-tertiary row-extra")}
-        aria-label="Seçenekler"
+        aria-label={t("track.options")}
         onClick={(e) => {
           const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
           openMenu({ track, x: rect.left, y: rect.bottom + 4 });
@@ -103,12 +105,13 @@ function Row({
 export function TrackTable({
   tracks,
   showAlbum = true,
-  emptyText = "Burada henüz bir şey yok.",
+  emptyText = t("track.empty"),
 }: {
   tracks: TrackMeta[];
   showAlbum?: boolean;
   emptyText?: string;
 }) {
+  useLocale();
   if (tracks.length === 0) {
     return <p className="px-6 py-14 text-center text-sm text-text-tertiary">{emptyText}</p>;
   }
@@ -116,9 +119,9 @@ export function TrackTable({
     <div className="group/table">
       <div className="track-head">
         <span className="text-center">#</span>
-        <span>Parça</span>
-        <span className={showAlbum ? "" : "invisible"}>Albüm</span>
-        <span className="text-right">Süre</span>
+        <span>{t("track.col.track")}</span>
+        <span className={showAlbum ? "" : "invisible"}>{t("track.col.album")}</span>
+        <span className="text-right">{t("track.col.duration")}</span>
         <span />
         <span />
       </div>

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { register } from "@/lib/registry";
 import type { RepeatMode, TrackMeta, View } from "@/lib/types";
+import { t } from "@/lib/i18n";
 
 type Menu = { track: TrackMeta; x: number; y: number } | null;
 
@@ -199,7 +200,7 @@ export const usePlayer = create<State & Actions>()((set, get) => ({
     }
     set({
       liked: isLiked ? liked.filter((t) => t.id !== track.id) : [track, ...liked],
-      toast: isLiked ? "Beğenilenlerden çıkarıldı" : "Beğenilenlere eklendi",
+      toast: isLiked ? t("toast.unliked") : t("toast.liked"),
       menu: null,
     });
     if (toastTimer) clearTimeout(toastTimer);
@@ -210,7 +211,7 @@ export const usePlayer = create<State & Actions>()((set, get) => ({
     const b = bridge();
     if (!b) return;
     b.addToQueue(track.id);
-    set({ menu: null, toast: "Sıradaki olarak eklendi" });
+    set({ menu: null, toast: t("toast.playNext") });
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(() => set({ toast: null }), 1700);
   },
@@ -219,7 +220,7 @@ export const usePlayer = create<State & Actions>()((set, get) => ({
     const b = bridge();
     if (!b) return;
     b.addToQueue(track.id);
-    set({ menu: null, toast: "Sıraya eklendi" });
+    set({ menu: null, toast: t("toast.queued") });
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(() => set({ toast: null }), 1700);
   },

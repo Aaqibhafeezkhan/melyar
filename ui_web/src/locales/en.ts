@@ -1,0 +1,162 @@
+/**
+ * English strings for Melyar.
+ *
+ * Keys are grouped by the surface that uses them. When you add a string,
+ * add it here and to `tr.ts` with the same key.
+ */
+export const en: Record<string, string> = {
+  // Navigation
+  "nav.section.listen": "LISTEN",
+  "nav.section.library": "LIBRARY",
+  "nav.home": "Home",
+  "nav.search": "Search",
+  "nav.songs": "Songs",
+  "nav.liked": "Liked",
+  "nav.history": "Recently played",
+  "nav.albums": "Albums",
+  "nav.artists": "Artists",
+  "nav.playlists": "Playlists",
+  "nav.queue": "Queue",
+  "nav.aria.library": "Library navigation",
+  "nav.search.placeholder": "Search artists, songs, albums",
+
+  // Toolbar
+  "toolbar.shuffle": "Shuffle",
+  "toolbar.prev": "Previous",
+  "toolbar.play": "Play",
+  "toolbar.pause": "Pause",
+  "toolbar.next": "Next",
+  "toolbar.repeat": "Repeat",
+  "toolbar.expand": "Open expanded player",
+  "toolbar.noTrack": "Pick a track to start playing",
+  "toolbar.lyrics.open": "Show lyrics",
+  "toolbar.lyrics.close": "Hide lyrics",
+  "toolbar.queue": "Queue",
+  "toolbar.mute.on": "Mute",
+  "toolbar.mute.off": "Unmute",
+  "toolbar.volume": "Volume",
+
+  // Queue panel
+  "queue.title": "Queue",
+  "queue.count": "{n} tracks",
+  "queue.clear": "Clear queue",
+  "queue.close": "Close queue",
+  "queue.empty": "The queue is empty. Tracks show up here as they play.",
+
+  // Track table
+  "track.play": "Play",
+  "track.pause": "Pause",
+  "track.like": "Like",
+  "track.unlike": "Remove from liked",
+  "track.options": "Options",
+  "track.empty": "Nothing here yet.",
+  "track.col.track": "Track",
+  "track.col.album": "Album",
+  "track.col.duration": "Duration",
+
+  // Context menu
+  "menu.playNext": "Play next",
+  "menu.addToQueue": "Add to queue",
+  "menu.like": "Add to liked",
+  "menu.unlike": "Remove from liked",
+  "menu.addToPlaylist": "Add to playlist",
+  "menu.download": "Download (offline)",
+  "menu.goToLyrics": "Go to lyrics",
+  "menu.copyLink": "Copy link",
+  "menu.goToArtist": "Go to artist",
+  "menu.removeFromQueue": "Remove from queue",
+
+  // Lyrics overlay
+  "lyrics.aria": "Lyrics",
+  "lyrics.close": "Close lyrics",
+  "lyrics.title": "Lyrics",
+  "lyrics.notFound": "No lyrics found for this track",
+  "lyrics.notFoundHint": "Try another track.",
+  "lyrics.prev": "Previous",
+  "lyrics.queue.open": "Open queue",
+  "lyrics.queue.close": "Close queue",
+
+  // Expanded player
+  "expanded.aria": "Expanded player",
+  "expanded.minimize": "Minimize",
+  "expanded.nowPlaying": "Now playing",
+  "expanded.unknownArtist": "Unknown artist",
+  "expanded.moreActions": "More actions",
+  "expanded.share": "Share",
+  "expanded.linkCopied": "Share link copied",
+  "expanded.lyricsLoading": "Loading lyrics…",
+  "expanded.repeat": "Repeat",
+  "expanded.shuffle": "Shuffle",
+  "expanded.externalLink": "External link",
+
+  // Home
+  "home.greeting.night": "Good night",
+  "home.greeting.morning": "Good morning",
+  "home.greeting.day": "Good afternoon",
+  "home.greeting.evening": "Good evening",
+  "home.resume": "Pick up where you left off:",
+  "home.subtitle": "Millions of tracks are waiting for you on YouTube Music.",
+  "home.kicker.recent": "Recently played",
+  "home.recentlyPlayed": "Recently played",
+  "home.liked": "Liked",
+  "home.showAll": "Show all",
+  "home.libraryEmpty.title": "Your library will show up here",
+  "home.libraryEmpty.body":
+    "Find something with the search box above and play it. The tracks you play are listed here, and you can keep the ones you like with the heart icon.",
+  "home.genres": "Explore genres",
+  "home.genre.turkishPop": "Turkish Pop",
+  "home.genre.electronic": "Electronic",
+  "home.genre.classical": "Classical",
+
+  // Library
+  "library.kicker": "Library",
+  "library.songs.title": "Songs",
+  "library.songs.empty": "Songs you play and like collect here.",
+  "library.liked.kicker": "Playlist",
+  "library.liked.title": "Liked songs",
+  "library.liked.empty": "Tracks you tap the heart on show up here.",
+  "library.history.kicker": "Playlist",
+  "library.history.title": "Recently played",
+  "library.history.empty": "Tracks you play show up here.",
+  "library.albums.title": "Albums",
+  "library.albums.empty": "Albums collect here as you play and like them.",
+  "library.artists.title": "Artists",
+  "library.artists.empty": "Artists you listen to show up here.",
+  "library.col.artist": "Artist",
+  "library.playAll": "Play all",
+  "library.openAlbum": "Open the {name} album",
+  "library.playAlbum": "Play {name}",
+  "library.count": "{n} tracks",
+  "library.countDuration": "{n} tracks · {time}",
+  "library.albums.notFound": "Album not found.",
+  "library.albums.label": "Album",
+  "library.albums.back": "← Back to albums",
+  "library.artists.notFound": "Artist not found.",
+  "library.artists.label": "Artist",
+  "library.artists.knownTracks": "{n} known tracks",
+  "library.detail.tracks": "Tracks",
+
+  // Search
+  "search.placeholder": "Search songs, artists, or albums",
+  "search.hint": "Type an artist, song, or album. Results come live from YouTube Music.",
+  "search.noResults": "No results for \"{query}\".",
+  "search.artists": "Artists",
+  "search.songs": "Songs",
+
+  // Toasts
+  "toast.liked": "Added to liked",
+  "toast.unliked": "Removed from liked",
+  "toast.playNext": "Set as next",
+  "toast.queued": "Added to queue",
+  "toast.linkCopied": "Link copied",
+
+  // Settings
+  "settings.language": "Language",
+  "settings.language.description": "The language of the interface.",
+
+  // Shared
+  "common.loading": "Loading...",
+  "common.unknownTrack": "Unknown track",
+  "common.unknownArtist": "Unknown artist",
+  "common.close": "Close",
+};

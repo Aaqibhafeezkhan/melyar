@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState, forwardRef, type RefObject, type ForwardedRef } from "react";
 import { cn } from "@/lib/cn";
+import { t, useLocale } from "@/lib/i18n";
 import {
   prefersReducedMotion,
   getMotionTokens,
@@ -272,6 +273,7 @@ const sizeClasses = {
 
 export const GlassButton = forwardRef<HTMLButtonElement, GlassButtonProps>(
   (props, ref) => {
+    useLocale();
     const {
       variant = "default",
       active = false,
@@ -333,7 +335,7 @@ export const GlassButton = forwardRef<HTMLButtonElement, GlassButtonProps>(
               <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
               <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" strokeOpacity="1" />
             </svg>
-            {!isIconOnly && <span>Yükleniyor...</span>}
+            {!isIconOnly && <span>{t("common.loading")}</span>}
           </span>
         ) : (
           children
@@ -1037,6 +1039,7 @@ interface PlayPauseMorphProps {
 
 export const PlayPauseMorph = forwardRef<HTMLButtonElement, PlayPauseMorphProps>(
   (props, ref) => {
+    useLocale();
     const {
       playing,
       onToggle,
@@ -1092,7 +1095,7 @@ export const PlayPauseMorph = forwardRef<HTMLButtonElement, PlayPauseMorphProps>
             : `transform ${tokens.duration.press}ms ${tokens.easing.spring}, box-shadow ${tokens.duration.toggle}ms ${tokens.easing.standard}, background ${tokens.duration.toggle}ms ${tokens.easing.morph}`,
           willChange: "transform, box-shadow, background",
         }}
-        aria-label={ariaLabel || (playing ? "Duraklat" : "Çal")}
+        aria-label={ariaLabel || (playing ? t("toolbar.pause") : t("toolbar.play"))}
         aria-pressed={playing}
       >
         {playing ? (

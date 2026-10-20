@@ -36,14 +36,14 @@ export function initBridge() {
   const start = () => {
     const transport = (window.qt as any)?.webChannelTransport;
     if (!transport || typeof window.QWebChannel !== "function") {
-      console.error("[Melyar] webChannelTransport veya QWebChannel yok (tarayıcı modu?)");
+      console.error("[Melyar] webChannelTransport or QWebChannel missing (browser mode?)");
       usePlayer.getState().patch({ bridgeError: "native" });
       return;
     }
     new window.QWebChannel(transport, (channel: any) => {
       const b = channel?.objects?.bridge;
       if (!b) {
-        console.error("[Melyar] channel.objects.bridge bulunamadı");
+        console.error("[Melyar] channel.objects.bridge not found");
         usePlayer.getState().patch({ bridgeError: "bridge" });
         return;
       }

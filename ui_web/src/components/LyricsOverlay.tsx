@@ -6,8 +6,10 @@ import { useLyricsScroll } from "@/lib/useLyricsScroll";
 import { usePlayer } from "@/store";
 import { Artwork } from "@/components/Toolbar";
 import { PlayPauseMorph } from "@/components/GlassComponents";
+import { t, useLocale } from "@/lib/i18n";
 
 export function LyricsOverlay() {
+  useLocale();
   const open = usePlayer((s) => s.lyricsOpen);
   const setOpen = usePlayer((s) => s.setLyricsOpen);
   const current = usePlayer((s) => s.current);
@@ -96,7 +98,7 @@ export function LyricsOverlay() {
       )}
       role="dialog"
       aria-modal="true"
-      aria-label="Sözler"
+      aria-label={t("lyrics.aria")}
       onClick={() => resetControlsTimer()}
     >
       {current?.thumbnail && (
@@ -117,19 +119,19 @@ export function LyricsOverlay() {
       <div className="relative z-20 flex items-center justify-between px-5 pt-4 pb-2">
         <button
           className="btn-glass text-white/90 hover:bg-white/10 hover:text-white"
-          aria-label="Sözleri kapat"
+          aria-label={t("lyrics.close")}
           onClick={() => setOpen(false)}
         >
           <ChevronDown className="size-6" />
         </button>
         <div className="min-w-0 flex-1 mx-4 text-center">
-          <p className="truncate text-[18px] font-bold text-white">{current?.title ?? "Sözler"}</p>
+          <p className="truncate text-[18px] font-bold text-white">{current?.title ?? t("lyrics.title")}</p>
           <p className="truncate text-[14px] text-white/70">{current?.artist ?? ""}</p>
         </div>
         {current ? (
           <button
             className="btn-glass text-white/90 hover:bg-white/10 hover:text-white"
-            aria-label={isLiked ? "Beğeniyi kaldır" : "Beğen"}
+            aria-label={isLiked ? t("track.unlike") : t("track.like")}
             onClick={() => toggleLike(current)}
           >
             <Heart className={cn("size-5", isLiked && "fill-accent text-accent")} />
@@ -190,8 +192,8 @@ export function LyricsOverlay() {
           ) : (
             <div className="grid place-items-center gap-3 text-center py-20">
               <Artwork src={current?.thumbnail} className="size-24" />
-              <p className="text-lg font-semibold text-white/80">Bu parça için söz bulunamadı</p>
-              <p className="text-sm text-white/50">Başka bir parçayı deneyebilirsin.</p>
+              <p className="text-lg font-semibold text-white/80">{t("lyrics.notFound")}</p>
+              <p className="text-sm text-white/50">{t("lyrics.notFoundHint")}</p>
             </div>
           )}
         </div>
@@ -201,7 +203,7 @@ export function LyricsOverlay() {
       <div className={cn("relative z-20 flex items-center justify-center gap-6 px-5 py-6", showControls ? "opacity-100 transition-opacity duration-300" : "opacity-0 pointer-events-none transition-opacity duration-300")}>
         <button
           className="btn-glass text-white/90 hover:bg-white/10 hover:text-white"
-          aria-label="Önceki"
+          aria-label={t("lyrics.prev")}
           onClick={prev}
         >
           <SkipBack className="size-7 fill-current" />
@@ -221,7 +223,7 @@ export function LyricsOverlay() {
         </button>
         <button
           className="btn-glass text-white/80 hover:bg-white/10 hover:text-white"
-          aria-label={queueOpen ? "Kuyruğu Kapat" : "Kuyruğu Aç"}
+          aria-label={queueOpen ? t("lyrics.queue.close") : t("lyrics.queue.open")}
           onClick={() => setQueueOpen(!queueOpen)}
         >
           <ListMusic className={cn("size-5", queueOpen && "text-accent")} />

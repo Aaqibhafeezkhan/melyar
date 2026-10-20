@@ -4,15 +4,27 @@ import { libraryTracks } from "@/lib/registry";
 import { Artwork } from "@/components/Toolbar";
 import { TrackTable } from "@/components/TrackTable";
 import type { TrackMeta, View } from "@/lib/types";
+import { t, useLocale } from "@/lib/i18n";
 
-const GENRES = ["Pop", "Rock", "Türkçe Pop", "Jazz", "Lo-fi", "Hip-Hop", "Elektronik", "Klasik", "Arabesk", "Indie"];
+const GENRES = [
+  { key: "Pop", label: "Pop" },
+  { key: "Rock", label: "Rock" },
+  { key: "Turkish Pop", label: "home.genre.turkishPop" },
+  { key: "Jazz", label: "Jazz" },
+  { key: "Lo-fi", label: "Lo-fi" },
+  { key: "Hip-Hop", label: "Hip-Hop" },
+  { key: "Electronic", label: "home.genre.electronic" },
+  { key: "Classical", label: "home.genre.classical" },
+  { key: "Arabesk", label: "Arabesk" },
+  { key: "Indie", label: "Indie" },
+];
 
 export function greeting() {
   const h = new Date().getHours();
-  if (h < 6) return "İyi geceler";
-  if (h < 12) return "Günaydın";
-  if (h < 18) return "İyi günler";
-  return "İyi akşamlar";
+  if (h < 6) return t("home.greeting.night");
+  if (h < 12) return t("home.greeting.morning");
+  if (h < 18) return t("home.greeting.day");
+  return t("home.greeting.evening");
 }
 
 function CardTile({
@@ -47,6 +59,7 @@ function CardTile({
 }
 
 export function HomeView() {
+  useLocale();
   const history = usePlayer((s) => s.history);
   const liked = usePlayer((s) => s.liked);
   const playTrack = usePlayer((s) => s.playTrack);
@@ -62,10 +75,10 @@ export function HomeView() {
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{greeting()}</h1>
         {featured ? (
           <p className="mt-1.5 text-sm text-text-tertiary">
-            Kaldığın yerden: <span className="font-medium text-text-secondary">{featured.artist}</span>
+            {t("home.resume")} <span className="font-medium text-text-secondary">{featured.artist}</span>
           </p>
         ) : (
-          <p className="mt-1.5 text-sm text-text-tertiary">YouTube Music'te milyonlarca parça seni bekliyor.</p>
+          <p className="mt-1.5 text-sm text-text-tertiary">{t("home.subtitle")}</p>
         )}
       </header>
 
@@ -76,7 +89,7 @@ export function HomeView() {
         >
           <Artwork src={featured.thumbnail} className="size-24 lg:size-28" />
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-wider text-accent">Son çalınan</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-accent">{t("home.kicker.recent")}</p>
             <p className="mt-1 truncate text-2xl md:text-3xl font-bold tracking-tight">{featured.title}</p>
             <p className="truncate text-sm text-text-tertiary">{featured.artist}</p>
           </div>
@@ -86,9 +99,9 @@ export function HomeView() {
       {history.length > 0 ? (
         <section className="mb-10">
           <div className="mb-4 flex items-end justify-between">
-            <h2 className="text-xl font-bold tracking-tight">Son Çalınanlar</h2>
+            <h2 className="text-xl font-bold tracking-tight">{t("home.recentlyPlayed")}</h2>
             <button className="text-sm font-medium text-text-tertiary hover:text-text-secondary hover:underline" onClick={() => navigate({ name: "history" })}>
-              Tümünü gör
+              {t("home.showAll")}
             </button>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
@@ -102,9 +115,9 @@ export function HomeView() {
       {liked.length > 0 ? (
         <section className="mb-10">
           <div className="mb-4 flex items-end justify-between">
-            <h2 className="text-xl font-bold tracking-tight">Beğenilenler</h2>
+            <h2 className="text-xl font-bold tracking-tight">{t("home.liked")}</h2>
             <button className="text-sm font-medium text-text-tertiary hover:text-text-secondary hover:underline" onClick={() => navigate({ name: "liked" })}>
-              Tümünü gör
+              {t("home.showAll")}
             </button>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
@@ -117,39 +130,39 @@ export function HomeView() {
 
       {library.length === 0 ? (
         <section className="card rounded-xl border border-glass-border p-8 text-center">
-          <h2 className="text-lg font-bold">Kitaplığın burada görünecek</h2>
+          <h2 className="text-lg font-bold">{t("home.libraryEmpty.title")}</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-text-tertiary">
-            Yukarıdaki arama kutusundan bir şey bul ve çal. Çaldığın parçalar burada listelenir; kalp ikonuyla beğendiklerini kaydedebilirsin.
+            {t("home.libraryEmpty.body")}
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-2">
             {GENRES.slice(0, 6).map((g) => (
               <button
-                key={g}
+                key={g.key}
                 className="chip"
                 onClick={() => {
-                  setQuery(g);
+                  setQuery(g.key);
                   navigate({ name: "search" });
                 }}
               >
-                {g}
+                {g.label.includes(".") ? t(g.label) : g.label}
               </button>
             ))}
           </div>
         </section>
       ) : (
         <section>
-          <h2 className="mb-4 text-xl font-bold tracking-tight">Türleri Keşfet</h2>
+          <h2 className="mb-4 text-xl font-bold tracking-tight">{t("home.genres")}</h2>
           <div className="flex flex-wrap gap-2">
             {GENRES.map((g) => (
               <button
-                key={g}
+                key={g.key}
                 className="chip"
                 onClick={() => {
-                  setQuery(g);
+                  setQuery(g.key);
                   navigate({ name: "search" });
                 }}
               >
-                {g}
+                {g.label.includes(".") ? t(g.label) : g.label}
               </button>
             ))}
           </div>
