@@ -101,8 +101,7 @@ jobs:
             dpkg-dev debhelper fakeroot build-essential \
             cmake pkg-config \
             qt6-base-dev qt6-declarative-dev qt6-webengine-dev qt6-webchannel-dev \
-            libmpv-dev \
-            qt6-base qt6-declarative qt6-webengine qt6-webchannel mpv yt-dlp
+            libmpv-dev
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -116,7 +115,7 @@ jobs:
         # dependency is installed above.
         run: dpkg-buildpackage -d -us -uc -b
 
-      - name: Show the package
+      - name: Check the package
         run: |
           ls -la ../melyar_*.deb
           dpkg-deb --info ../melyar_0.1.0-1_amd64.deb
@@ -131,11 +130,15 @@ jobs:
           sudo apt-get clean
           df -h /
 
-      - name: Check the package installs
+      - name: Unpack the package and check the files
+        # Unpacking does not resolve the dependencies, so it works without
+        # the runtime Qt packages being on the runner.
         run: |
-          sudo dpkg -i ../melyar_0.1.0-1_amd64.deb
-          dpkg -l melyar
-          test -x /usr/bin/melyar
-          test -f /usr/share/melyar/web/index.html
-          test -f /usr/share/applications/melyar.desktop
-          test -f /usr/share/icons/hicolor/scalable/apps/melyar.svg
+          rm -rf package-root
+          mkdir package-root
+          dpkg-deb -x ../melyar_0.1.0-1_amd64.deb package-root
+          test -x package-root/usr/bin/melyar
+          test -f package-root/usr/share/melyar/web/index.html
+          test -f package-root/usr/share/applications/melyar.desktop
+          test -f package-root/usr/share/icons/hicolor/scalable/apps/melyar.svg
+          ls package-root/usr/share/melyar/web
