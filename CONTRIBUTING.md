@@ -151,13 +151,27 @@ awkward data through the interface, a title long enough to break any layout
 and a track with no artwork, because those are what a real library contains.
 
 The contrast is measured against the colour that is really behind the text,
-compositing every layer. Tailwind writes its tints in oklab(), so oklab is
-read here and converted to sRGB. A canvas was tried first, because the engine
-is meant to normalise any colour it understands, but this QtWebEngine hands
-oklab() back untouched. Two earlier versions of the check read the wrong
-background, one reporting a problem that was not there and one missing a
-problem that was, so it is verified in both directions now: it passes on a
-clean interface and it catches a deliberately unreadable one.
+compositing every layer, and the floor is WCAG 2.1 AA: 4.5:1 for ordinary
+text and 3:1 for large text, with a tenth asked of every measurement for the
+rounding the layers introduce. The colours are read here rather than through
+the engine, because what the engine makes of them differs between versions —
+this QtWebEngine hands oklab() back untouched while the build's normalises it
+to a hex string and drops the alpha, which turns a twenty percent tint into a
+solid one. rgb, hsl, hex, color(srgb) and oklab are parsed directly, so the
+measurement depends on nothing but the script.
+
+Both themes are walked step for step, not just glanced at: the floating
+surfaces were drawn for the dark one and the light one has its own set. That
+is what found the full screen player writing grey text on its always-dark
+surface at 2.87:1, which no single glance would have caught.
+
+Every distinct piece of text that fails is named, not only the first, because
+the first is usually the same sentence on a dozen pages and hides the rest.
+Three earlier versions of the check read the wrong background — one reporting
+a problem that was not there, one missing a problem that was, one losing the
+alpha — so it is verified in both directions each time: it passes on a clean
+interface at every window size and in both themes, and it catches a
+deliberately unreadable one.
 
 Run it yourself:
 

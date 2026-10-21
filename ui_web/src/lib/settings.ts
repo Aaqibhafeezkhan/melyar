@@ -165,13 +165,16 @@ export function applySettingsToDocument(settings: Settings) {
   for (const step of ACCENT_STEPS) {
     root.style.setProperty(`--accent-${step}`, hexToRgba(accent, step / 100));
   }
-  // The colour used when the accent is used as text. A pale accent is
-  // unreadable on a light surface, so it is darkened there; the dark theme
-  // keeps it as it is.
-  root.style.setProperty(
-    "--accent-text",
-    settings.theme === "light" ? darkenHex(accent, 0.34) : accent,
-  );
+  // The colour used when the accent is written as text. It lands on the
+  // accent's own tints in the dark theme and on white in the light one, and
+  // an accent that is readable on one is not necessarily readable on the
+  // other, so it is mixed towards white or black until it clears WCAG AA
+  // against both. An accent that already clears it is left as it is.
+  //
+  // The dark variant is set as well, because the full screen player keeps a
+  // dark surface in both themes and reads that one instead.
+  root.style.setProperty("--accent-text", accentTextColour(accent, settings.theme));
+  root.style.setProperty("--accent-text-dark", accentTextColour(accent, "dark"));
   // The gradient behind artwork that has none. It mixes the accent with the
   // two darks it sits on, so it follows the accent like everything else.
   root.style.setProperty("--cover-start", mixHex(accent, "#2a2a2e", 0.45));
@@ -190,14 +193,50 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-/** Mix a colour towards black, for text that has to stay readable. */
-function darkenHex(hex: string, amount: number): string {
+/** Relative luminance of a colour, as WCAG defines it. */
+function relativeLuminance(hex: string): number {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
-  if (!m) return hex;
-  const channel = (value: string) => Math.round(parseInt(value, 16) * (1 - amount));
-  return `#${[m[1], m[2], m[3]]
-    .map((v) => channel(v).toString(16).padStart(2, "0"))
-    .join("")}`;
+  if (!m) return 0;
+  const channel = (value: string) => {
+    const c = parseInt(value, 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * channel(m[1]) + 0.7152 * channel(m[2]) + 0.0722 * channel(m[3]);
+}
+
+/**
+ * The accent as text: readable where it is used, which is over the accent's
+ * own tints in the dark theme and over white in the light one.
+ *
+ * The two directions are opposite. Over a near-black tint the accent has to
+ * be lighter than itself; over white it has to be darker, and a pale accent
+ * may have to become quite dark. The surfaces are built from the accent
+ * itself — the plain panel, then the accent over it at the ten, sixteen and
+ * twenty percent the interface uses — so this holds whichever colour is
+ * chosen, not only the default one. It mixes until every one of them clears
+ * 4.6:1, the floor the audit holds text to.
+ *
+ * The swatches, the play button and the tints keep the accent itself; only
+ * this changes.
+ */
+function accentTextColour(hex: string, theme: string): string {
+  const dark = theme !== "light";
+  const base = dark ? "#131317" : "#fafafc";
+  const surfaces = [0, 0.1, 0.16, 0.2].map((tint) => mixHex(hex, base, tint));
+  if (!dark) surfaces.push("#ffffff");
+  const towards = dark ? "#ffffff" : "#000000";
+  for (let step = 0; step <= 100; step += 1) {
+    const candidate = mixHex(hex, towards, 1 - step / 100);
+    if (surfaces.every((s) => contrastWith(candidate, s) >= 4.6)) return candidate;
+  }
+  return towards;
+}
+
+/** Contrast ratio between two colours, per WCAG. */
+function contrastWith(first: string, second: string): number {
+  const a = relativeLuminance(first);
+  const b = relativeLuminance(second);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
 /**

@@ -15,6 +15,9 @@
      is a darkened version of it. It follows the accent, so changing the
      accent changes both at once. */
   --accent-text: var(--accent);
+  /* The same, adjusted for a dark surface. The full screen player keeps its
+     dark surface in both themes, so it reads this one instead. */
+  --accent-text-dark: #fb4256;
 
   /* ---- Temel Renkler (Apple Music benzeri derinlik) ---- */
   --bg: #0b0b0d;
@@ -73,7 +76,9 @@
   /* ---- Metin ---- */
   --text: #fafafa;
   --text-secondary: #b8b8bd;
-  --text-tertiary: #8a8a90;
+  /* Readable on the cards it sits on, not just on the page: WCAG AA
+     needs 4.5:1 and #8a8a90 reached 4.16:1 there. */
+  --text-tertiary: #919197;
   --text-disabled: #5a5a60;
   --mute: #8a8a90;
 
@@ -172,7 +177,7 @@
   /* Darkened here as well as in the script, so the light theme is
      readable before the script has run. The script replaces it with
      the accent the user picked. */
-  --accent-text: #a51727;
+  --accent-text: #c81c2f;
   /* The light theme's own values for the derived surfaces above. */
   --mute-25: rgba(122, 122, 128, 0.25);
   --mute-30: rgba(122, 122, 128, 0.30);
@@ -203,7 +208,10 @@
   --glass-shadow-xl: rgba(0, 0, 0, 0.2);
   --text: #151518;
   --text-secondary: #4a4a4f;
-  --text-tertiary: #7a7a80;
+  /* The light theme is the harder one: white, and the accent tint behind
+     the active item, put #7a7a80 as low as 3.35:1. The tint is what sets
+     the level — at #65656a it still reached only 4.56:1 there. */
+  --text-tertiary: #606065;
   --text-disabled: #a0a0a5;
   --mute: #7a7a80;
   color-scheme: light;
@@ -1152,6 +1160,24 @@
      background of its own: without it the page behind shows through and
      the player becomes unreadable. */
   background: rgba(16, 16, 20, 0.94);
+  /* It is dark in both themes, so everything written on it has to be too:
+     the light theme's grey text on this surface measured 2.87:1, which is
+     not readable at all. The tokens are redeclared here, which is what the
+     descendants inherit. */
+  --text: #fafafa;
+  --text-secondary: #b8b8bd;
+  --text-tertiary: #919197;
+  --text-disabled: #5a5a60;
+  --mute: #8a8a90;
+  --mute-25: rgba(138, 138, 144, 0.25);
+  --mute-30: rgba(138, 138, 144, 0.30);
+  --bg: #0b0b0d;
+  --bg-elevated: #111114;
+  --bg-content: #151519;
+  --bg-content-94: rgba(21, 21, 25, 0.94);
+  --bg-elevated-92: rgba(17, 17, 20, 0.92);
+  --bg-hover: rgba(255, 255, 255, 0.035);
+  --accent-text: var(--accent-text-dark);
   backdrop-filter: var(--blur-3xl) var(--sat-max);
   -webkit-backdrop-filter: var(--blur-3xl) var(--sat-max);
   border: 1px solid var(--glass-border-strong);

@@ -275,11 +275,25 @@
       if (!fg || fg.a === 0) return;
       const bg = backgroundBehind(el);
       const ratio = contrast(fg.a < 1 ? blend(fg, bg) : fg, bg);
-      if (ratio < 2.4) {
+      // WCAG 2.1 AA, which is the floor this audit holds to: 4.5:1 for text
+      // of this size, and 3:1 for large text — 24px, or 18.66px at a bold
+      // weight. A little is asked of every measurement rather than exactly
+      // the threshold, because the colours come from several rounded layers.
+      const px = parseFloat(style.fontSize);
+      const weight = parseInt(style.fontWeight, 10) || 400;
+      const large = px >= 24 || (px >= 18.66 && weight >= 700);
+      const floor = (large ? 3.0 : 4.5) + 0.1;
+      if (ratio < floor) {
         bad.push(
           (el.textContent || "").trim().slice(0, 24) +
-            " (ratio " +
-            ratio.toFixed(1) +
+            " (" +
+            px.toFixed(0) +
+            "px " +
+            style.fontWeight +
+            ", ratio " +
+            ratio.toFixed(2) +
+            " < " +
+            floor +
             ", color " +
             style.color +
             ", behind rgb(" +
@@ -296,10 +310,11 @@
     });
 
     if (bad.length) {
-      const unique = Array.from(new Set(bad));
-      note(
-        "low-contrast",
-        tag + ": " + unique.length + " pieces of text are hard to read, first: " + unique[0],
+      // Every distinct piece of text is named, not only the first one: the
+      // first is usually the same sentence on several pages, and it hides
+      // what the rest of them are.
+      Array.from(new Set(bad)).forEach((one) =>
+        note("low-contrast", tag + ": " + one),
       );
     }
   }
@@ -436,44 +451,39 @@
   ]);
 
   let index = 0;
+  let theme = "dark";
   function next() {
     if (index >= steps.length) {
-      // The light theme is checked as well, because the surfaces that float
-      // over the page were drawn for the dark one.
-      if (window.__setTheme) {
+      // The light theme is walked through step for step as well, not just
+      // glanced at: the floating surfaces were drawn for the dark one, and
+      // the light one has its own set of them, over its own colours.
+      if (theme === "dark" && window.__setTheme) {
         console.log("  acik tema denetimi basliyor");
+        theme = "light";
         window.__setTheme("light");
-        setTimeout(function () {
-          try {
-            checkOverflow("light-theme");
-            checkText("light-theme");
-            checkAccessibleNames("light-theme");
-            checkContrast("light-theme");
-          } catch (e) {
-            note("check", "light-theme: " + String(e).slice(0, 110));
-          }
-          finish();
-        }, 900);
-      } else {
-        finish();
+        index = 0;
+        setTimeout(next, 1200);
+        return;
       }
+      finish();
       return;
     }
     const step = steps[index++];
+    const tag = theme === "dark" ? step[0] : step[0] + " @acik-tema";
     try {
       step[1]();
     } catch (e) {
-      note("threw", step[0] + ": " + String(e).slice(0, 140));
+      note("threw", tag + ": " + String(e).slice(0, 140));
     }
     setTimeout(function () {
       try {
-        checkOverflow(step[0]);
-        checkText(step[0]);
-        checkAccessibleNames(step[0]);
-        checkContrast(step[0]);
+        checkOverflow(tag);
+        checkText(tag);
+        checkAccessibleNames(tag);
+        checkContrast(tag);
         if (step[2]) step[2]();
       } catch (e) {
-        note("check", step[0] + ": " + String(e).slice(0, 110));
+        note("check", tag + ": " + String(e).slice(0, 110));
       }
       next();
     }, 900);
