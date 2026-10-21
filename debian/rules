@@ -1,9 +1,6 @@
 #!/usr/bin/make -f
 
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
-# Keep the cargo registry inside the build tree so the package build does not
-# write to the home directory.
-export CARGO_HOME = $(CURDIR)/debian/cargo-home
 export RUST_BACKTRACE = 1
 
 %:

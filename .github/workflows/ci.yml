@@ -98,7 +98,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            dpkg-dev debhelper fakeroot \
+            dpkg-dev debhelper fakeroot build-essential \
             cmake pkg-config \
             qt6-base-dev qt6-declarative-dev qt6-webengine-dev qt6-webchannel-dev \
             libmpv-dev
@@ -110,7 +110,10 @@ jobs:
           workspaces: . -> target
 
       - name: Build the package
-        run: dpkg-buildpackage -us -uc -b
+        # The dependency check is skipped because rustc and cargo come from
+        # rustup, which dpkg does not know about. Every other build
+        # dependency is installed above.
+        run: dpkg-buildpackage -d -us -uc -b
 
       - name: Show the package
         run: |
