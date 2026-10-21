@@ -21,7 +21,10 @@ library into one desktop application. It is built around a **Rust core**, a
 **Qt/C++ desktop bridge**, and a **React + TypeScript interface**.
 
 Playback is powered by `libmpv`, and stream/metadata resolution goes through
-`yt-dlp` and the YouTube `InnerTube` API.
+the YouTube `InnerTube` API. The client version is read from the live web
+client at runtime, and several client identities are tried in turn, so one
+of them being refused does not stop playback. `yt-dlp` is used when it is
+installed, but it is not required.
 
 > **Project status: Work in progress.** Melyar is actively developed. Some UI
 > interactions and provider integrations are still being refined, so expect
@@ -74,8 +77,10 @@ alone is 59 MB less resident memory, and the interface is ready in about
 Every push drives the application through every view and every overlay and
 fails the build when something is wrong with it.
 
-- Music playback powered by **mpv**, with stream resolution through `yt-dlp` for
-  the current YouTube Music workflow.
+- Music playback powered by **mpv**, with stream resolution through the
+  YouTube Music API. Several client identities are tried in turn, and the
+  client version is read from the live web client, so the client keeps
+  working when YouTube changes something.
 - Search and discovery for music available through the currently implemented provider.
 - Playback controls including play/pause, previous/next, seeking, volume, shuffle,
   and repeat where supported by the current build.
@@ -188,7 +193,7 @@ The current Linux-oriented build requirements:
 | pnpm | ≥ 9 |
 | mpv | ≥ 2.x (`libmpv` development files) |
 | pkg-config | — |
-| yt-dlp | available on `PATH` |
+| yt-dlp | optional, used when it is installed |
 
 Install the Qt development packages appropriate for your distribution, including
 the Qt WebEngine and WebChannel components required by the project.
@@ -227,8 +232,10 @@ mpv --version
 yt-dlp --version
 ```
 
-If the application cannot resolve a stream, first confirm that `yt-dlp` is
-installed, executable, and available in the environment used to launch Melyar.
+The application resolves streams without `yt-dlp`, but when it is installed
+it is used as well, because it handles some of the harder parts of the
+protocol. If a stream will not resolve, confirm that `yt-dlp` is installed,
+executable, and available in the environment used to launch Melyar.
 
 ---
 

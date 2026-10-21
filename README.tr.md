@@ -124,7 +124,7 @@ oynatılır.
 | mpv | ≥ 2.x (`libmpv`) |
 | pkg-config | — |
 | Node.js + pnpm | ≥ 20 / ≥ 9 (yalnızca web arayüzü geliştirmek için) |
-| yt-dlp | önerilir (bazı metadata çözümlemeleri için) |
+| yt-dlp | isteğe bağlı, kuruluysa kullanılır |
 
 Corrosion (Rust ↔ CMake entegrasyonu) `CMakeLists.txt` tarafından otomatik olarak
 indirilir; ayrıca kurulum gerekmez.

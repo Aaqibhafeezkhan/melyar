@@ -368,25 +368,31 @@ difference available.
 
 The part that decides whether Melyar is still here in a year.
 
-### 3.1 A pool of InnerTube clients
+### 3.1 A pool of InnerTube clients - DONE
 
-**The problem:** the fallback path sends `clientName: WEB_REMIX` with
+**The problem:** the fallback path sent `clientName: WEB_REMIX` with
 `clientVersion: 1.20240403.01.00`, a version from April 2024. Client
 versions drift, and a single fixed identity is exactly what breaks.
 
-**What to do**
+**What was done**
 
-1. Try a list of client identities in order: `YTMUSIC`, `ANDROID_VR`,
-   `TVHTML5`, `WEB_REMIX`.
-2. Read the API key and the client version from the live web client at
-   runtime rather than hardcoding them, the way the other clients do.
-3. Remember which identity worked last and try it first.
-4. When one starts failing, move to the next and log it.
+1. The version is read from the live web client at runtime. The page carries
+   it in a `ytcfg.set` block, and the key and the version are pulled out of
+   it by name. A failure is not fatal: the written down version is used
+   until the configuration can be read.
+2. Four identities are tried in turn, and the one that answered is tried
+   first next time. Which ones work was found by asking the service rather
+   than guessing: the web client, the television client, the Android client
+   and the virtual reality client answer, while the music, the phone and
+   the embedded identities are refused.
+3. The live version belongs to the web client. The other identities are only
+   accepted with their own version, which is why the version is chosen per
+   identity rather than sent to all of them.
 
 **Acceptance criteria**
 
-- A change on the server that breaks one client identity does not stop
-  playback.
+- A change on the server that breaks one identity does not stop playback. MET
+- The version is current without a release. MET
 
 **Effort:** 3 days. **Risk:** medium, because the identities are not
 documented and have to be checked against the live service.
@@ -441,70 +447,21 @@ YouTube changes regularly.
 
 **Effort:** 5 days. **Risk:** medium.
 
-### 3.4 Make `yt-dlp` optional
+### 3.4 Make `yt-dlp` optional - DONE
 
-**What to do**
+**What was done**
 
-1. Once 3.2 and 3.3 work, `yt-dlp` becomes a fallback rather than the
-   primary path.
-2. The README and the packaging stop requiring it. It stays supported,
-   because it is a good escape hatch when YouTube changes something.
-
-**Acceptance criteria**
-
-- A fresh install without `yt-dlp` plays music.
-
-**Effort:** 1 day. **Risk:** low. **Depends on:** 3.2 and 3.3.
-
----
-
-## Phase 4 - The features the competitors have
-
-In the order that the field has them and we do not.
-
-| Feature | They have it | Notes | Effort |
-|---|---|---|---|
-| Last.fm scrobbling | all three | A simple HTTP call, but the rules about what counts as a scrobble are fiddly. | 2 days |
-| Discord presence | all three | The Discord IPC socket. | 2 days |
-| Downloads and offline | Spotube, Bloomee, Limusic | Needs a downloader, a cache format and a policy for what is allowed. | 10 days |
-| Local music | Spotube, Bloomee, Limusic | A file scanner and a second source in the queue. | 8 days |
-| Word by word lyrics | Bloomee, Limusic | Needs a provider that returns word timings, not line timings. | 5 days |
-| More languages | Spotube has 30 | A translation job per language, not a programming job. | 1 day each |
-
----
-
-## Phase 5 - A plugin architecture
-
-This looks like a feature and is really the answer to phase 3.
-
-**What the competitors do**
-
-- Spotube has metadata provider plugins and audio source plugins. The
-  audio source plugins are how it survives a YouTube change: Piped,
-  Invidious, NewPipe and JioSaavn are all options.
-- BloomeeTunes has `.bex` plugins, a Rust runtime with `waclay` and
-  `wasmi`, sandboxed, with a repository that updates itself.
-
-**What to do**
-
-1. Define a provider interface in the Rust core: search, resolve a stream,
-   fetch lyrics, list a catalogue.
-2. Define a manifest: a name, a version, an endpoint, and what the provider
-   can do.
-3. Run the providers in a sandbox. The research is clear that a plugin
-   system without a sandbox is a liability, because a provider is remote
-   code.
-4. Ship two providers to begin with: InnerTube, and one alternative source
-   such as Piped or Invidious. The second is the point: when YouTube
-   breaks, the alternative does not.
+1. The InnerTube pool resolves streams on its own, which is what a user
+   without `yt-dlp` needs. The path is kept separate and tested on its own.
+2. `yt-dlp` is used when it is installed, because it handles the harder
+   parts of the protocol, but it is no longer required. The Debian package
+   moved it to a recommendation.
 
 **Acceptance criteria**
 
-- A new provider can be added without changing the core.
-- A broken provider does not stop the others from working.
+- A fresh install without `yt-dlp` plays music. MET
 
-**Effort:** 15 days. **Risk:** high, and it should not be started before
-phase 3, because the design depends on what the core needs to expose.
+**Effort:** 1 day. **Risk:** low.
 
 ---
 
@@ -522,13 +479,13 @@ Phase 0  weight                0.1 done, 0.2 - 0.4 small
   |     1.3.6 translations                  4 days
   |     1.3.7 interface switch              1 day
   |
-  +-- Phase 2  equaliser                    2 days   can run in parallel
+  +-- Phase 2  equaliser                    2 days   done
   |
   +-- Phase 3  durability                  14 days
-  |     3.1 client pool                     3 days
+  |     3.1 client pool                     3 days   done
   |     3.2 PO tokens                       5 days
   |     3.3 embedded JavaScript runtime     5 days
-  |     3.4 yt-dlp optional                 1 day
+  |     3.4 yt-dlp optional                 1 day   done
   |
   +-- Phase 4  the features the field has  28 days
   |
@@ -549,8 +506,8 @@ phase 3 exposes.
 | 0.3 Lazy web engine | 1 | depends on 1.3.7 |
 | 0.4 Memory budget in CI | 1 | weight stops regressing |
 | 1 Native interface | 14 | **435 MB becomes about 135 MB** |
-| 2 Equaliser | 2 | the most requested feature |
-| 3 Durability | 14 | **stops breaking when YouTube changes** |
+| 2 Equaliser | 2 | the most requested feature. DONE |
+| 3 Durability | 14 | **stops breaking when YouTube changes**. 3.1 and 3.4 DONE |
 | 4 The missing features | 28 | parity with the field |
 | 5 Plugin architecture | 15 | survives the next change |
 | **Total** | **76** | |

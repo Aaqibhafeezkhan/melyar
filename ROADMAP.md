@@ -83,6 +83,12 @@ client to switch to".
       preferences
 - [x] **A ten band graphic equaliser** - 31 Hz to 16 kHz, built on mpv's
       filter chain, with the bands stored in the settings
+- [x] **A live InnerTube configuration** - the client version is read from
+      the web client at runtime instead of being written down, so it does
+      not quietly go stale
+- [x] **A pool of client identities** - the web, television, Android and
+      virtual reality clients are tried in turn, and the one that works is
+      remembered. `yt-dlp` is now optional: streams resolve without it.
 - [ ] **Right-to-left languages** - the layout uses physical margins in a few
       places, so Arabic and Hebrew need the spacing converted to logical
       properties first

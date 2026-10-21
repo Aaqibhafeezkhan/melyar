@@ -8,13 +8,17 @@ use std::process::Command;
 use std::time::Duration;
 
 use super::cipher::CipherSolver;
+use super::clients::{endpoint, parse_live_config, InnerTubeConfig, CLIENT_POOL};
 use super::parser::parse_search_results;
 use crate::ffi::CxxTrackMetadata;
 
-const INNERTUBE_API_KEY: &str = "AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30";
-const SEARCH_URL: &str = "https://music.youtube.com/youtubei/v1/search";
-const PLAYER_URL: &str = "https://music.youtube.com/youtubei/v1/player";
+/// The API key as a last resort, when the live configuration cannot be read.
+const FALLBACK_API_KEY: &str = "AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30";
+const SEARCH_PATH: &str = "search";
+const PLAYER_PATH: &str = "player";
 const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0";
+/// Where the live client configuration is read from.
+const CONFIG_URL: &str = "https://music.youtube.com/";
 
 /// Resolved video: metadata + direct audio stream url (single yt-dlp call).
 #[derive(Clone, Debug, Default)]
@@ -197,6 +201,13 @@ fn parse_ytdlp_json(data: &Value, video_id: &str) -> Result<ResolvedVideo> {
 pub struct InnerTubeClient {
     http: Client,
     cipher: CipherSolver,
+    /// The live client configuration, read once and refreshed when it goes
+    /// stale. Without it the client version would be written down here and
+    /// would be wrong within a few months.
+    config: Mutex<InnerTubeConfig>,
+    /// Which identity in the pool worked last, so the working one is tried
+    /// first.
+    preferred: Mutex<usize>,
 }
 
 impl InnerTubeClient {
@@ -232,6 +243,8 @@ impl InnerTubeClient {
         Ok(Self {
             http,
             cipher: CipherSolver::new(),
+            config: Mutex::new(InnerTubeConfig::default()),
+            preferred: Mutex::new(0),
         })
     }
 
@@ -240,32 +253,128 @@ impl InnerTubeClient {
         yt_dlp_json_blocking(video_id)
     }
 
-    /// Search tracks on YouTube Music (WEB_REMIX client)
-    pub async fn search_tracks(&self, query: &str) -> Result<Vec<CxxTrackMetadata>> {
-        let url = format!("{SEARCH_URL}?key={INNERTUBE_API_KEY}");
-        let payload = json!({
-            "context": {
-                "client": {
-                    "clientName": "WEB_REMIX",
-                    "clientVersion": "1.20240403.01.00",
-                    "hl": "en",
-                    "gl": "US"
-                }
-            },
-            "query": query,
-            "params": "Eg-KAQwIARAAGAAgACgAMABqChAKEAMQBBAKEAU%3D"
-        });
+    /// The HTTP client, for the tests that talk to the service directly.
+    #[cfg(test)]
+    pub fn http(&self) -> &Client {
+        &self.http
+    }
 
-        let resp = self.http.post(&url).json(&payload).send().await?;
-        if !resp.status().is_success() {
-            return Err(anyhow!(
-                "Search request failed with status {}",
-                resp.status()
-            ));
+    /// The API key to use, from the live configuration when it is known.
+    fn api_key(&self) -> String {
+        let config = self.config.lock();
+        if config.api_key.is_empty() {
+            FALLBACK_API_KEY.to_string()
+        } else {
+            config.api_key.clone()
+        }
+    }
+
+    /// The client version to send, from the live configuration when it is
+    /// known.
+    fn client_version(&self) -> String {
+        self.config.lock().client_version.clone()
+    }
+
+    /// Read the live client configuration, so the version stays current.
+    ///
+    /// A failure here is not fatal. The fallback version is used until the
+    /// configuration can be read.
+    pub async fn refresh_config(&self) -> Result<InnerTubeConfig> {
+        let resp = self.http.get(CONFIG_URL).send().await?;
+        let html = resp.text().await?;
+        let config = parse_live_config(&html)?;
+        *self.config.lock() = config.clone();
+        Ok(config)
+    }
+
+    /// Make sure the configuration is fresh before a request goes out.
+    async fn ensure_config(&self) {
+        let stale = self.config.lock().is_stale();
+        if !stale {
+            return;
+        }
+        if let Err(e) = self.refresh_config().await {
+            eprintln!("Could not read the live InnerTube configuration: {e}");
+        }
+    }
+
+    /// The identities to try, starting with the one that worked last.
+    fn pool_order(&self) -> Vec<super::clients::ClientProfile> {
+        let start = *self.preferred.lock() % CLIENT_POOL.len();
+        let mut order = Vec::with_capacity(CLIENT_POOL.len());
+        for offset in 0..CLIENT_POOL.len() {
+            order.push(CLIENT_POOL[(start + offset) % CLIENT_POOL.len()]);
+        }
+        order
+    }
+
+    /// Remember that an identity worked, so it is tried first next time.
+    fn remember(&self, name: &str) {
+        if let Some(index) = CLIENT_POOL.iter().position(|p| p.name == name) {
+            *self.preferred.lock() = index;
+        }
+    }
+
+    /// The context an InnerTube request is sent with.
+    fn client_context(&self, profile: &super::clients::ClientProfile) -> Value {
+        let version = super::clients::version_for(profile, &self.client_version());
+        let mut client = json!({
+            "clientName": profile.name,
+            "clientVersion": version,
+            "hl": "en",
+            "gl": "US"
+        });
+        // The phone clients are only accepted when they are told which
+        // platform they are running on.
+        if profile.name == "ANDROID" || profile.name == "ANDROID_VR" {
+            client["androidSdkVersion"] = json!(30);
+        }
+        json!({ "context": { "client": client } })
+    }
+
+    /// Search tracks on YouTube Music.
+    ///
+    /// The identities are tried in turn, because the one that works today is
+    /// not guaranteed to work tomorrow.
+    pub async fn search_tracks(&self, query: &str) -> Result<Vec<CxxTrackMetadata>> {
+        self.ensure_config().await;
+        let key = self.api_key();
+
+        let mut last_error: anyhow::Error = anyhow!("no InnerTube client could answer the search");
+
+        for profile in self.pool_order() {
+            let url = format!("{}/{SEARCH_PATH}?key={key}", endpoint(&profile));
+            let mut payload = self.client_context(&profile);
+            payload["query"] = json!(query);
+            payload["params"] = json!("Eg-KAQwIARAAGAAgACgAMABqChAKEAMQBBAKEAU%3D");
+
+            let request = self
+                .http
+                .post(&url)
+                .json(&payload)
+                .header(header::USER_AGENT, profile.user_agent.unwrap_or(USER_AGENT));
+
+            match request.send().await {
+                Ok(resp) if resp.status().is_success() => match resp.json::<Value>().await {
+                    Ok(data) => {
+                        if let Ok(tracks) = parse_search_results(&data) {
+                            if !tracks.is_empty() {
+                                self.remember(profile.name);
+                                return Ok(tracks);
+                            }
+                        }
+                        last_error = anyhow!("the search returned nothing");
+                    }
+                    Err(e) => last_error = e.into(),
+                },
+                Ok(resp) => {
+                    last_error = anyhow!("the search failed with status {}", resp.status());
+                }
+                Err(e) => last_error = e.into(),
+            }
         }
 
-        let json_data: Value = resp.json().await?;
-        parse_search_results(&json_data)
+        Err(last_error)
     }
 
     /// Resolve direct audio stream URL for a given track/video id.
@@ -283,67 +392,42 @@ impl InnerTubeClient {
             }
         }
 
-        // 2. YouTube Music WEB_REMIX player endpoint
-        let url = format!("{PLAYER_URL}?key={INNERTUBE_API_KEY}");
-        let payload = json!({
-            "context": {
-                "client": {
-                    "clientName": "WEB_REMIX",
-                    "clientVersion": "1.20240403.01.00",
-                    "hl": "en",
-                    "gl": "US"
-                }
-            },
-            "videoId": video_id
-        });
+        // 2. The InnerTube player endpoint, trying the identities in turn.
+        self.resolve_stream_via_pool(video_id).await
+    }
 
-        if let Ok(resp) = self.http.post(&url).json(&payload).send().await {
-            if resp.status().is_success() {
-                if let Ok(data) = resp.json::<Value>().await {
-                    if let Some(stream_url) = self.extract_best_audio_stream(&data).await {
-                        return Ok(stream_url);
+    /// Resolve a stream using only the InnerTube identities, with no help
+    /// from yt-dlp.
+    ///
+    /// This is the path a user without yt-dlp takes, so it is worth keeping
+    /// separate and worth testing on its own.
+    pub async fn resolve_stream_via_pool(&self, video_id: &str) -> Result<String> {
+        self.ensure_config().await;
+        let key = self.api_key();
+
+        for profile in self.pool_order() {
+            let url = format!("{}/{PLAYER_PATH}?key={key}", endpoint(&profile));
+            let mut payload = self.client_context(&profile);
+            payload["videoId"] = json!(video_id);
+
+            let mut request = self.http.post(&url).json(&payload);
+            if let Some(agent) = profile.user_agent {
+                request = request.header(header::USER_AGENT, agent);
+            }
+
+            if let Ok(resp) = request.send().await {
+                if resp.status().is_success() {
+                    if let Ok(data) = resp.json::<Value>().await {
+                        if let Some(stream_url) = self.extract_best_audio_stream(&data).await {
+                            self.remember(profile.name);
+                            return Ok(stream_url);
+                        }
                     }
                 }
             }
         }
 
-        // 3. Android client player endpoint fallback
-        let android_payload = json!({
-            "context": {
-                "client": {
-                    "clientName": "ANDROID",
-                    "clientVersion": "21.26.364",
-                    "androidSdkVersion": 30,
-                    "hl": "en",
-                    "gl": "US"
-                }
-            },
-            "videoId": video_id
-        });
-
-        let android_url =
-            format!("https://www.youtube.com/youtubei/v1/player?key={INNERTUBE_API_KEY}");
-        if let Ok(resp) = self
-            .http
-            .post(&android_url)
-            .header(
-                header::USER_AGENT,
-                "com.google.android.youtube/21.26.364 (Linux; U; Android 11) gzip",
-            )
-            .json(&android_payload)
-            .send()
-            .await
-        {
-            if resp.status().is_success() {
-                if let Ok(data) = resp.json::<Value>().await {
-                    if let Some(stream_url) = self.extract_best_audio_stream(&data).await {
-                        return Ok(stream_url);
-                    }
-                }
-            }
-        }
-
-        // 4. Fallback: Piped / Invidious audio stream resolver
+        // 3. Fallback: Piped / Invidious audio stream resolver
         let fallback_apis = [
             format!("https://pipedapi.kavin.rocks/streams/{video_id}"),
             format!("https://api.piped.privacydev.net/streams/{video_id}"),

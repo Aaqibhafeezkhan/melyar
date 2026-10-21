@@ -24,8 +24,8 @@ Depends: ${shlibs:Depends},
          qt6-declarative,
          qt6-webengine,
          qt6-webchannel,
-         mpv,
-         yt-dlp
+         mpv
+Recommends: yt-dlp
 Description: native YouTube Music desktop client
  Melyar is a lightweight YouTube Music client for Linux. A Rust core handles
  the InnerTube API, the stream cipher, mpv playback, the local library and the
@@ -34,8 +34,12 @@ Description: native YouTube Music desktop client
  .
  It speaks to YouTube Music directly, so it needs no account of its own and no
  cloud service. Playback runs through libmpv, the library is kept in a local
- SQLite database, and the interface speaks twelve languages.
+ SQLite database, and the interface speaks thirteen languages.
  .
  The client integrates with the desktop rather than sitting on top of it:
  MPRIS for media keys, a Unix socket for Waybar and Polybar, global shortcuts
  and a desktop entry.
+ .
+ yt-dlp is optional. It is used when it is installed, because it handles some
+ of the harder parts of the protocol, but the application resolves streams
+ without it as well.
