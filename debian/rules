@@ -1,0 +1,34 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+# Keep the cargo registry inside the build tree so the package build does not
+# write to the home directory.
+export CARGO_HOME = $(CURDIR)/debian/cargo-home
+export RUST_BACKTRACE = 1
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	cmake -B build -S . \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr
+
+override_dh_auto_build:
+	# The web interface is committed to the repository, so pnpm is only needed
+	# when it is available. When it is, the bundle is rebuilt so that the
+	# package always ships the current interface.
+	if command -v pnpm >/dev/null 2>&1; then \
+		cd ui_web && pnpm install --frozen-lockfile && pnpm build && cd ..; \
+	else \
+		echo "pnpm not found, using the committed web interface bundle"; \
+	fi
+	cmake --build build -j$(nproc)
+
+override_dh_auto_test:
+	# The lyrics test reaches out to lrclib, so it is skipped here. The
+	# continuous integration runs the full suite.
+	cargo test --manifest-path core_rs/Cargo.toml -- --skip lrclib
+
+override_dh_auto_clean:
+	rm -rf build debian/cargo-home

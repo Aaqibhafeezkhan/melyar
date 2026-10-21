@@ -18,6 +18,14 @@ third_party/
 # Logs
 *.log
 
+# Debian packaging
+debian/cargo-home
+debian/.debhelper
+debian/files
+debian/melyar.debhelper.log
+debian/melyar.substvars
+debian/*.debhelper.log
+
 # Node / web UI
 ui_web/node_modules/
 

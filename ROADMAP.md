@@ -157,7 +157,8 @@ understand the whole system.
 - [ ] Add a `QML` linting step to CI
 
 **Build and packaging**
-- [ ] Add a `deb` packaging recipe alongside the existing `PKGBUILD`
+- [x] Add a `deb` packaging recipe alongside the existing `PKGBUILD` - the
+      package is built and installed by the continuous integration
 - [ ] Publish a `flake.nix` for Nix users
 - [ ] Cache the Cargo registry in CI to cut build time
 

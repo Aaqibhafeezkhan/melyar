@@ -87,3 +87,38 @@ jobs:
 
       - name: Build
         run: cmake --build build -j$(nproc)
+
+  debian-package:
+    name: Debian package
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            dpkg-dev debhelper fakeroot \
+            cmake pkg-config \
+            qt6-base-dev qt6-declarative-dev qt6-webengine-dev qt6-webchannel-dev \
+            libmpv-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: . -> target
+
+      - name: Build the package
+        run: dpkg-buildpackage -us -uc -b
+
+      - name: Show the package
+        run: |
+          ls -la ../melyar_*.deb
+          dpkg-deb --info ../melyar_*.deb
+          dpkg-deb --contents ../melyar_*.deb | head -20
+
+      - name: Check the package installs
+        run: |
+          sudo dpkg -i ../melyar_*.deb
+          melyar --version || true

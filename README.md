@@ -309,6 +309,19 @@ A `PKGBUILD` is included in the repository:
 makepkg -si
 ```
 
+### Debian / Ubuntu
+
+A `debian/` recipe is included, so the package can be built with the usual
+tools:
+
+```bash
+dpkg-buildpackage -us -uc -b
+sudo dpkg -i ../melyar_*.deb
+```
+
+The continuous integration builds the package on every push, so the recipe is
+checked against a real Debian system.
+
 ---
 
 ## Waybar / status bar integration

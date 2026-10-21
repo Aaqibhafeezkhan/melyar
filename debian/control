@@ -1,0 +1,41 @@
+Source: melyar
+Section: sound
+Priority: optional
+Maintainer: MAKHMUDJON MURODOV <mahmudjonmurodov@mail.ru>
+Build-Depends: debhelper-compat (= 13),
+               cmake (>= 3.25),
+               pkg-config,
+               qt6-base-dev (>= 6.2),
+               qt6-declarative-dev,
+               qt6-webengine-dev,
+               qt6-webchannel-dev,
+               libmpv-dev,
+               rustc,
+               cargo
+Standards-Version: 4.6.2
+Homepage: https://github.com/MAKHMUDuz/melyar
+Rules-Requires-Root: no
+
+Package: melyar
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         qt6-base,
+         qt6-declarative,
+         qt6-webengine,
+         qt6-webchannel,
+         mpv,
+         yt-dlp
+Description: native YouTube Music desktop client
+ Melyar is a lightweight YouTube Music client for Linux. A Rust core handles
+ the InnerTube API, the stream cipher, mpv playback, the local library and the
+ Linux desktop integration, a Qt 6 shell hosts it, and a React interface draws
+ it.
+ .
+ It speaks to YouTube Music directly, so it needs no account of its own and no
+ cloud service. Playback runs through libmpv, the library is kept in a local
+ SQLite database, and the interface speaks twelve languages.
+ .
+ The client integrates with the desktop rather than sitting on top of it:
+ MPRIS for media keys, a Unix socket for Waybar and Polybar, global shortcuts
+ and a desktop entry.
