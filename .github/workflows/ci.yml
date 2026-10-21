@@ -64,6 +64,49 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Check the committed bundle is up to date
+        # The bundle is committed so that a plain cmake build produces a
+        # runnable binary. A contributor who rebuilds it from a checkout that
+        # is not up to date would commit a bundle that does not match the
+        # sources, so the build is repeated here and the result compared.
+        run: |
+          if ! git diff --quiet -- ui_web/dist; then
+            echo "::error::ui_web/dist does not match the sources."
+            echo "Run 'cd ui_web && pnpm build' and commit the result."
+            git diff --stat -- ui_web/dist
+            exit 1
+          fi
+
+      - name: Check every locale has the same keys
+        # A missing key shows the key itself in the interface, so the files
+        # have to stay in step with en.ts.
+        run: |
+          cd ui_web
+          node -e '
+            const fs = require("fs");
+            const path = require("path");
+            const dir = path.join(process.cwd(), "src", "locales");
+            const keysOf = (file) => {
+              const text = fs.readFileSync(file, "utf8");
+              return new Set([...text.matchAll(/"([a-zA-Z.]+)":/g)].map((m) => m[1]));
+            };
+            const reference = keysOf(path.join(dir, "en.ts"));
+            let failed = false;
+            for (const file of fs.readdirSync(dir).filter((f) => f.endsWith(".ts"))) {
+              const keys = keysOf(path.join(dir, file));
+              const missing = [...reference].filter((k) => !keys.has(k));
+              const extra = [...keys].filter((k) => !reference.has(k));
+              if (missing.length || extra.length) {
+                failed = true;
+                console.log(`::error::${file} is out of step with en.ts`);
+                if (missing.length) console.log(`  missing: ${missing.join(", ")}`);
+                if (extra.length) console.log(`  extra: ${extra.join(", ")}`);
+              }
+            }
+            if (failed) process.exit(1);
+            console.log("every locale matches en.ts");
+          '
+
   desktop-app:
     name: Desktop app (Qt6)
     runs-on: ubuntu-24.04
