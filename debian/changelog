@@ -1,6 +1,7 @@
-melyar (0.1.0-1) unstable; urgency=medium
+melyar (0.2.0-1) unstable; urgency=medium
 
-  * Initial release.
+  * Second release: settings that persist, thirteen languages, library import
+    from another service and a Debian package.
   * Native YouTube Music client for Linux, built on a Rust core with a Qt 6
     shell and a React interface.
 

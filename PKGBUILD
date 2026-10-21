@@ -1,6 +1,6 @@
 # Maintainer: mahmud <mahmudjonmurodov@mail.ru>
 pkgname=melyar
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc="Ultra-lightweight native YouTube Music desktop client in C++20 and Rust"
 arch=('x86_64')
