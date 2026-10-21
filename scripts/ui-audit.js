@@ -95,13 +95,52 @@
   // what is behind a panel, so this has to be checked rather than assumed.
   //
   // The colours have to be read carefully. Tailwind writes its tints in
-  // oklab() and color-mix(), so a plain regex over the computed value finds
-  // nothing and the measurement ends up against the wrong background. A
-  // canvas normalises any colour the engine understands.
+  // oklab() and color-mix(), so a plain regex over rgb() finds nothing and
+  // the measurement ends up against the wrong background. The engine does
+  // not always normalise either: this QtWebEngine hands oklab() back
+  // untouched, so it is read here.
   const colourContext = document.createElement("canvas").getContext("2d");
+
+  /** Convert a colour in oklab to sRGB, per the CSS colour specification. */
+  function oklabToSrgb(L, a, b, alpha) {
+    const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+    const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+    const s_ = L - 0.0894841775 * a - 1.291485548 * b;
+    const l = l_ * l_ * l_;
+    const m = m_ * m_ * m_;
+    const s = s_ * s_ * s_;
+    const enc = (v) => {
+      const c = Math.max(0, Math.min(1, v));
+      return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+    };
+    return {
+      r: enc(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s) * 255,
+      g: enc(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s) * 255,
+      b: enc(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s) * 255,
+      a: alpha,
+    };
+  }
 
   function parseColor(value) {
     if (!value) return null;
+
+    // oklab, which is what Tailwind writes its tints in.
+    const oklab = /oklab\(\s*(-?[\d.eE+-]+)[,\s]+(-?[\d.eE+-]+)[,\s]+(-?[\d.eE+-]+)\s*(?:\/\s*([\d.]+)(%?)\s*)?\)/i.exec(
+      value,
+    );
+    if (oklab) {
+      let alpha = 1;
+      if (oklab[4] !== undefined) {
+        alpha = parseFloat(oklab[4]);
+        if (oklab[5] === "%") alpha /= 100;
+      }
+      return oklabToSrgb(
+        parseFloat(oklab[1]),
+        parseFloat(oklab[2]),
+        parseFloat(oklab[3]),
+        alpha,
+      );
+    }
 
     // The common case, and the one that needs the alpha.
     const m = /rgba?\(([^)]+)\)/.exec(value);

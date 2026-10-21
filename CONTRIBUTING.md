@@ -151,10 +151,13 @@ awkward data through the interface, a title long enough to break any layout
 and a track with no artwork, because those are what a real library contains.
 
 The contrast is measured against the colour that is really behind the text,
-compositing every layer. Tailwind writes its tints in oklab() and color-mix(),
-so the measurement goes through a canvas, which the engine normalises. An
-earlier version of the check read the wrong background and reported a false
-problem; it is verified in both directions now.
+compositing every layer. Tailwind writes its tints in oklab(), so oklab is
+read here and converted to sRGB. A canvas was tried first, because the engine
+is meant to normalise any colour it understands, but this QtWebEngine hands
+oklab() back untouched. Two earlier versions of the check read the wrong
+background, one reporting a problem that was not there and one missing a
+problem that was, so it is verified in both directions now: it passes on a
+clean interface and it catches a deliberately unreadable one.
 
 Run it yourself:
 
