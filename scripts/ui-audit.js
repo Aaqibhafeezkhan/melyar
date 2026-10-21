@@ -90,6 +90,93 @@
     }
   }
 
+  // The contrast of the text against what is behind it. A light surface with
+  // light text is invisible, and the browser engine does not always blur
+  // what is behind a panel, so this has to be checked rather than assumed.
+  function parseColor(value) {
+    const m = /rgba?\(([^)]+)\)/.exec(value || "");
+    if (!m) return null;
+    const parts = m[1].split(",").map((p) => parseFloat(p.trim()));
+    if (parts.length < 3 || parts.some((p) => Number.isNaN(p))) return null;
+    return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
+  }
+
+  function blend(top, bottom) {
+    const a = top.a;
+    return {
+      r: top.r * a + bottom.r * (1 - a),
+      g: top.g * a + bottom.g * (1 - a),
+      b: top.b * a + bottom.b * (1 - a),
+      a: 1,
+    };
+  }
+
+  function luminance(c) {
+    const f = (v) => {
+      const s = v / 255;
+      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b);
+  }
+
+  function contrast(a, b) {
+    const la = luminance(a);
+    const lb = luminance(b);
+    const lighter = Math.max(la, lb);
+    const darker = Math.min(la, lb);
+    return (lighter + 0.05) / (darker + 0.05);
+  }
+
+  function effectiveBackground(el) {
+    let node = el;
+    while (node && node !== document.documentElement) {
+      const bg = parseColor(getComputedStyle(node).backgroundColor);
+      if (bg && bg.a > 0.9) return bg;
+      node = node.parentElement;
+    }
+    return { r: 255, g: 255, b: 255, a: 1 };
+  }
+
+  function checkContrast(tag) {
+    const texts = Array.prototype.slice
+      .call(document.querySelectorAll("*"))
+      .filter((el) => {
+        if (el.children.length > 0) return false;
+        if (!(el.textContent || "").trim()) return false;
+        if (el.getAttribute("aria-hidden") === "true") return false;
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      });
+
+    const bad = [];
+    texts.forEach((el) => {
+      const style = getComputedStyle(el);
+      if (style.visibility === "hidden" || style.opacity === "0") return;
+      const fg = parseColor(style.color);
+      if (!fg || fg.a === 0) return;
+      const bg = effectiveBackground(el);
+      const ratio = contrast(fg.a < 1 ? blend(fg, bg) : fg, bg);
+      if (ratio < 2.4) {
+        bad.push(
+          (el.textContent || "").trim().slice(0, 24) +
+            " (ratio " +
+            ratio.toFixed(1) +
+            ", class " +
+            String(el.className).slice(0, 40) +
+            ")",
+        );
+      }
+    });
+
+    if (bad.length) {
+      const unique = Array.from(new Set(bad));
+      note(
+        "low-contrast",
+        tag + ": " + unique.length + " pieces of text are hard to read, first: " + unique[0],
+      );
+    }
+  }
+
   const steps = [];
 
   function view(name, needsHeading) {
@@ -224,13 +311,24 @@
   let index = 0;
   function next() {
     if (index >= steps.length) {
-      setTimeout(function () {
-        const unique = Array.from(new Set(problems));
-        console.log("DENETIM_SONUCU problems=" + unique.length);
-        unique.forEach((p) => console.log("  SORUN: " + p));
-        if (unique.length === 0) console.log("  SORUN YOK");
-        window.bridge.quit();
-      }, 3000);
+      // The light theme is checked as well, because the surfaces that float
+      // over the page were drawn for the dark one.
+      if (window.__setTheme) {
+        window.__setTheme("light");
+        setTimeout(function () {
+          try {
+            checkOverflow("light-theme");
+            checkText("light-theme");
+            checkAccessibleNames("light-theme");
+            checkContrast("light-theme");
+          } catch (e) {
+            note("check", "light-theme: " + String(e).slice(0, 110));
+          }
+          finish();
+        }, 900);
+      } else {
+        finish();
+      }
       return;
     }
     const step = steps[index++];
@@ -244,12 +342,23 @@
         checkOverflow(step[0]);
         checkText(step[0]);
         checkAccessibleNames(step[0]);
+        checkContrast(step[0]);
         if (step[2]) step[2]();
       } catch (e) {
         note("check", step[0] + ": " + String(e).slice(0, 110));
       }
       next();
     }, 900);
+  }
+
+  function finish() {
+    setTimeout(function () {
+      const unique = Array.from(new Set(problems));
+      console.log("DENETIM_SONUCU problems=" + unique.length);
+      unique.forEach((p) => console.log("  SORUN: " + p));
+      if (unique.length === 0) console.log("  SORUN YOK");
+      window.bridge.quit();
+    }, 1200);
   }
 
   setTimeout(next, 1200);

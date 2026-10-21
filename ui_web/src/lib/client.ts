@@ -258,6 +258,8 @@ export function initBridge() {
       w.__testSetSetting = (k: string, v: string) =>
         useSettings.getState().set(k as never, v as never);
       w.__testSettings = () => useSettings.getState().settings;
+      w.__setTheme = (theme: string) =>
+        useSettings.getState().set("theme", theme as never);
 
       // Navigation and overlay hooks, so the interface can be driven from
       // outside for the automated checks.

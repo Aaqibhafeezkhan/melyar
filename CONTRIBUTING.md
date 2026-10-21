@@ -144,10 +144,11 @@ melyar://settings
 The interface has a check that runs on every push. It drives the application
 through every view and every overlay and reports what is wrong: a console
 error, an element reaching outside the window, a translation key that was
-never replaced, an interactive element without an accessible name, a view that
-renders nothing. It also pushes deliberately awkward data through the
-interface, a title long enough to break any layout and a track with no
-artwork, because those are what a real library contains.
+never replaced, an interactive element without an accessible name, text that
+is hard to read against what is behind it, a view that renders nothing. It
+checks the light theme as well as the dark one, and it pushes deliberately
+awkward data through the interface, a title long enough to break any layout
+and a track with no artwork, because those are what a real library contains.
 
 Run it yourself:
 

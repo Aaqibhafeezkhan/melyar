@@ -68,12 +68,12 @@ export function QueuePanel() {
     >
       <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-glass-border shrink-0">
         <div className="flex items-center gap-3">
-          <div className="size-8 rounded-lg bg-white/10 flex items-center justify-center">
+          <div className="size-8 rounded-lg bg-panel flex items-center justify-center">
             <ListMusic className="size-5 text-accent" />
           </div>
           <div>
-            <h2 className="text-[15px] font-bold tracking-tight text-white">{t("queue.title")}</h2>
-            <p className="text-[11px] text-white/50">{tCount("queue.count", queue.length)}</p>
+            <h2 className="text-[15px] font-bold tracking-tight text-text">{t("queue.title")}</h2>
+            <p className="text-[11px] text-text-tertiary">{tCount("queue.count", queue.length)}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -87,7 +87,7 @@ export function QueuePanel() {
             </button>
           ) : null}
           <button
-            className="btn-glass icon-btn text-white/80 hover:bg-white/10 hover:text-white"
+            className="btn-glass icon-btn text-text hover:bg-panel hover:text-text"
             aria-label={t("queue.close")}
             onClick={(e) => { e.stopPropagation(); setOpen(false); }}
           >
@@ -99,8 +99,8 @@ export function QueuePanel() {
       <div className="scroll-thin flex-1 min-h-0 overflow-y-auto pr-2 pb-4">
         {queue.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <ListMusic className="size-12 text-white/10 mb-3" />
-            <p className="text-sm text-white/50">{t("queue.empty")}</p>
+            <ListMusic className="size-12 text-text/10 mb-3" />
+            <p className="text-sm text-text-tertiary">{t("queue.empty")}</p>
           </div>
         ) : (
           queue.map((track, i) => {
@@ -119,7 +119,7 @@ export function QueuePanel() {
                   <div className="relative flex-shrink-0">
                     <Artwork src={track.thumbnail} className="size-12 rounded-lg" />
                     {active && (
-                      <div className="absolute inset-0 rounded-lg flex items-center justify-center text-white/90">
+                      <div className="absolute inset-0 rounded-lg flex items-center justify-center text-text">
                         <ListMusic className="size-5" />
                       </div>
                     )}
@@ -131,15 +131,15 @@ export function QueuePanel() {
                     <span className={cn("block truncate text-[14px] font-medium", active && "text-accent")}>
                       {track.title}
                     </span>
-                    <span className="block truncate text-[12px] text-white/60">{track.artist}</span>
+                    <span className="block truncate text-[12px] text-text-secondary">{track.artist}</span>
                   </div>
-                  <span className="text-[11px] tabular-nums text-white/40 whitespace-nowrap">
+                  <span className="text-[11px] tabular-nums text-text-tertiary whitespace-nowrap">
                     {formatTime(track.duration)}
                   </span>
                 </button>
                 <button
                   data-menu-btn="true"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 icon-btn text-white/50 hover:text-white"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 icon-btn text-text-tertiary hover:text-text"
                   aria-label={t("track.options")}
                   onClick={(e) => handleMenuClick(track, (e.currentTarget as HTMLElement).getBoundingClientRect(), e)}
                 >

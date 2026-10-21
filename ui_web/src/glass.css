@@ -1005,10 +1005,11 @@
   padding: 0.5625rem 1.25rem;
   font-size: var(--text-sm);
   font-weight: 500;
-  background: var(--glass-bg-strong);
+  background: color-mix(in srgb, var(--bg-content) 94%, transparent);
   backdrop-filter: var(--blur-xl) var(--sat-strong);
   -webkit-backdrop-filter: var(--blur-xl) var(--sat-strong);
   border: 1px solid var(--glass-border-strong);
+  color: var(--text);
   box-shadow:
     0 12px 32px var(--glass-shadow-xl),
     0 20px 50px var(--glass-shadow-xl);
@@ -1032,7 +1033,10 @@
   min-height: 0;
   border-radius: 0;
   border-left: 1px solid var(--glass-border-strong);
-  background: var(--glass-bg-strong);
+  /* The panel sits next to the content, so it needs a background of its
+     own. The browser engine does not always apply a backdrop filter, and
+     without this the text underneath shows through. */
+  background: color-mix(in srgb, var(--bg-content) 94%, transparent);
   backdrop-filter: var(--blur-3xl) var(--sat-intense);
   -webkit-backdrop-filter: var(--blur-3xl) var(--sat-intense);
   box-shadow:
@@ -1096,9 +1100,9 @@
 .expanded-player-veil {
   position: absolute; inset: 0;
   background: linear-gradient(180deg,
-    rgba(0,0,0,0.55) 0%,
-    rgba(0,0,0,0.75) 50%,
-    rgba(0,0,0,0.92) 100%);
+    rgba(0,0,0,0.72) 0%,
+    rgba(0,0,0,0.86) 50%,
+    rgba(0,0,0,0.95) 100%);
   z-index: -1;
 }
 
@@ -1106,7 +1110,12 @@
   width: 100%; max-width: 900px;
   max-height: 90vh;
   border-radius: var(--radius-2xl);
-  background: var(--glass-bg-strong);
+  /* The full screen player is a theatre, and it keeps its own dark
+     surface in every theme, the way the other players do. The browser
+     engine does not always apply a backdrop filter, so the panel needs a
+     background of its own: without it the page behind shows through and
+     the player becomes unreadable. */
+  background: rgba(16, 16, 20, 0.94);
   backdrop-filter: var(--blur-3xl) var(--sat-max);
   -webkit-backdrop-filter: var(--blur-3xl) var(--sat-max);
   border: 1px solid var(--glass-border-strong);
@@ -1279,6 +1288,16 @@
   transition:
     background var(--duration-fast) var(--ease-out),
     border-color var(--duration-fast) var(--ease-out);
+}
+
+/* The queue reuses the row, but it has three cells where the table has
+   six. Without this the row keeps the table's grid, and the columns the
+   queue does not use are still reserved, which leaves the title with a
+   few pixels. */
+.queue-panel .track-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
 }
 .track-row:hover {
   background: var(--bg-hover);
@@ -1483,10 +1502,11 @@
   padding: 0.375rem 0.75rem;
   font-size: var(--text-xs); font-weight: 500;
   white-space: nowrap;
-  background: var(--glass-bg-strong);
+  background: color-mix(in srgb, var(--bg-content) 94%, transparent);
   backdrop-filter: var(--blur-xl) var(--sat-strong);
   -webkit-backdrop-filter: var(--blur-xl) var(--sat-strong);
   border: 1px solid var(--glass-border-strong);
+  color: var(--text);
   border-radius: var(--radius-sm);
   color: var(--text);
   box-shadow: 0 8px 24px var(--glass-shadow-xl);
