@@ -150,11 +150,36 @@ export function applySettingsToDocument(settings: Settings) {
   root.dataset.animations = settings.animationsEnabled ? "true" : "false";
 
   // The accent colour drives a handful of custom properties.
+  //
+  // The alpha steps are computed here rather than with color-mix() in the
+  // stylesheet. color-mix() only exists from Chromium 111, and Qt WebEngine
+  // on Qt 6.4 — which is what Ubuntu 24.04 ships — is older than that. When
+  // the declaration is dropped there, what remains is Tailwind's fallback for
+  // a runtime variable, which is the solid colour: a twenty percent tint
+  // becomes a solid block. Computing the steps here gives every engine the
+  // same value.
   const accent = settings.accentColor;
   root.style.setProperty("--accent", accent);
   root.style.setProperty("--accent-soft", hexToRgba(accent, 0.16));
   root.style.setProperty("--on-accent", readableTextColor(accent));
+  for (const step of ACCENT_STEPS) {
+    root.style.setProperty(`--accent-${step}`, hexToRgba(accent, step / 100));
+  }
+  // The colour used when the accent is used as text. A pale accent is
+  // unreadable on a light surface, so it is darkened there; the dark theme
+  // keeps it as it is.
+  root.style.setProperty(
+    "--accent-text",
+    settings.theme === "light" ? darkenHex(accent, 0.34) : accent,
+  );
+  // The gradient behind artwork that has none. It mixes the accent with the
+  // two darks it sits on, so it follows the accent like everything else.
+  root.style.setProperty("--cover-start", mixHex(accent, "#2a2a2e", 0.45));
+  root.style.setProperty("--cover-end", mixHex(accent, "#151518", 0.15));
 }
+
+/** The alpha steps of the accent that the interface asks for by name. */
+const ACCENT_STEPS = [10, 15, 20, 25, 30, 35, 40, 45, 50];
 
 function hexToRgba(hex: string, alpha: number): string {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
@@ -163,6 +188,37 @@ function hexToRgba(hex: string, alpha: number): string {
   const g = parseInt(m[2], 16);
   const b = parseInt(m[3], 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/** Mix a colour towards black, for text that has to stay readable. */
+function darkenHex(hex: string, amount: number): string {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const channel = (value: string) => Math.round(parseInt(value, 16) * (1 - amount));
+  return `#${[m[1], m[2], m[3]]
+    .map((v) => channel(v).toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+/**
+ * Mix two opaque colours in sRGB. color-mix() would do this in oklab, which
+ * differs slightly, but the difference is not visible in a gradient and this
+ * runs on engines that do not have color-mix() at all.
+ */
+function mixHex(first: string, second: string, firstShare: number): string {
+  const channels = (hex: string) => {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
+    return m ? m.slice(1, 4).map((v) => parseInt(v, 16)) : [42, 42, 46];
+  };
+  const a = channels(first);
+  const b = channels(second);
+  return `#${a
+    .map((v, i) =>
+      Math.round(v * firstShare + b[i] * (1 - firstShare))
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")}`;
 }
 
 function readableTextColor(hex: string): string {

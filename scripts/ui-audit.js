@@ -229,14 +229,21 @@
     const layers = [];
     const labels = [];
     let node = el;
+    let raw = "";
     while (node) {
-      const bg = parseColor(getComputedStyle(node).backgroundColor);
+      const declared = getComputedStyle(node).backgroundColor;
+      if (!raw) raw = declared;
+      const bg = parseColor(declared);
       if (bg && bg.a > 0) {
         layers.push(bg);
         labels.push(
           String(node.className || node.tagName).slice(0, 26) + " @" + bg.a.toFixed(2),
         );
         if (bg.a >= 0.99) break;
+      } else if (declared && declared !== "rgba(0, 0, 0, 0)" && declared !== "transparent") {
+        // A colour that could not be read is not silently passed over: it
+        // changes what is behind the text, so it is named instead.
+        labels.push("unread " + declared.slice(0, 46));
       }
       node = node.parentElement;
     }
@@ -245,6 +252,7 @@
       result = blend(layers[i], result);
     }
     result.over = labels.join(" over ") || "the page default";
+    result.raw = raw;
     return result;
   }
 
@@ -278,6 +286,8 @@
             [bg.r, bg.g, bg.b].map((v) => Math.round(v)).join(", ") +
             ") from " +
             bg.over +
+            ", declared " +
+            bg.raw +
             ", class " +
             String(el.className).slice(0, 40) +
             ")",
@@ -431,6 +441,7 @@
       // The light theme is checked as well, because the surfaces that float
       // over the page were drawn for the dark one.
       if (window.__setTheme) {
+        console.log("  acik tema denetimi basliyor");
         window.__setTheme("light");
         setTimeout(function () {
           try {
