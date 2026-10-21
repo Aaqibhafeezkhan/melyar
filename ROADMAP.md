@@ -5,6 +5,9 @@ version of where it is, where it is going, and what you can pick up.
 
 For the current feature set, see the [README](README.md).
 For the system design, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+For the measurements against the other clients and the detailed work
+breakdown, see [docs/COMPETITIVE.md](docs/COMPETITIVE.md) and
+[docs/IMPLEMENTATION-PLAN.md](docs/IMPLEMENTATION-PLAN.md).
 
 ---
 
