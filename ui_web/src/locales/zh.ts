@@ -158,6 +158,8 @@ export const zh: Record<string, string> = {
   "settings.showNotifications": "通知",
   "settings.showAlbumArt": "专辑封面",
   "settings.equalizer": "均衡器",
+  "settings.equalizer.description": "十个频段，从 31 Hz 到 16 kHz。",
+  "settings.equalizer.bands": "频段",
   "settings.cacheSize": "缓存大小",
   "settings.cacheSize.description": "流媒体缓存可以使用的磁盘空间。",
   "settings.language": "语言",

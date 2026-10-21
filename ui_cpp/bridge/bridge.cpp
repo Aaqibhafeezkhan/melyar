@@ -459,6 +459,15 @@ void MelyarBridge::setImportProgress(const QVariantMap &progress) {
     emit importProgressChanged();
 }
 
+void MelyarBridge::setEqualizerBands(const QVariantList &bands) {
+    rust::Vec<double> gains;
+    gains.reserve(static_cast<std::size_t>(bands.size()));
+    for (const QVariant &band : bands) {
+        gains.push_back(band.toDouble());
+    }
+    melyar::set_equalizer_bands(std::move(gains));
+}
+
 void MelyarBridge::handleProgressUpdate(double current, double total) {
     m_currentPosition = current;
     if (total > 0.0) {

@@ -158,6 +158,8 @@ export const es: Record<string, string> = {
   "settings.showNotifications": "Notificaciones",
   "settings.showAlbumArt": "Carátula del álbum",
   "settings.equalizer": "Ecualizador",
+  "settings.equalizer.description": "Diez bandas, de 31 Hz a 16 kHz.",
+  "settings.equalizer.bands": "Bandas",
   "settings.cacheSize": "Tamaño de la caché",
   "settings.cacheSize.description": "Cuánto disco puede usar la caché de transmisión.",
   "settings.language": "Idioma",

@@ -182,6 +182,8 @@ export const tr: Record<string, string> = {
   "settings.showNotifications": "Bildirimler",
   "settings.showAlbumArt": "Albüm kapağı",
   "settings.equalizer": "Ekolayzer",
+  "settings.equalizer.description": "31 Hz'den 16 kHz'e kadar on bant.",
+  "settings.equalizer.bands": "Bantlar",
   "settings.cacheSize": "Önbellek boyutu",
   "settings.cacheSize.description": "Yayın önbelleğinin kullanabileceği disk alanı.",
   "settings.language": "Dil",

@@ -158,6 +158,8 @@ export const ko: Record<string, string> = {
   "settings.showNotifications": "알림",
   "settings.showAlbumArt": "앨범 아트",
   "settings.equalizer": "이퀄라이저",
+  "settings.equalizer.description": "31 Hz에서 16 kHz까지 10개 대역.",
+  "settings.equalizer.bands": "대역",
   "settings.cacheSize": "캐시 크기",
   "settings.cacheSize.description": "스트리밍 캐시가 사용할 수 있는 디스크 공간입니다.",
   "settings.language": "언어",

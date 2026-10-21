@@ -112,6 +112,7 @@ pub mod ffi {
         fn delete_setting(key: String) -> bool;
         fn import_library(path: String) -> bool;
         fn cancel_import() -> bool;
+        fn set_equalizer_bands(bands: Vec<f64>) -> bool;
     }
 }
 
@@ -744,4 +745,23 @@ pub fn import_library(path: String) -> bool {
 pub fn cancel_import() -> bool {
     IMPORT_CANCELLED.store(true, Ordering::Relaxed);
     true
+}
+
+/// Set the gains of the graphic equaliser, in decibels. An empty list turns
+/// the equaliser off.
+pub fn set_equalizer_bands(bands: Vec<f64>) -> bool {
+    let core = get_core();
+    let audio = core.audio.lock().clone();
+    match audio {
+        Some(engine) => match engine.set_equalizer_bands(&bands) {
+            Ok(()) => true,
+            Err(e) => {
+                // The error would otherwise be swallowed, and a filter that
+                // mpv refused would look like it had been applied.
+                eprintln!("Could not set the equaliser: {e}");
+                false
+            }
+        },
+        None => false,
+    }
 }

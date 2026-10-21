@@ -46,9 +46,14 @@ draws no video. Disabling it rather than only the compositing saved 59 MB,
 
 ### 0.2 Split the locale tables out of the main bundle
 
-Thirteen locales are compiled into the interface bundle. The tables are 136
-KB of source and they all load at start, even though a user only ever reads
-one of them.
+Thirteen locales are compiled into the interface bundle, which is 136 KB of
+the 429 KB of JavaScript. A user only ever reads one of them.
+
+**Worth doing, but not for the reason it first appears.** The bundle is read
+from the local disk, so a hundred kilobytes costs nothing at startup. The
+gain is a smaller repository and a faster build, and it only becomes a real
+saving once the project has thirty languages, where the tables would be
+around 300 KB.
 
 **What to do**
 
@@ -65,7 +70,8 @@ one of them.
 - Switching to a language that has not been loaded yet still works and does
   not flash the key names.
 
-**Effort:** 1 day. **Payoff:** about 100 KB of bundle, a faster start.
+**Effort:** 1 day. **Payoff:** a smaller repository rather than a faster
+start.
 
 ### 0.3 Do not start the browser engine before it is needed
 
@@ -317,34 +323,38 @@ the Rust core.
 
 ---
 
-## Phase 2 - The equaliser
+## Phase 2 - The equaliser - DONE
 
-The most requested feature in the whole space, and the one we can close
+The most requested feature in the whole space, and the one we could close
 cheapest.
 
-**Why it is cheap**
+**Why it was cheap**
 
-- The setting exists: `equalizerEnabled` in the settings table.
-- The interface exists: `EqualizerBand.qml`, a slider from -12 to +12 dB.
+- The setting existed: `equalizerEnabled` in the settings table.
+- The interface existed: `EqualizerBand.qml`, a slider from -12 to +12 dB.
 - mpv has the filters: `af` with `lavfi=[equalizer=...]`.
 - The engine already talks to mpv through `mpv_command_string`, so no new
-  plumbing is needed.
+  plumbing was needed.
 
-**What to do**
+**What was done**
 
-1. In the Rust engine, add `set_equalizer_bands(bands: Vec<f32>)` that builds
-   the `af` chain, for example
-   `af add @melyar_eq:lavfi=[equalizer=f=60:t=q:w=1:g=3]`, one per band.
-2. Expose it through the bridge as `setEqualizerBands(QVariantList)`.
-3. Wire the sliders in the settings view to it, and to the setting.
-4. Decide the band set. mpv has no ready made equaliser preset, so build one
-   from ffmpeg's `equalizer` filter. The conventional ten band octave centres
-   are 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000 and 16000 Hz.
+1. `set_equalizer_bands` in the Rust engine builds the whole chain as one
+   lavfi filter and hands it to mpv in a single command, so the equaliser is
+   replaced in one go rather than one command per band. The band centres are
+   the usual octave centres, 31 Hz to 16 kHz.
+2. The bridge exposes it as `setEqualizerBands`, and the interface stores the
+   gains in the settings as a JSON array.
+3. The settings panel shows one slider per band and applies the change as it
+   is made.
+4. The command the core builds is covered by a test that runs against a real
+   mpv: the chain has to be accepted, and a filter that does not exist has to
+   be reported. The second half matters, because it is what proves the first
+   half is not vacuous.
 
 **Acceptance criteria**
 
-- Moving a band changes the sound.
-- The setting survives a restart, and the bands are restored with it.
+- Moving a band changes the sound. MET
+- The setting survives a restart, and the bands are restored with it. MET
 
 **Effort:** 2 days. **Risk:** low.
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { Settings as SettingsIcon, X, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { t, useLocale, LOCALES } from "@/lib/i18n";
-import { useSettings, type Settings } from "@/lib/settings";
+import { useSettings, EQUALIZER_BAND_FREQUENCIES, type Settings } from "@/lib/settings";
 import { GlassToggle, GlassSegmented, GlassSlider } from "@/components/GlassComponents";
 
 const ACCENT_PRESETS = ["#fa233b", "#1db954", "#ff8a00", "#7c5cff", "#00a6c8", "#e0218a"];
@@ -272,13 +272,44 @@ export function SettingsPanel() {
                 aria-label={t("settings.showAlbumArt")}
               />
             </Row>
-            <Row label={t("settings.equalizer")}>
+            <Row label={t("settings.equalizer")} description={t("settings.equalizer.description")}>
               <GlassToggle
                 checked={settings.equalizerEnabled}
                 onChange={setBool("equalizerEnabled")}
                 aria-label={t("settings.equalizer")}
               />
             </Row>
+            {settings.equalizerEnabled ? (
+              <div className="py-2.5">
+                <div className="text-[11.5px] text-text-tertiary mb-2">
+                  {t("settings.equalizer.bands")}
+                </div>
+                <div className="flex items-end justify-between gap-1">
+                  {EQUALIZER_BAND_FREQUENCIES.map((frequency, index) => (
+                    <div key={frequency} className="flex flex-col items-center gap-1 w-8">
+                      <input
+                        type="range"
+                        min={-12}
+                        max={12}
+                        step={1}
+                        value={settings.equalizerBands[index] ?? 0}
+                        onChange={(e) => {
+                          const bands = [...settings.equalizerBands];
+                          bands[index] = Number(e.target.value);
+                          set("equalizerBands", bands);
+                        }}
+                        className="w-full accent-[var(--accent)]"
+                        aria-label={`${frequency} Hz`}
+                        title={`${frequency} Hz`}
+                      />
+                      <span className="text-[9px] text-text-tertiary tabular-nums">
+                        {frequency >= 1000 ? `${frequency / 1000}k` : frequency}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </Section>
 
           <Section title={t("settings.section.advanced")}>

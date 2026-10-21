@@ -125,6 +125,7 @@ public:
     Q_INVOKABLE void setPickedFile(const QString &fileUrl);
     Q_INVOKABLE void importLibrary(const QString &path);
     Q_INVOKABLE void cancelImport();
+    Q_INVOKABLE void setEqualizerBands(const QVariantList &bands);
 
 signals:
     void currentTrackChanged();

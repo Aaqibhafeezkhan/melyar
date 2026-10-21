@@ -81,6 +81,8 @@ client to switch to".
       core's SQLite database: theme, accent colour, language, compact mode,
       animations, crossfade, gapless, streaming quality and the playback
       preferences
+- [x] **A ten band graphic equaliser** - 31 Hz to 16 kHz, built on mpv's
+      filter chain, with the bands stored in the settings
 - [ ] **Right-to-left languages** - the layout uses physical margins in a few
       places, so Arabic and Hebrew need the spacing converted to logical
       properties first

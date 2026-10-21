@@ -158,6 +158,8 @@ export const uk: Record<string, string> = {
   "settings.showNotifications": "Сповіщення",
   "settings.showAlbumArt": "Обкладинка альбому",
   "settings.equalizer": "Еквалайзер",
+  "settings.equalizer.description": "Десять смуг, від 31 Гц до 16 кГц.",
+  "settings.equalizer.bands": "Смуги",
   "settings.cacheSize": "Розмір кешу",
   "settings.cacheSize.description": "Скільки місця на диску може займати кеш потоку.",
   "settings.language": "Мова",

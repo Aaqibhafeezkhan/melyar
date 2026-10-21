@@ -176,6 +176,8 @@ export const sq: Record<string, string> = {
   "settings.showNotifications": "Njoftimet",
   "settings.showAlbumArt": "Kopertina e albumit",
   "settings.equalizer": "Ekualizuesi",
+  "settings.equalizer.description": "Dhjetë breza, nga 31 Hz deri në 16 kHz.",
+  "settings.equalizer.bands": "Brezat",
   "settings.cacheSize": "Madhësia e cache-it",
   "settings.cacheSize.description": "Sa hapësirë në disk mund të përdorë cache-i i transmetimit.",
   "settings.language": "Gjuha",

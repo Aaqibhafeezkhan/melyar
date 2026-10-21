@@ -5,6 +5,14 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
 
+/// The band centres of a ten band graphic equaliser, in hertz.
+///
+/// These are the usual octave centres, so the bands line up with what a
+/// hardware equaliser would show.
+pub const EQUALIZER_BANDS: [f64; 10] = [
+    31.0, 62.0, 125.0, 250.0, 500.0, 1000.0, 2000.0, 4000.0, 8000.0, 16000.0,
+];
+
 /// MPV Handle Wrapper with proper cleanup
 pub struct MpvHandleWrapper {
     raw: *mut mpv_sys::mpv_handle,
@@ -32,6 +40,27 @@ pub trait AudioEventHandler: Send + Sync + 'static {
 }
 
 /// MPV Audio Engine - Low-level MPV wrapper
+/// Build the mpv command that sets the equaliser chain.
+///
+/// Returns `None` when there is nothing to set, which is how the equaliser is
+/// turned off.
+pub fn build_equalizer_command(gains: &[f64]) -> Option<String> {
+    if gains.is_empty() {
+        return None;
+    }
+
+    let mut filters = Vec::with_capacity(gains.len());
+    for (index, gain) in gains.iter().enumerate() {
+        let frequency = EQUALIZER_BANDS.get(index).copied().unwrap_or(1000.0);
+        // mpv is tolerant of a wide range, but a gain outside it would be
+        // amplified past what the filters can express.
+        let gain = gain.clamp(-24.0, 24.0);
+        filters.push(format!("equalizer=f={}:t=q:w=1:g={:.1}", frequency, gain));
+    }
+
+    Some(format!("af add @melyar_eq:lavfi=[{}]\n", filters.join(",")))
+}
+
 pub struct MelyarAudioEngine {
     mpv: Arc<MpvHandleWrapper>,
     is_playing: Arc<AtomicBool>,
@@ -215,6 +244,20 @@ impl MelyarAudioEngine {
         self.command_string(&cmd)
     }
 
+    /// Set the gains of a ten band graphic equaliser, in decibels.
+    ///
+    /// The bands are built as a single lavfi chain so that the whole
+    /// equaliser is replaced in one go, rather than one command per band.
+    pub fn set_equalizer_bands(&self, gains: &[f64]) -> Result<()> {
+        // The chain may not be there yet, so a failure here is expected.
+        let _ = self.command_string("af remove @melyar_eq\n");
+
+        let Some(cmd) = build_equalizer_command(gains) else {
+            return Ok(());
+        };
+        self.command_string(&cmd)
+    }
+
     pub fn stop(&self) -> Result<()> {
         self.command_string("stop\n")?;
         self.is_playing.store(false, Ordering::Relaxed);
@@ -233,5 +276,81 @@ impl MelyarAudioEngine {
         } else {
             Ok(())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn equalizer_command_is_empty_for_no_bands() {
+        assert!(build_equalizer_command(&[]).is_none());
+    }
+
+    #[test]
+    fn equalizer_command_uses_the_standard_bands() {
+        let gains = [3.0, -2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let cmd = build_equalizer_command(&gains).unwrap();
+        assert!(cmd.starts_with("af add @melyar_eq:lavfi=["));
+        assert!(cmd.contains("equalizer=f=31:t=q:w=1:g=3.0"));
+        assert!(cmd.contains("equalizer=f=62:t=q:w=1:g=-2.0"));
+        assert!(cmd.contains("equalizer=f=16000:t=q:w=1:g=0.0"));
+        assert!(cmd.ends_with("\n"));
+    }
+
+    #[test]
+    fn equalizer_command_clamps_the_gain() {
+        let cmd = build_equalizer_command(&[999.0]).unwrap();
+        assert!(cmd.contains("g=24.0"));
+
+        let cmd = build_equalizer_command(&[-999.0]).unwrap();
+        assert!(cmd.contains("g=-24.0"));
+    }
+
+    #[test]
+    fn equalizer_command_survives_a_short_band_list() {
+        // Fewer bands than the preset still works, the rest stay flat.
+        let cmd = build_equalizer_command(&[1.0, 1.0]).unwrap();
+        assert!(cmd.contains("f=31"));
+        assert!(cmd.contains("f=62"));
+        assert_eq!(cmd.matches("equalizer=").count(), 2);
+    }
+
+    /// The engine talks to a real mpv, so this checks that the command the
+    /// core builds is one that mpv actually accepts, and that a broken one
+    /// is reported rather than swallowed.
+    #[test]
+    fn mpv_accepts_the_equaliser_chain_and_rejects_a_broken_one() {
+        struct Silent;
+        impl AudioEventHandler for Silent {
+            fn on_progress(&self, _current_secs: f64, _total_secs: f64) {}
+            fn on_state_changed(&self, _is_playing: bool) {}
+            fn on_track_ended(&self) {}
+            fn on_gapless_prefetch_needed(&self) {}
+        }
+
+        let Ok(engine) = MelyarAudioEngine::new(Arc::new(Silent)) else {
+            // No audio device in this environment, nothing to check.
+            return;
+        };
+
+        let gains = [6.0, 3.0, 0.0, -2.0, -4.0, 0.0, 3.0, 5.0, 2.0, 0.0];
+        assert!(
+            engine.set_equalizer_bands(&gains).is_ok(),
+            "mpv refused the equaliser chain"
+        );
+
+        // Turning it off removes the chain, which must not fail even though
+        // the chain may not be there.
+        assert!(engine.set_equalizer_bands(&[]).is_ok());
+
+        // A filter that does not exist has to be reported.
+        assert!(
+            engine
+                .command_string("af add @broken:not_a_real_filter\n")
+                .is_err(),
+            "mpv accepted a filter that does not exist"
+        );
     }
 }

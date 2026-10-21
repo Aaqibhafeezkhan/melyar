@@ -182,6 +182,8 @@ export const en: Record<string, string> = {
   "settings.showNotifications": "Notifications",
   "settings.showAlbumArt": "Album art",
   "settings.equalizer": "Equalizer",
+  "settings.equalizer.description": "Ten bands, from 31 Hz to 16 kHz.",
+  "settings.equalizer.bands": "Bands",
   "settings.cacheSize": "Cache size",
   "settings.cacheSize.description": "How much disk space the stream cache may use.",
   "settings.language": "Language",

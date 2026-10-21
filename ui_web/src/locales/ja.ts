@@ -158,6 +158,8 @@ export const ja: Record<string, string> = {
   "settings.showNotifications": "通知",
   "settings.showAlbumArt": "アルバムアート",
   "settings.equalizer": "イコライザー",
+  "settings.equalizer.description": "31 Hz から 16 kHz までの 10 バンド。",
+  "settings.equalizer.bands": "バンド",
   "settings.cacheSize": "キャッシュサイズ",
   "settings.cacheSize.description": "ストリーミングキャッシュが使えるディスク容量です。",
   "settings.language": "言語",
