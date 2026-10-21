@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 import { useLibraryImport } from "@/lib/import";
-import { t } from "@/lib/i18n";
+import { t, tCount } from "@/lib/i18n";
 import { usePlayer } from "@/store";
 
 /**
@@ -31,7 +31,7 @@ export function ImportOverlay() {
               {t("import.title")}
             </h2>
             <p className="text-[12px] text-text-tertiary mt-1">
-              {t("import.progress", { current: progress.current, total: progress.total })}
+              {tCount("import.progress", progress.total, { current: progress.current })}
             </p>
           </div>
           <button
@@ -54,8 +54,8 @@ export function ImportOverlay() {
         </div>
 
         <div className="mt-3 flex items-center justify-between text-[11.5px] text-text-tertiary">
-          <span>{t("import.matched", { n: progress.matched })}</span>
-          <span>{t("import.notFound", { n: progress.skipped })}</span>
+          <span>{tCount("import.matched", progress.matched)}</span>
+          <span>{tCount("import.notFound", progress.skipped)}</span>
         </div>
       </div>
     </div>

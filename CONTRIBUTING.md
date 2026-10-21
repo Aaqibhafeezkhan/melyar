@@ -117,6 +117,8 @@ The Rust core logs to stderr. Set `RUST_LOG=debug` for verbose output.
 | `MELYAR_SCREENSHOT` | Write a PNG of the window to this path, then exit. |
 | `MELYAR_SCREENSHOT_DELAY` | How long to wait before the capture, in milliseconds. Default 6000. |
 | `MELYAR_EVAL_JS` | Run a script inside the interface once it has booted. A debugging aid. |
+| `MELYAR_EVAL_FILE` | Read the script from a file instead. Easier for anything longer than one line. |
+| `MELYAR_EVAL_DELAY` | How long to wait before the script runs, in milliseconds. Default 2500. |
 | `RUST_LOG` | Rust log level, for example `debug`. |
 
 ### Deep links
@@ -133,6 +135,32 @@ on these links:
 ```bash
 melyar://settings
 ```
+
+---
+
+## Auditing the interface
+
+The interface has a check that runs on every push. It drives the application
+through every view and every overlay and reports what is wrong: a console
+error, an element reaching outside the window, a translation key that was
+never replaced, an interactive element without an accessible name, a view that
+renders nothing. It also pushes deliberately awkward data through the
+interface, a title long enough to break any layout and a track with no
+artwork, because those are what a real library contains.
+
+Run it yourself:
+
+```bash
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j"$(nproc)"
+MELYAR_EVAL_FILE=scripts/ui-audit.js ./build/melyar
+```
+
+The application prints `DENETIM_SONUCU problems=0` when the interface is
+clean. The continuous integration fails when it is not, so a regression does
+not get in.
+
+If you add a view, add it to `scripts/ui-audit.js` as well.
 
 ---
 
@@ -189,9 +217,15 @@ Korean. Adding one is a translation job, not a programming job.
   becomes `"{n} pistas · {time}"` in Spanish, not `"{n} canciones"` - the count
   and the duration are inserted at runtime.
 - Keep it short. These are interface labels, not sentences.
+- **Counted strings come in three forms.** A key such as `library.count` has
+  `library.count.one`, `library.count.few` and `library.count.many` beside it.
+  Use `tCount("library.count", n)` rather than `t(...)` for anything that
+  counts something, otherwise the interface says "1 tracks". A language
+  without a separate "few" form uses the same wording for both.
 - Translate the `aria-label` values too. Screen readers read them.
-- Every locale file must have the same keys as `en.ts`. A missing key shows
-  the key itself in the interface, so it is easy to spot.
+- Every locale file must have the same keys as `en.ts`. The continuous
+  integration checks it, and a missing key shows the key itself in the
+  interface, so it is easy to spot.
 
 **Right-to-left languages** need a little more: the layout still uses a few
 physical margins, so they have to be converted to logical properties first.

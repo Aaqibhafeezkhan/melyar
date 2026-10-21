@@ -121,6 +121,47 @@ export function setLocale(locale: Locale) {
  */
 export function t(key: string, params?: Record<string, string | number>): string {
   const template = MESSAGES[current]?.[key] ?? MESSAGES[FALLBACK]?.[key] ?? key;
+  return interpolate(template, params);
+}
+
+/**
+ * The plural form of a count for the current language.
+ *
+ * English, German, Spanish, French, Italian and Portuguese have two forms.
+ * Russian and Ukrainian have three, and count differently for every digit.
+ */
+function pluralForm(locale: Locale, n: number): "one" | "few" | "many" {
+  if (n === 1) return "one";
+  if (n === 0) return "many";
+  if (locale === "ru" || locale === "uk") {
+    const last = n % 10;
+    const lastTwo = n % 100;
+    if (last >= 2 && last <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) return "few";
+  }
+  return "many";
+}
+
+/**
+ * Translate a counted string, choosing the right plural form.
+ *
+ * The key is looked up as `<key>.one`, `<key>.few` or `<key>.many`, so the
+ * wording can follow the language rather than just appending an s.
+ */
+export function tCount(
+  key: string,
+  n: number,
+  params?: Record<string, string | number>,
+): string {
+  const form = pluralForm(current, n);
+  const full = `${key}.${form}`;
+  const template = MESSAGES[current]?.[full] ?? MESSAGES[FALLBACK]?.[full] ?? full;
+  return interpolate(template, { n, ...params });
+}
+
+function interpolate(
+  template: string,
+  params?: Record<string, string | number>,
+): string {
   if (!params) return template;
   return template.replace(/\{(\w+)\}/g, (match, name: string) =>
     name in params ? String(params[name]) : match,

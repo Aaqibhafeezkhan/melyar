@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 import { formatTime } from "@/lib/lyrics";
 import { usePlayer } from "@/store";
 import { Artwork } from "@/components/Toolbar";
-import { t, useLocale } from "@/lib/i18n";
+import { t, tCount, useLocale } from "@/lib/i18n";
 
 export function QueuePanel() {
   useLocale();
@@ -73,7 +73,7 @@ export function QueuePanel() {
           </div>
           <div>
             <h2 className="text-[15px] font-bold tracking-tight text-white">{t("queue.title")}</h2>
-            <p className="text-[11px] text-white/50">{t("queue.count", { n: queue.length })}</p>
+            <p className="text-[11px] text-white/50">{tCount("queue.count", queue.length)}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

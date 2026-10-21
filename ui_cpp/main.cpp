@@ -1,3 +1,4 @@
+#include <chrono>
 #include <clocale>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
@@ -19,6 +20,15 @@
 #include "bridge/bridge.hpp"
 
 int main(int argc, char *argv[]) {
+    // A single clock for the whole start up, so the log shows where the
+    // time goes.
+    const auto started = std::chrono::steady_clock::now();
+    auto elapsed = [&started]() -> long {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - started)
+            .count();
+    };
+
     std::setlocale(LC_NUMERIC, "C");
 
     // Prevent GPU buffer sharing segfault on Wayland with hybrid GPU (NVIDIA + AMD/Intel)
@@ -117,7 +127,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
     webChannel->registerObject(QStringLiteral("bridge"), bridgePtr);
-    std::cout << "[C++] bridge registered onto QML appChannel" << std::endl;
+    std::cout << "[C++] bridge registered onto QML appChannel at " << elapsed() << " ms" << std::endl;
 
     QObject *webViewObj = rootObject->findChild<QObject *>(QStringLiteral("webView"));
     if (!webViewObj) {
@@ -125,7 +135,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
     webViewObj->setProperty("url", webUrlStr);
-    std::cout << "[C++] webView url set: " << webUrlStr.toStdString() << std::endl;
+    std::cout << "[C++] webView url set at " << elapsed() << " ms: " << webUrlStr.toStdString() << std::endl;
 
     // A melyar:// link passed on the command line, for example
     // "melyar://settings" or "melyar://track/<id>". The desktop entry
@@ -193,15 +203,34 @@ int main(int argc, char *argv[]) {
     // MELYAR_EVAL_JS runs a script inside the interface once it has booted.
     // It is a debugging aid: it lets you drive the interface from the
     // command line, for example to reproduce a state or to check that a
-    // setting is written.
+    // setting is written. MELYAR_EVAL_FILE reads the script from a file,
+    // which is the easier way to run anything longer than one line.
     const QString evalJs = qEnvironmentVariable("MELYAR_EVAL_JS").trimmed();
-    if (!evalJs.isEmpty()) {
-        QTimer::singleShot(2500, webViewObj, [webViewObj, evalJs]() {
+    const QString evalFile = qEnvironmentVariable("MELYAR_EVAL_FILE").trimmed();
+    if (!evalJs.isEmpty() || !evalFile.isEmpty()) {
+        // The script needs the interface to be up and the bridge connected,
+        // so the default delay is generous.
+        int evalDelay = qEnvironmentVariableIntValue("MELYAR_EVAL_DELAY");
+        if (evalDelay <= 0) {
+            evalDelay = 2500;
+        }
+        QTimer::singleShot(evalDelay, webViewObj, [webViewObj, evalJs, evalFile]() {
+            QString script = evalJs;
+            if (!evalFile.isEmpty()) {
+                QFile file(evalFile);
+                if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                    script = QString::fromUtf8(file.readAll());
+                } else {
+                    std::cerr << "Could not read " << evalFile.toStdString() << std::endl;
+                    return;
+                }
+            }
             const QJSValue undefined;
             QMetaObject::invokeMethod(webViewObj, "runJavaScript", Qt::DirectConnection,
-                                      Q_ARG(QString, evalJs),
+                                      Q_ARG(QString, script),
                                       Q_ARG(QJSValue, undefined));
-            std::cout << "[C++] evaluated: " << evalJs.toStdString() << std::endl;
+            std::cout << "[C++] evaluated " << evalFile.toStdString().size() << " byte script"
+                      << std::endl;
         });
     }
 

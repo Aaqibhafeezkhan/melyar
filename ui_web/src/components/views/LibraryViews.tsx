@@ -6,7 +6,7 @@ import { TrackTable } from "@/components/TrackTable";
 import { Artwork } from "@/components/Toolbar";
 import { formatTime } from "@/lib/lyrics";
 import type { View } from "@/lib/types";
-import { t, useLocale } from "@/lib/i18n";
+import { t, tCount, useLocale } from "@/lib/i18n";
 
 function LibraryHeader({
   icon: Icon,
@@ -52,7 +52,7 @@ export function SongsView() {
         icon={Library}
         kicker={t("library.kicker")}
         title={t("library.songs.title")}
-        meta={t("library.countDuration", { n: library.length, time: formatTime(totalSecs) })}
+        meta={tCount("library.countDuration", library.length, { time: formatTime(totalSecs) })}
         gradient="linear-gradient(135deg,#8e8e93,#48484a)"
       />
       <TrackTable tracks={library} emptyText={t("library.songs.empty")} />
@@ -72,7 +72,7 @@ export function LikedView() {
         icon={Heart}
         kicker={t("library.liked.kicker")}
         title={t("library.liked.title")}
-        meta={t("library.countDuration", { n: liked.length, time: formatTime(totalSecs) })}
+        meta={tCount("library.countDuration", liked.length, { time: formatTime(totalSecs) })}
         gradient="linear-gradient(135deg,#fc5c7d,#fa233b)"
       />
       {liked.length > 0 ? (
@@ -112,7 +112,7 @@ export function HistoryView() {
         icon={Clock3}
         kicker={t("library.history.kicker")}
         title={t("library.history.title")}
-        meta={t("library.count", { n: history.length })}
+        meta={tCount("library.count", history.length)}
         gradient="linear-gradient(135deg,#5e5ce6,#30d158)"
       />
       {history.length > 0 ? (
@@ -244,7 +244,7 @@ export function AlbumDetailView({ albumKey }: { albumKey: string }) {
           <p className="text-xs font-bold uppercase tracking-wider text-text-tertiary">{t("library.albums.label")}</p>
           <h1 className="mt-1 truncate text-4xl font-bold tracking-tight lg:text-5xl">{album.name}</h1>
           <p className="mt-2 text-sm text-text-tertiary">
-            <span className="font-medium text-text-secondary">{album.artist}</span> · {t("library.count", { n: album.tracks.length })} ·{" "}
+            <span className="font-medium text-text-secondary">{album.artist}</span> · {tCount("library.count", album.tracks.length)} ·{" "}
             {formatTime(totalSecs)}
           </p>
         </div>
@@ -280,7 +280,7 @@ export function ArtistDetailView({ artistKey }: { artistKey: string }) {
             <Music2 className="size-3.5" /> {t("library.artists.label")}
           </p>
           <h1 className="mt-1 truncate text-4xl font-bold tracking-tight lg:text-5xl">{artist.name}</h1>
-          <p className="mt-2 text-sm text-text-tertiary">{t("library.artists.knownTracks", { n: artist.tracks.length })}</p>
+          <p className="mt-2 text-sm text-text-tertiary">{tCount("library.artists.knownTracks", artist.tracks.length)}</p>
         </div>
       </header>
 
@@ -292,7 +292,7 @@ export function ArtistDetailView({ artistKey }: { artistKey: string }) {
               <button key={album.key} className="card w-36 shrink-0" onClick={() => navigate({ name: "album", key: album.key })}>
                 <Artwork src={album.cover} className="mb-3 aspect-square w-full" />
                 <p className="truncate text-left text-[13px] font-semibold">{album.name}</p>
-                <p className="text-left text-[11.5px] text-text-tertiary">{t("library.count", { n: album.tracks.length })}</p>
+                <p className="text-left text-[11.5px] text-text-tertiary">{tCount("library.count", album.tracks.length)}</p>
               </button>
             ))}
           </div>

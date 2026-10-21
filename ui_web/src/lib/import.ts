@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { getBridge } from "@/lib/client";
 import { usePlayer } from "@/store";
-import { t } from "@/lib/i18n";
+import { t, tCount } from "@/lib/i18n";
 
 export type ImportProgress = {
   current: number;
@@ -86,7 +86,7 @@ export function bindImportProgress() {
 
       const st = usePlayer.getState();
       st.toastNote(
-        t("import.finished", { matched: progress.matched, skipped: progress.skipped }),
+        tCount("import.finished", progress.matched, { skipped: progress.skipped }),
       );
     }
   });

@@ -258,9 +258,30 @@ export function initBridge() {
       w.__testSetSetting = (k: string, v: string) =>
         useSettings.getState().set(k as never, v as never);
       w.__testSettings = () => useSettings.getState().settings;
+
+      // Navigation and overlay hooks, so the interface can be driven from
+      // outside for the automated checks.
+      w.__navigate = (view: string) => {
+        const st = usePlayer.getState();
+        st.navigate({ name: view } as never);
+      };
+      w.__openExpandedPlayer = () => usePlayer.getState().setExpandedPlayerOpen(true);
+      w.__openLyrics = () => usePlayer.getState().setLyricsOpen(true);
+      w.__openQueue = () => usePlayer.getState().setQueueOpen(true);
+      w.__testSetState = (partial: Record<string, unknown>) =>
+        usePlayer.setState(partial as never);
+      w.__openMenuOnFirstTrack = () => {
+        const st = usePlayer.getState();
+        const track = st.results[0] ?? st.liked[0] ?? st.history[0];
+        if (!track) return false;
+        st.openMenu({ track, x: 200, y: 200 });
+        return true;
+      };
+
       w.__testState = () => {
         const s = usePlayer.getState();
         return {
+          view: s.view,
           results: s.results,
           liked: s.liked,
           queue: s.queue,
@@ -269,6 +290,11 @@ export function initBridge() {
           duration: s.duration,
           current: s.current,
           lyricsRaw: s.lyricsRaw,
+          menuOpen: s.menu !== null,
+          queueOpen: s.queueOpen,
+          lyricsOpen: s.lyricsOpen,
+          expandedPlayerOpen: s.expandedPlayerOpen,
+          bridgeError: s.bridgeError,
         };
       };
     });

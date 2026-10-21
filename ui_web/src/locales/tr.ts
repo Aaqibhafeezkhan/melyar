@@ -39,6 +39,10 @@ export const tr: Record<string, string> = {
   // Sıra paneli
   "queue.title": "Çalma Sırası",
   "queue.count": "{n} parça",
+  "queue.count.one": "{n} parça",
+  "queue.count.many": "{n} parça",
+
+  "queue.count.few": "{n} parça",
   "queue.clear": "Sırayı temizle",
   "queue.clearButton": "Temizle",
   "queue.close": "Kuyruğu kapat",
@@ -128,13 +132,25 @@ export const tr: Record<string, string> = {
   "library.openAlbum": "{name} albümünü aç",
   "library.playAlbum": "{name} çal",
   "library.count": "{n} parça",
+  "library.count.one": "{n} parça",
+  "library.count.many": "{n} parça",
+
+  "library.count.few": "{n} parça",
   "library.countDuration": "{n} parça · {time}",
+  "library.countDuration.one": "{n} parça · {time}",
+  "library.countDuration.many": "{n} parça · {time}",
+
+  "library.countDuration.few": "{n} parça · {time}",
   "library.albums.notFound": "Albüm bulunamadı.",
   "library.albums.label": "Albüm",
   "library.albums.back": "← Albümlere dön",
   "library.artists.notFound": "Sanatçı bulunamadı.",
   "library.artists.label": "Sanatçı",
   "library.artists.knownTracks": "{n} bilinen parça",
+  "library.artists.knownTracks.one": "{n} bilinen parça",
+  "library.artists.knownTracks.many": "{n} bilinen parça",
+
+  "library.artists.knownTracks.few": "{n} bilinen parça",
   "library.detail.tracks": "Parçalar",
 
   // Arama
@@ -197,10 +213,26 @@ export const tr: Record<string, string> = {
   "import.action": "Kitaplığı içe aktar",
   "import.hint": "Spotify dışa aktarımından, JSON listesinden veya CSV dosyasından",
   "import.progress": "{total} parçadan {current} tanesi",
+  "import.progress.one": "{total} parçadan {current} tanesi",
+  "import.progress.many": "{total} parçadan {current} tanesi",
+
+  "import.progress.few": "{total} parçadan {current} tanesi",
   "import.matched": "{n} eşleşti",
+  "import.matched.one": "{n} eşleşti",
+  "import.matched.many": "{n} eşleşti",
+
+  "import.matched.few": "{n} eşleşti",
   "import.notFound": "{n} bulunamadı",
+  "import.notFound.one": "{n} bulunamadı",
+  "import.notFound.many": "{n} bulunamadı",
+
+  "import.notFound.few": "{n} bulunamadı",
   "import.cancel": "İçe aktarmayı iptal et",
   "import.finished": "{matched} parça içe aktarıldı, {skipped} tanesi bulunamadı",
+  "import.finished.one": "{matched} parça içe aktarıldı, {skipped} bulunamadı",
+  "import.finished.many": "{matched} parça içe aktarıldı, {skipped} bulunamadı",
+
+  "import.finished.few": "{matched} parça içe aktarıldı, {skipped} bulunamadı",
   "common.close": "Kapat",
   "common.clear": "Temizle",
   "common.search": "Ara...",

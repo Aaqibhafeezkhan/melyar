@@ -1,4 +1,4 @@
-melyar (0.2.0-1) unstable; urgency=medium
+melyar (0.0.2-1) unstable; urgency=medium
 
   * Second release: settings that persist, thirteen languages, library import
     from another service and a Debian package.

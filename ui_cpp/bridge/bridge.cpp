@@ -459,6 +459,10 @@ void MelyarBridge::setImportProgress(const QVariantMap &progress) {
     emit importProgressChanged();
 }
 
+void MelyarBridge::quit() {
+    QCoreApplication::quit();
+}
+
 void MelyarBridge::setEqualizerBands(const QVariantList &bands) {
     rust::Vec<double> gains;
     gains.reserve(static_cast<std::size_t>(bands.size()));

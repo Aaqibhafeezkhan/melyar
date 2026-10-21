@@ -33,6 +33,10 @@ export const sq: Record<string, string> = {
   // Queue panel
   "queue.title": "Radha",
   "queue.count": "{n} këngë",
+  "queue.count.one": "{n} këngë",
+  "queue.count.many": "{n} këngë",
+
+  "queue.count.few": "{n} këngë",
   "queue.clear": "Pastro radhën",
   "queue.clearButton": "Pastro",
   "queue.close": "Mbyll radhën",
@@ -122,13 +126,25 @@ export const sq: Record<string, string> = {
   "library.openAlbum": "Hap albumin {name}",
   "library.playAlbum": "Luaj {name}",
   "library.count": "{n} këngë",
+  "library.count.one": "{n} këngë",
+  "library.count.many": "{n} këngë",
+
+  "library.count.few": "{n} këngë",
   "library.countDuration": "{n} këngë · {time}",
+  "library.countDuration.one": "{n} këngë · {time}",
+  "library.countDuration.many": "{n} këngë · {time}",
+
+  "library.countDuration.few": "{n} këngë · {time}",
   "library.albums.notFound": "Albumi nuk u gjet.",
   "library.albums.label": "Album",
   "library.albums.back": "← Kthehu te albumet",
   "library.artists.notFound": "Artisti nuk u gjet.",
   "library.artists.label": "Artist",
   "library.artists.knownTracks": "{n} këngë të njohura",
+  "library.artists.knownTracks.one": "{n} këngë e njohur",
+  "library.artists.knownTracks.many": "{n} këngë të njohura",
+
+  "library.artists.knownTracks.few": "{n} këngë të njohura",
   "library.detail.tracks": "Këngët",
 
   // Search
@@ -191,10 +207,26 @@ export const sq: Record<string, string> = {
   "import.action": "Importo bibliotekën",
   "import.hint": "Nga një eksport i Spotify, një listë JSON ose një skedar CSV",
   "import.progress": "{current} nga {total} këngë",
+  "import.progress.one": "{current} nga {total} këngë",
+  "import.progress.many": "{current} nga {total} këngë",
+
+  "import.progress.few": "{current} nga {total} këngë",
   "import.matched": "{n} u gjetën",
+  "import.matched.one": "{n} u përputh",
+  "import.matched.many": "{n} u përputhën",
+
+  "import.matched.few": "{n} u përputhën",
   "import.notFound": "{n} nuk u gjetën",
+  "import.notFound.one": "{n} nuk u gjet",
+  "import.notFound.many": "{n} nuk u gjetën",
+
+  "import.notFound.few": "{n} nuk u gjetën",
   "import.cancel": "Anulo importimin",
   "import.finished": "U importuan {matched} këngë, {skipped} nuk u gjetën",
+  "import.finished.one": "U importua {matched} këngë, {skipped} nuk u gjetën",
+  "import.finished.many": "U importuan {matched} këngë, {skipped} nuk u gjetën",
+
+  "import.finished.few": "U importuan {matched} këngë, {skipped} nuk u gjetën",
   "common.close": "Mbyll",
   "common.clear": "Pastro",
   "common.search": "Kërko...",
