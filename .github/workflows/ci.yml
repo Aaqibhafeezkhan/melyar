@@ -117,10 +117,11 @@ jobs:
 
       - name: Check the package
         run: |
-          ls -la ../melyar_*.deb
-          dpkg-deb --info ../melyar_0.1.0-1_amd64.deb
+          DEB=$(ls ../melyar_*_amd64.deb)
+          ls -la "$DEB"
+          dpkg-deb --info "$DEB"
           # sed instead of head: head closes the pipe and makes tar fail.
-          dpkg-deb --contents ../melyar_0.1.0-1_amd64.deb | sed -n '1,20p'
+          dpkg-deb --contents "$DEB" | sed -n '1,20p'
 
       - name: Free the disk
         # The Rust build tree is several gigabytes and the runner does not
@@ -136,7 +137,8 @@ jobs:
         run: |
           rm -rf package-root
           mkdir package-root
-          dpkg-deb -x ../melyar_0.1.0-1_amd64.deb package-root
+          DEB=$(ls ../melyar_*_amd64.deb)
+          dpkg-deb -x "$DEB" package-root
           test -x package-root/usr/bin/melyar
           test -f package-root/usr/share/melyar/web/index.html
           test -f package-root/usr/share/applications/melyar.desktop
@@ -144,7 +146,7 @@ jobs:
           ls package-root/usr/share/melyar/web
 
       - name: Upload the package
-        run: cp ../melyar_*.deb .
+        run: cp ../melyar_*_amd64.deb .
 
       - name: Upload the package
         uses: actions/upload-artifact@v4
