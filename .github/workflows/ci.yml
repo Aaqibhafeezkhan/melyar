@@ -172,21 +172,21 @@ jobs:
         # an element reaching outside the window, a translation key that was
         # never replaced, an interactive element without an accessible name.
         run: |
-          set -o pipefail
           xvfb-run -a --server-args="-screen 0 1920x1080x24" \
             env MELYAR_LANG=en \
                 MELYAR_EVAL_FILE=scripts/ui-audit.js \
                 MELYAR_EVAL_DELAY=1500 \
-                ./build/melyar 2>&1 | tee audit.log || true
+                ./build/melyar > audit.log 2>&1 || true
 
           echo "--- audit output ---"
           grep -E "DENETIM_SONUCU|SORUN" audit.log || true
 
           if ! grep -q "DENETIM_SONUCU problems=0" audit.log; then
-            echo "::error::The interface audit failed."
+            echo "::error::The interface audit did not finish."
+            tail -40 audit.log
             exit 1
           fi
-          if grep -q "  SORUN " audit.log; then
+          if grep -q "  SORUN: " audit.log; then
             echo "::error::The interface audit reported problems."
             exit 1
           fi

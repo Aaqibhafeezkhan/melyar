@@ -227,7 +227,7 @@
       setTimeout(function () {
         const unique = Array.from(new Set(problems));
         console.log("DENETIM_SONUCU problems=" + unique.length);
-        unique.forEach((p) => console.log("  SORUN " + p));
+        unique.forEach((p) => console.log("  SORUN: " + p));
         if (unique.length === 0) console.log("  SORUN YOK");
         window.bridge.quit();
       }, 3000);
