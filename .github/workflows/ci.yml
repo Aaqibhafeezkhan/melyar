@@ -101,7 +101,8 @@ jobs:
             dpkg-dev debhelper fakeroot build-essential \
             cmake pkg-config \
             qt6-base-dev qt6-declarative-dev qt6-webengine-dev qt6-webchannel-dev \
-            libmpv-dev
+            libmpv-dev \
+            qt6-base qt6-declarative qt6-webengine qt6-webchannel mpv yt-dlp
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -118,8 +119,9 @@ jobs:
       - name: Show the package
         run: |
           ls -la ../melyar_*.deb
-          dpkg-deb --info ../melyar_*.deb
-          dpkg-deb --contents ../melyar_*.deb | head -20
+          dpkg-deb --info ../melyar_0.1.0-1_amd64.deb
+          # sed instead of head: head closes the pipe and makes tar fail.
+          dpkg-deb --contents ../melyar_0.1.0-1_amd64.deb | sed -n '1,20p'
 
       - name: Free the disk
         # The Rust build tree is several gigabytes and the runner does not
@@ -131,8 +133,9 @@ jobs:
 
       - name: Check the package installs
         run: |
-          sudo dpkg -i ../melyar_*.deb
+          sudo dpkg -i ../melyar_0.1.0-1_amd64.deb
           dpkg -l melyar
           test -x /usr/bin/melyar
           test -f /usr/share/melyar/web/index.html
           test -f /usr/share/applications/melyar.desktop
+          test -f /usr/share/icons/hicolor/scalable/apps/melyar.svg
