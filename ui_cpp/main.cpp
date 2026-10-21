@@ -1,5 +1,7 @@
 #include <chrono>
 #include <clocale>
+#include <cstdio>
+#include <cstring>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -195,6 +197,7 @@ int main(int argc, char *argv[]) {
                     return;
                 }
                 std::cout << "[C++] screenshot written to " << shotPath.toStdString() << std::endl;
+
                 qApp->exit(0);
             });
         });

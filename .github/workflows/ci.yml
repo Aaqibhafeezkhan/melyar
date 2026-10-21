@@ -171,6 +171,8 @@ jobs:
         # fails when something is wrong with the interface: a console error,
         # an element reaching outside the window, a translation key that was
         # never replaced, an interactive element without an accessible name.
+        # It also measures the memory the application uses, because the point
+        # of it being light is easy to lose without noticing.
         run: |
           xvfb-run -a --server-args="-screen 0 1920x1080x24" \
             env MELYAR_LANG=en \
@@ -188,6 +190,48 @@ jobs:
           fi
           if grep -q "  SORUN: " audit.log; then
             echo "::error::The interface audit reported problems."
+            exit 1
+          fi
+
+      - name: Check the memory budget
+        # The application is supposed to be light. This measures what it
+        # actually uses, so a change that costs fifty megabytes cannot be
+        # merged without someone deciding that it is worth it.
+        run: |
+          set -uo pipefail
+
+          xvfb-run -a --server-args="-screen 0 1920x1080x24" \
+            env MELYAR_LANG=en ./build/melyar > memory.log 2>&1 &
+          RUNNER_PID=$!
+
+          # Give the interface time to come up, then measure.
+          sleep 15
+          APP_PID=$(pgrep -x melyar | head -1 || true)
+          if [ -z "$APP_PID" ]; then
+            echo "::error::The application did not start."
+            cat memory.log
+            exit 1
+          fi
+
+          MEASUREMENT=$(python3 scripts/memory.py "$APP_PID")
+          echo "$MEASUREMENT"
+
+          PSS_KB=$(echo "$MEASUREMENT" | sed -n 's/.*pss=\([0-9]*\) .*/\1/p')
+          BUDGET_KB=$((400 * 1024))
+
+          kill "$APP_PID" 2>/dev/null || true
+          wait "$RUNNER_PID" 2>/dev/null || true
+
+          if [ -z "$PSS_KB" ]; then
+            echo "::error::Could not read the memory usage."
+            exit 1
+          fi
+
+          PSS_MB=$((PSS_KB / 1024))
+          echo "the application uses ${PSS_MB} MB, the budget is $((BUDGET_KB / 1024)) MB"
+
+          if [ "$PSS_KB" -gt "$BUDGET_KB" ]; then
+            echo "::error::The application uses ${PSS_MB} MB, which is over the budget."
             exit 1
           fi
 
