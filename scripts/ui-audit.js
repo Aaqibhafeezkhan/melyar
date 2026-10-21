@@ -94,12 +94,13 @@
   // light text is invisible, and the browser engine does not always blur
   // what is behind a panel, so this has to be checked rather than assumed.
   //
-  // The colours have to be read carefully. Tailwind writes its tints in
-  // oklab() and color-mix(), so a plain regex over rgb() finds nothing and
-  // the measurement ends up against the wrong background. The engine does
-  // not always normalise either: this QtWebEngine hands oklab() back
-  // untouched, so it is read here.
-  const colourContext = document.createElement("canvas").getContext("2d");
+  // The colours have to be read carefully, and they have to be read here
+  // rather than through the engine. Tailwind writes its tints in oklab() and
+  // color-mix(), and what the engine makes of them differs between versions:
+  // this QtWebEngine hands oklab() back untouched through a canvas, while the
+  // one in the build normalises it to a hex string and drops the alpha, which
+  // would turn a twenty percent tint into a solid one. So the colour function
+  // is read directly and nothing is asked of the engine.
 
   /** Convert a colour in oklab to sRGB, per the CSS colour specification. */
   function oklabToSrgb(L, a, b, alpha) {
@@ -121,61 +122,74 @@
     };
   }
 
+  function hslToRgb(h, s, l, alpha) {
+    const f = (n) => {
+      const k = (n + h / 30) % 12;
+      const a = s * Math.min(l, 1 - l);
+      return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    };
+    return { r: f(0) * 255, g: f(8) * 255, b: f(4) * 255, a: alpha };
+  }
+
   function parseColor(value) {
     if (!value) return null;
 
-    // oklab, which is what Tailwind writes its tints in.
-    const oklab = /oklab\(\s*(-?[\d.eE+-]+)[,\s]+(-?[\d.eE+-]+)[,\s]+(-?[\d.eE+-]+)\s*(?:\/\s*([\d.]+)(%?)\s*)?\)/i.exec(
-      value,
-    );
-    if (oklab) {
-      let alpha = 1;
-      if (oklab[4] !== undefined) {
-        alpha = parseFloat(oklab[4]);
-        if (oklab[5] === "%") alpha /= 100;
+    const hex = /^#([0-9a-f]{3,8})$/i.exec(value.trim());
+    if (hex) {
+      let digits = hex[1];
+      if (digits.length === 3 || digits.length === 4) {
+        digits = digits
+          .split("")
+          .map((d) => d + d)
+          .join("");
       }
-      return oklabToSrgb(
-        parseFloat(oklab[1]),
-        parseFloat(oklab[2]),
-        parseFloat(oklab[3]),
-        alpha,
-      );
+      return {
+        r: parseInt(digits.slice(0, 2), 16),
+        g: parseInt(digits.slice(2, 4), 16),
+        b: parseInt(digits.slice(4, 6), 16),
+        a: digits.length === 8 ? parseInt(digits.slice(6, 8), 16) / 255 : 1,
+      };
     }
 
-    // The common case, and the one that needs the alpha.
-    const m = /rgba?\(([^)]+)\)/.exec(value);
-    if (m) {
-      const parts = m[1].split(/[,/\s]+/).filter(Boolean).map(parseFloat);
-      if (parts.length >= 3 && !parts.some((p) => Number.isNaN(p))) {
-        return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
-      }
+    if (value.indexOf("(") === -1) return null;
+
+    // The modern syntax puts the alpha after a slash, rgba() as a fourth
+    // component. It is taken off first so the components are unambiguous.
+    let alpha = 1;
+    let body = value;
+    const slash = value.indexOf("/");
+    if (slash !== -1) {
+      body = value.slice(0, slash);
+      const rest = value
+        .slice(slash + 1)
+        .replace(/[)\s]/g, "")
+        .trim();
+      const a = parseFloat(rest);
+      if (!Number.isNaN(a)) alpha = rest.indexOf("%") !== -1 ? a / 100 : a;
     }
 
-    // Anything else, let the engine work it out.
-    try {
-      colourContext.fillStyle = "#000000";
-      colourContext.fillStyle = value;
-      const normalised = colourContext.fillStyle;
-      if (normalised && normalised !== value) {
-        const n = /rgba?\(([^)]+)\)/.exec(normalised);
-        if (n) {
-          const parts = n[1].split(/[,/\s]+/).filter(Boolean).map(parseFloat);
-          if (parts.length >= 3) {
-            return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
-          }
-        }
-        const hex = /^#([0-9a-f]{6})$/i.exec(normalised);
-        if (hex) {
-          return {
-            r: parseInt(hex[1].slice(0, 2), 16),
-            g: parseInt(hex[1].slice(2, 4), 16),
-            b: parseInt(hex[1].slice(4, 6), 16),
-            a: 1,
-          };
-        }
-      }
-    } catch (e) {
-      return null;
+    const words = body.replace(/[()]/g, " ").split(/[\s,]+/).filter(Boolean);
+    if (!words.length) return null;
+    const name = words[0].toLowerCase();
+    const rest = words.slice(name === "color" && words[1] === "srgb" ? 2 : 1);
+    const nums = rest.map((v) => parseFloat(v)).filter((v) => !Number.isNaN(v));
+    if (nums.length < 3) return null;
+    // A fourth component is the alpha when no slash carried it.
+    if (slash === -1 && nums.length > 3) alpha = nums[3];
+
+    if (name === "rgb" || name === "rgba") {
+      return { r: nums[0], g: nums[1], b: nums[2], a: alpha };
+    }
+    if (name === "color") {
+      // srgb components are normalized to 1.
+      if (words[1] && words[1].toLowerCase() !== "srgb") return null;
+      return { r: nums[0] * 255, g: nums[1] * 255, b: nums[2] * 255, a: alpha };
+    }
+    if (name === "oklab") {
+      return oklabToSrgb(nums[0], nums[1], nums[2], alpha);
+    }
+    if (name === "hsl" || name === "hsla") {
+      return hslToRgb(nums[0], nums[1] / 100, nums[2] / 100, alpha);
     }
     return null;
   }
