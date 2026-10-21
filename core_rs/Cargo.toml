@@ -9,7 +9,8 @@ homepage.workspace = true
 
 [lib]
 name = "melyar_core"
-crate-type = ["staticlib", "cdylib"]
+# rlib lets the examples and integration tests link against the core.
+crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 cxx-build = "1.0"

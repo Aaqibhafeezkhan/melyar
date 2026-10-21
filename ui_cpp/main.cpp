@@ -22,8 +22,13 @@ int main(int argc, char *argv[]) {
     std::setlocale(LC_NUMERIC, "C");
 
     // Prevent GPU buffer sharing segfault on Wayland with hybrid GPU (NVIDIA + AMD/Intel)
+    // A music player draws no video, so the whole GPU stack is dead weight: it
+    // costs roughly 50 MB of resident memory and buys nothing. Turning it off
+    // also keeps the software rasteriser from being pulled in as a fallback.
     if (!qEnvironmentVariableIsSet("QTWEBENGINE_CHROMIUM_FLAGS")) {
-        qputenv("QTWEBENGINE_CHROMIUM_FLAGS", "--disable-gpu-compositing --disable-dev-shm-usage");
+        qputenv("QTWEBENGINE_CHROMIUM_FLAGS",
+                "--disable-gpu --disable-gpu-compositing --disable-software-rasterizer "
+                "--disable-dev-shm-usage");
     }
     qputenv("QT_QUICK_CONTROLS_STYLE", "Basic");
 
