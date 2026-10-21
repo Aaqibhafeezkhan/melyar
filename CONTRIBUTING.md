@@ -119,6 +119,7 @@ The Rust core logs to stderr. Set `RUST_LOG=debug` for verbose output.
 | `MELYAR_EVAL_JS` | Run a script inside the interface once it has booted. A debugging aid. |
 | `MELYAR_EVAL_FILE` | Read the script from a file instead. Easier for anything longer than one line. |
 | `MELYAR_EVAL_DELAY` | How long to wait before the script runs, in milliseconds. Default 2500. |
+| `MELYAR_WINDOW_GEOMETRY` | Set the window size, for example `1000x640`. Used to check the layout at the sizes a user actually has. |
 | `RUST_LOG` | Rust log level, for example `debug`. |
 
 ### Deep links
@@ -160,7 +161,27 @@ The application prints `DENETIM_SONUCU problems=0` when the interface is
 clean. The continuous integration fails when it is not, so a regression does
 not get in.
 
+It runs at several window sizes in the build, because a layout that holds
+together on a wide screen can still break on a small one:
+
+```bash
+MELYAR_WINDOW_GEOMETRY=1000x640 MELYAR_EVAL_FILE=scripts/ui-audit.js ./build/melyar
+```
+
 If you add a view, add it to `scripts/ui-audit.js` as well.
+
+### Watching the memory
+
+The application is supposed to be light, and that is easy to lose without
+noticing. `scripts/memory.py` measures what a running application costs:
+
+```bash
+scripts/memory.py $(pgrep -x melyar)
+```
+
+It walks the process tree and adds up the proportional set size, so the pages
+the browser engine shares between its processes are only counted once. The
+build does the same and fails when the result goes over the budget.
 
 ---
 

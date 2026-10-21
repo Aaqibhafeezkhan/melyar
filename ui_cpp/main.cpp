@@ -118,6 +118,20 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    // The window size can be set from the outside, so the layout can be
+    // checked at the sizes a user actually has. MELYAR_WINDOW_GEOMETRY takes
+    // "widthxheight", for example 1000x640.
+    const QString geometry = qEnvironmentVariable("MELYAR_WINDOW_GEOMETRY").trimmed();
+    if (!geometry.isEmpty()) {
+        const QStringList parts = geometry.split(QLatin1Char('x'));
+        if (parts.size() == 2) {
+            const int width = parts[0].trimmed().toInt();
+            const int height = parts[1].trimmed().toInt();
+            if (width > 0) rootObject->setProperty("width", width);
+            if (height > 0) rootObject->setProperty("height", height);
+        }
+    }
+
     QObject *channelObj = rootObject->findChild<QObject *>(QStringLiteral("appChannel"));
     if (!channelObj) {
         std::cerr << "FATAL: appChannel (QML WebChannel) not found" << std::endl;
