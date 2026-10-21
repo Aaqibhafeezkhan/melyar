@@ -1,0 +1,63 @@
+import { X } from "lucide-react";
+import { useLibraryImport } from "@/lib/import";
+import { t } from "@/lib/i18n";
+import { usePlayer } from "@/store";
+
+/**
+ * The overlay that shows while a library import is running. It reports how
+ * many tracks were matched so far and how many could not be found.
+ */
+export function ImportOverlay() {
+  const running = useLibraryImport((s) => s.running);
+  const progress = useLibraryImport((s) => s.progress);
+  const cancel = useLibraryImport((s) => s.cancel);
+  const reloadFavorites = usePlayer((s) => s.loadFavorites);
+
+  if (!running) return null;
+
+  const percent = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
+
+  return (
+    <div
+      className="settings-overlay fixed inset-0 z-50 flex items-center justify-center p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("import.title")}
+    >
+      <div className="settings-panel w-full max-w-sm rounded-2xl shadow-2xl p-6">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h2 className="text-[15px] font-bold tracking-tight text-text">
+              {t("import.title")}
+            </h2>
+            <p className="text-[12px] text-text-tertiary mt-1">
+              {t("import.progress", { current: progress.current, total: progress.total })}
+            </p>
+          </div>
+          <button
+            className="btn-glass icon-btn text-text hover:bg-hover"
+            aria-label={t("import.cancel")}
+            onClick={() => {
+              cancel();
+              reloadFavorites();
+            }}
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-accent transition-[width] duration-300"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+
+        <div className="mt-3 flex items-center justify-between text-[11.5px] text-text-tertiary">
+          <span>{t("import.matched", { n: progress.matched })}</span>
+          <span>{t("import.notFound", { n: progress.skipped })}</span>
+        </div>
+      </div>
+    </div>
+  );
+}

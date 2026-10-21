@@ -1,10 +1,13 @@
 pub mod audio;
 pub mod db;
+pub mod import;
 pub mod innertube;
 pub mod linux;
 
 use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::runtime::Runtime;
 
@@ -64,6 +67,7 @@ pub mod ffi {
         fn on_state_changed(is_playing: bool);
         fn on_lyrics_loaded(track_id: String, lyrics_lrc: String);
         fn on_search_results(results: Vec<CxxTrackMetadata>);
+        fn on_import_progress(current: i32, total: i32, matched: i32, skipped: i32);
     }
 
     extern "Rust" {
@@ -106,6 +110,8 @@ pub mod ffi {
         fn get_settings_json() -> String;
         fn set_setting(key: String, value: String) -> bool;
         fn delete_setting(key: String) -> bool;
+        fn import_library(path: String) -> bool;
+        fn cancel_import() -> bool;
     }
 }
 
@@ -648,4 +654,94 @@ pub fn set_setting(key: String, value: String) -> bool {
 pub fn delete_setting(key: String) -> bool {
     let core = get_core();
     core.storage.delete_setting(&key).unwrap_or(false)
+}
+
+/// A flag the import loop checks so it can be stopped.
+static IMPORT_CANCELLED: AtomicBool = AtomicBool::new(false);
+
+/// Import a library from another service's export file.
+///
+/// The file is read, every entry is resolved against InnerTube and the
+/// matches are added to the library. The work happens on the runtime so the
+/// interface stays responsive, and the progress is reported back through
+/// `on_import_progress`.
+pub fn import_library(path: String) -> bool {
+    let core = get_core();
+    IMPORT_CANCELLED.store(false, Ordering::Relaxed);
+
+    let source = PathBuf::from(path);
+    let plan = match import::read_import_file(&source) {
+        Ok(plan) => plan,
+        Err(e) => {
+            eprintln!("Library import failed: {e}");
+            ffi::on_import_progress(0, 0, 0, 0);
+            return false;
+        }
+    };
+
+    let total = plan.entries.len() as i32;
+    let innertube = core.innertube.clone();
+    let storage = core.storage.clone();
+    let runtime = core.runtime.clone();
+
+    runtime.spawn(async move {
+        let mut matched = 0i32;
+        let mut skipped = 0i32;
+
+        for (index, entry) in plan.entries.iter().enumerate() {
+            if IMPORT_CANCELLED.load(Ordering::Relaxed) {
+                break;
+            }
+
+            let current = (index + 1) as i32;
+            let query = if entry.artist.is_empty() {
+                entry.title.clone()
+            } else {
+                format!("{} {}", entry.title, entry.artist)
+            };
+
+            let found = innertube.search_tracks(&query).await.unwrap_or_default();
+
+            let mut best: Option<(i32, crate::ffi::CxxTrackMetadata)> = None;
+            for candidate in &found {
+                let scored = import::score_match(
+                    entry,
+                    &candidate.title,
+                    &candidate.artist,
+                    &candidate.album,
+                );
+                if scored.score >= import::MATCH_THRESHOLD {
+                    let better = best
+                        .as_ref()
+                        .map(|(s, _)| scored.score > *s)
+                        .unwrap_or(true);
+                    if better {
+                        best = Some((scored.score, candidate.clone()));
+                    }
+                }
+            }
+
+            match best {
+                Some((_, track)) => {
+                    let _ = storage.add_favorite(&track);
+                    matched += 1;
+                }
+                None => {
+                    skipped += 1;
+                }
+            }
+
+            ffi::on_import_progress(current, total, matched, skipped);
+        }
+
+        println!("Library import finished: {matched} matched, {skipped} not found");
+        ffi::on_import_progress(total, total, matched, skipped);
+    });
+
+    true
+}
+
+pub fn cancel_import() -> bool {
+    IMPORT_CANCELLED.store(true, Ordering::Relaxed);
+    true
 }

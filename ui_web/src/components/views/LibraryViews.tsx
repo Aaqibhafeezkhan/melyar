@@ -1,5 +1,6 @@
-import { Clock3, Heart, Library, Music2 } from "lucide-react";
+import { Clock3, Download, Heart, Library, Music2 } from "lucide-react";
 import { usePlayer } from "@/store";
+import { useLibraryImport } from "@/lib/import";
 import { allKnown, findAlbum, findArtist, groupAlbums, groupArtists, libraryTracks } from "@/lib/registry";
 import { TrackTable } from "@/components/TrackTable";
 import { Artwork } from "@/components/Toolbar";
@@ -63,6 +64,7 @@ export function LikedView() {
   useLocale();
   const liked = usePlayer((s) => s.liked);
   const playTrack = usePlayer((s) => s.playTrack);
+  const startImport = useLibraryImport((s) => s.start);
   const totalSecs = liked.reduce((acc, t) => acc + (t.duration || 0), 0);
   return (
     <div className="px-6 pb-10 pt-6 lg:px-9">
@@ -85,6 +87,16 @@ export function LikedView() {
           <svg viewBox="0 0 24 24" className="ml-0.5 size-5 fill-current"><path d="M8 5v14l11-7z" /></svg>
         </button>
       ) : null}
+      <div className="mb-5 flex items-center gap-3">
+        <button
+          className="btn-glass chip text-xs inline-flex items-center gap-1.5"
+          onClick={() => void startImport()}
+        >
+          <Download className="size-3.5" />
+          {t("import.action")}
+        </button>
+        <span className="text-[11.5px] text-text-tertiary">{t("import.hint")}</span>
+      </div>
       <TrackTable tracks={liked} emptyText={t("library.liked.empty")} />
     </div>
   );

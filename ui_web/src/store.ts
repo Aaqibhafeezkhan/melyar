@@ -62,6 +62,7 @@ type Actions = {
   setQueueOpen: (open: boolean) => void;
   setExpandedPlayerOpen: (open: boolean) => void;
   toastNote: (text: string) => void;
+  loadFavorites: () => void;
   patch: (partial: Partial<State>) => void;
 };
 
@@ -101,6 +102,11 @@ export const usePlayer = create<State & Actions>()((set, get) => ({
   bridgeError: null,
 
   patch: (partial) => set(partial),
+
+  loadFavorites: () => {
+    const b = bridge();
+    if (b && typeof b.loadFavorites === "function") b.loadFavorites();
+  },
 
   navigate: (view) => set({ view, menu: null }),
 

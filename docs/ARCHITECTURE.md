@@ -45,6 +45,7 @@ profiled on its own.
 | `innertube/cipher.rs` | Solves the InnerTube stream cipher (the `n`-parameter transform) by extracting and interpreting the base.js actions. |
 | `innertube/parser.rs` | Converts raw InnerTube JSON into the track, album, artist and playlist models. |
 | `innertube/lyrics.rs` | Fetches lyrics from `lrclib`, returning synchronized LRC when available and plain text otherwise. |
+| `import.rs` | Reads another service's library export and matches every entry against InnerTube. |
 | `audio/engine.rs` | Wraps `libmpv`: playback, pause, seek, volume, property observation, gapless prefetch. |
 | `audio/queue.rs` | The playback queue, with shuffle and repeat handling. |
 | `db/storage.rs` | SQLite persistence: favorites, listening history, search history, lyrics cache. |

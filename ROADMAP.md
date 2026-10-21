@@ -102,9 +102,16 @@ client to switch to".
 
 *Reach the libraries users actually have, legally.*
 
-- [ ] **Spotify library import** via the official export format and the
-      documented API where permitted
-- [ ] **Apple Music library import** likewise
+- [x] **Library import from another service's export** - a Spotify account
+      export, a JSON list or a CSV file is read, every track is resolved
+      against InnerTube and the matches are added to the library. The
+      matching is conservative: the title has to agree, and an entry that
+      names an artist has to have that artist confirmed, so a cover of the
+      same song is not mistaken for the original.
+- [x] **Spotify and Apple Music export formats** - the Spotify export shape
+      and the CSV shape Apple Music produces are both understood.
+- [ ] **Import the other direction** - export a Melyar library for another
+      service, so the user is never locked in either direction
 - [ ] **Provider plugin architecture** - a documented interface so a provider
       can be added without touching the core
 - [ ] **Provider-agnostic search** with a unified result model

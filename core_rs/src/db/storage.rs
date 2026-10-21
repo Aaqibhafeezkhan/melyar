@@ -199,6 +199,33 @@ impl DbStorage {
         }
     }
 
+    /// Add a track to the library. Unlike `toggle_favorite` this never
+    /// removes an existing entry, which is what an import needs.
+    pub fn add_favorite(&self, track: &CxxTrackMetadata) -> Result<bool> {
+        let conn = self.conn.lock();
+        let now = Self::current_timestamp();
+        conn.execute(
+            "INSERT INTO favorites (track_id, title, artist, album, duration, thumbnail, added_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+             ON CONFLICT(track_id) DO UPDATE SET
+                 title = ?2,
+                 artist = ?3,
+                 album = ?4,
+                 duration = ?5,
+                 thumbnail = ?6",
+            params![
+                track.id,
+                track.title,
+                track.artist,
+                track.album,
+                track.duration_secs,
+                track.thumbnail_url,
+                now
+            ],
+        )?;
+        Ok(true)
+    }
+
     pub fn is_favorite(&self, track_id: &str) -> Result<bool> {
         let conn = self.conn.lock();
         let mut stmt = conn.prepare("SELECT 1 FROM favorites WHERE track_id = ?1")?;

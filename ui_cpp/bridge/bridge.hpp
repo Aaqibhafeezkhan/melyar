@@ -4,6 +4,7 @@
 #include <QString>
 #include <QVariantList>
 #include <QVariantMap>
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -18,6 +19,7 @@ namespace melyar {
     void on_state_changed(bool is_playing);
     void on_lyrics_loaded(rust::String track_id, rust::String lyrics_lrc);
     void on_search_results(rust::Vec<CxxTrackMetadata> results);
+    void on_import_progress(int32_t current, int32_t total, int32_t matched, int32_t skipped);
 }
 
 class MelyarBridge : public QObject {
@@ -35,6 +37,8 @@ class MelyarBridge : public QObject {
     Q_PROPERTY(QString currentLyrics READ currentLyrics NOTIFY lyricsChanged)
     Q_PROPERTY(QString pendingUri READ pendingUri NOTIFY uriChanged)
     Q_PROPERTY(QVariantMap pendingTrackMeta READ pendingTrackMeta NOTIFY trackMetadataChanged)
+    Q_PROPERTY(QVariantMap importProgress READ importProgress NOTIFY importProgressChanged)
+    Q_PROPERTY(QString pickedFile READ pickedFile NOTIFY filePicked)
     Q_PROPERTY(QVariantList searchResults READ searchResults NOTIFY searchResultsChanged)
     Q_PROPERTY(QVariantList favorites READ favorites NOTIFY favoritesChanged)
     Q_PROPERTY(QVariantList history READ history NOTIFY historyChanged)
@@ -66,6 +70,8 @@ public:
     QString currentLyrics() const { return m_currentLyrics; }
     QString pendingUri() const { return m_pendingUri; }
     QVariantMap pendingTrackMeta() const { return m_pendingTrackMeta; }
+    QVariantMap importProgress() const { return m_importProgress; }
+    QString pickedFile() const { return m_pickedFile; }
     QVariantList searchResults() const { return m_searchResults; }
     QVariantList favorites() const { return m_favorites; }
     QVariantList history() const { return m_history; }
@@ -115,6 +121,10 @@ public:
     Q_INVOKABLE bool removeSetting(const QString &key);
     Q_INVOKABLE void openUri(const QString &uri);
     Q_INVOKABLE QVariantMap getTrackMetadata(const QString &trackId);
+    Q_INVOKABLE void requestFilePick();
+    Q_INVOKABLE void setPickedFile(const QString &fileUrl);
+    Q_INVOKABLE void importLibrary(const QString &path);
+    Q_INVOKABLE void cancelImport();
 
 signals:
     void currentTrackChanged();
@@ -135,6 +145,9 @@ signals:
     void searchHistoryChanged();
     void uriChanged();
     void trackMetadataChanged();
+    void importProgressChanged();
+    void filePickRequested();
+    void filePicked(const QString &path);
 
 public slots:
     void handleProgressUpdate(double current, double total);
@@ -144,6 +157,7 @@ public slots:
     void handleStateChanged(bool isPlaying);
     void handleLyricsLoaded(const QString &trackId, const QString &lrc);
     void handleSearchResults(const QVariantList &results);
+    void setImportProgress(const QVariantMap &progress);
 
 private:
     static MelyarBridge* s_instance;
@@ -160,6 +174,8 @@ private:
     QString m_currentLyrics{""};
     QString m_pendingUri{""};
     QVariantMap m_pendingTrackMeta;
+    QVariantMap m_importProgress;
+    QString m_pickedFile{""};
     QVariantList m_searchResults;
     QVariantList m_favorites;
     QVariantList m_history;

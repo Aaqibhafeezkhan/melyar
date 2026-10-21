@@ -69,6 +69,9 @@ breadth - is stated plainly in the [roadmap](ROADMAP.md).
 - **Synchronized LRC lyrics** with timestamped highlighting and plain-text fallback.
 - Queue management for upcoming tracks, with gapless prefetch.
 - Personal library views for liked tracks, listening history, songs, albums, and artists.
+- **Library import** - bring your library over from another service. Melyar reads
+  a Spotify account export, a JSON list, or a CSV file, matches every track
+  against YouTube Music and adds the ones it recognises.
 - **Liquid Glass-inspired UI** with translucent surfaces, artwork-focused layouts,
   and animated controls.
 - **Twelve languages** - English, Turkish, Spanish, German, French, Italian,

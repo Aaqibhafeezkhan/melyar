@@ -2,6 +2,7 @@
 
 #include <QMetaObject>
 #include <QtConcurrent/QtConcurrent>
+#include <QUrl>
 #include <iostream>
 #include <QTimer>
 
@@ -423,6 +424,41 @@ void MelyarBridge::openUri(const QString &uri) {
     emit uriChanged();
 }
 
+void MelyarBridge::requestFilePick() {
+    m_pickedFile.clear();
+    emit filePickRequested();
+}
+
+void MelyarBridge::setPickedFile(const QString &fileUrl) {
+    // The QML dialog hands over a url, the core wants a path.
+    QString path = fileUrl;
+    if (path.startsWith("file://")) {
+        path = QUrl(path).toLocalFile();
+    }
+    if (path.isEmpty()) {
+        return;
+    }
+    m_pickedFile = path;
+    emit filePicked(path);
+}
+
+void MelyarBridge::importLibrary(const QString &path) {
+    if (path.trimmed().isEmpty()) return;
+    m_importProgress.clear();
+    emit importProgressChanged();
+
+    melyar::import_library(rust::String(path.toStdString()));
+}
+
+void MelyarBridge::cancelImport() {
+    melyar::cancel_import();
+}
+
+void MelyarBridge::setImportProgress(const QVariantMap &progress) {
+    m_importProgress = progress;
+    emit importProgressChanged();
+}
+
 void MelyarBridge::handleProgressUpdate(double current, double total) {
     m_currentPosition = current;
     if (total > 0.0) {
@@ -516,8 +552,7 @@ void on_lyrics_loaded(rust::String track_id, rust::String lyrics_lrc) {
     }
 }
 
-void on_search_results(rust::Vec<CxxTrackMetadata> results) {
-    auto *b = MelyarBridge::instance();
+void on_search_results(rust::Vec<CxxTrackMetadata> results) {    auto *b = MelyarBridge::instance();
     if (b) {
         QVariantList q_list;
         for (const auto &item : results) {
@@ -535,6 +570,24 @@ void on_search_results(rust::Vec<CxxTrackMetadata> results) {
             b->handleSearchResults(q_list);
         }, Qt::QueuedConnection);
     }
+}
+
+void on_import_progress(int32_t current, int32_t total, int32_t matched, int32_t skipped) {
+    auto *b = MelyarBridge::instance();
+    if (!b) {
+        return;
+    }
+
+    QVariantMap progress;
+    progress["current"] = current;
+    progress["total"] = total;
+    progress["matched"] = matched;
+    progress["skipped"] = skipped;
+    progress["done"] = total > 0 && current >= total;
+
+    QMetaObject::invokeMethod(b, [b, progress]() {
+        b->setImportProgress(progress);
+    }, Qt::QueuedConnection);
 }
 
 } // namespace melyar

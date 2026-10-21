@@ -1,6 +1,7 @@
 import { usePlayer } from "@/store";
 import { register } from "@/lib/registry";
 import { useSettings } from "@/lib/settings";
+import { bindImportProgress } from "@/lib/import";
 import type { RepeatMode, TrackMeta } from "@/lib/types";
 
 let bridgeInstance: any = null;
@@ -194,6 +195,9 @@ export function initBridge() {
       // ---- initial data pulls (signals already connected: nothing is lost) ----
       if (typeof b.loadFavorites === "function") b.loadFavorites();
       if (typeof b.loadHistory === "function") b.loadHistory();
+
+      // The library import reports its progress through the bridge.
+      bindImportProgress();
 
       // ---- persisted settings ----
       // The settings live in the core's database, so they survive a restart.

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Window
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtWebEngine
 import QtWebChannel
 
@@ -72,5 +73,22 @@ Window {
     Shortcut {
         sequence: "Ctrl+Down"
         onActivated: bridge.setVolume(Math.max(0, bridge.volume - 5))
+    }
+
+    // The native file dialog lives here, because the web interface cannot
+    // reach the file system. The bridge asks for it and receives the result.
+    FileDialog {
+        id: libraryFileDialog
+        title: qsTr("Import a library export")
+        fileMode: FileDialog.OpenFile
+        nameFilters: [qsTr("Library exports (*.json *.csv)"), qsTr("All files (*)")]
+        onAccepted: bridge.setPickedFile(selectedFile.toString())
+    }
+
+    Connections {
+        target: bridge
+        function onFilePickRequested() {
+            libraryFileDialog.open()
+        }
     }
 }
