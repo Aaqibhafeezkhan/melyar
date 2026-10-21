@@ -22,10 +22,15 @@ override_dh_auto_build:
 	fi
 	cmake --build build -j$(nproc)
 
+# The install is done here rather than through dh_auto_install, because the
+# project is configured into build/ and debhelper does not pick that up.
+override_dh_auto_install:
+	DESTDIR=$(CURDIR)/debian/melyar cmake --install build
+
 override_dh_auto_test:
 	# The lyrics test reaches out to lrclib, so it is skipped here. The
 	# continuous integration runs the full suite.
 	cargo test --manifest-path core_rs/Cargo.toml -- --skip lrclib
 
 override_dh_auto_clean:
-	rm -rf build debian/cargo-home
+	rm -rf build debian/melyar debian/.debhelper debian/files
