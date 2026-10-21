@@ -89,12 +89,27 @@ client to switch to".
 - [x] **A pool of client identities** - the web, television, Android and
       virtual reality clients are tried in turn, and the one that works is
       remembered. `yt-dlp` is now optional: streams resolve without it.
+- [x] **Readable on older Qt WebEngine** - the accent tints, the queue panel,
+      the toast and the artwork gradient were written with `color-mix()`,
+      which does not exist before Chromium 111. On what Ubuntu 24.04 ships
+      they came out solid or with no background at all. They are computed at
+      runtime now, so every engine takes one path.
+- [x] **Contrast that meets WCAG AA in both themes** - the audit measures
+      every piece of text against what is really behind it, at 4.5:1 for
+      ordinary text and 3:1 for large, and walks the light theme step for
+      step as well. That found 97 failures, fixed in three tokens, including
+      the full screen player writing grey text on its own dark surface.
+- [x] **A memory budget the build enforces** - proportional set size over the
+      whole process tree, measured at 318 MB against a ceiling of 400 MB
+- [x] **The interface audited at several window sizes** - 1360x860, 1200x760
+      and 1000x640, because a layout that holds at only one size is not done
 - [ ] **Right-to-left languages** - the layout uses physical margins in a few
       places, so Arabic and Hebrew need the spacing converted to logical
       properties first
 - [ ] **Keyboard-first navigation** - full focus traversal, visible focus rings
-- [ ] **Accessibility pass** - screen reader labels, contrast in the light
-      theme, respect for the reduced-motion preference everywhere
+- [ ] **Accessibility pass** - screen reader labels, respect for the
+      reduced-motion preference everywhere. The contrast half of this is
+      done; it now meets WCAG AA in both themes.
 - [ ] **Crash-safe database writes** - the history table is written on every
       track change
 

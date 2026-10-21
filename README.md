@@ -285,8 +285,8 @@ Prebuilt packages are attached to the
 toolchain is needed:
 
 ```bash
-tar xf melyar-v0.0.2-linux-x86_64.tar.gz
-cd melyar-0.0.2
+tar xf melyar-v0.0.3-linux-x86_64.tar.gz
+cd melyar-0.0.3
 sudo cp bin/melyar /usr/local/bin/
 sudo cp -r share/melyar /usr/local/share/
 sudo cp share/applications/melyar.desktop /usr/local/share/applications/
