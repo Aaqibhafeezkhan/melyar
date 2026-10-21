@@ -18,6 +18,7 @@ export const ko: Record<string, string> = {
   "nav.queue": "재생 대기열",
   "nav.aria.library": "라이브러리 내비게이션",
   "nav.search.placeholder": "아티스트, 노래, 앨범 검색",
+  "toolbar.seek": "재생 위치",
   "toolbar.shuffle": "셔플",
   "toolbar.prev": "이전",
   "toolbar.play": "재생",

@@ -86,7 +86,7 @@ function MiniTimeline() {
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       role="slider"
-      aria-label="Oynatma Konumu"
+      aria-label={t("toolbar.seek")}
       aria-valuemin={0}
       aria-valuemax={Math.floor(duration)}
       aria-valuenow={Math.floor(position)}
@@ -111,7 +111,7 @@ function Transport() {
   const cycleRepeat = usePlayer((s) => s.cycleRepeat);
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="toolbar-transport flex items-center gap-1">
       <button className="btn-glass transport-btn" data-active={shuffle} aria-label={t("toolbar.shuffle")} onClick={toggleShuffle}>
         <Shuffle className={cn("size-[17px]", shuffle && "text-accent-text")} />
       </button>
@@ -123,10 +123,10 @@ function Transport() {
         playing={playing}
         onToggle={toggle}
       />
-      <button className="btn-glass transport-btn" aria-label="Sonraki" onClick={next}>
+      <button className="btn-glass transport-btn" aria-label={t("toolbar.next")} onClick={next}>
         <SkipForward className="size-[19px] fill-current" />
       </button>
-      <button className="btn-glass transport-btn" data-active={repeat !== 0} aria-label="Tekrar" onClick={cycleRepeat}>
+      <button className="btn-glass transport-btn" data-active={repeat !== 0} aria-label={t("toolbar.repeat")} onClick={cycleRepeat}>
         {repeat === 2 ? <Repeat1 className="size-[17px] text-accent-text" /> : <Repeat className={cn("size-[17px]", repeat === 1 && "text-accent-text")} />}
       </button>
     </div>
@@ -165,7 +165,7 @@ function MiniTrackCapsule() {
         <p className="mini-track-artist">{track ? track.artist : t("toolbar.noTrack")}</p>
         <WaveBars />
       </div>
-      <div className="flex items-center gap-2">
+      <div className="mini-track-end flex items-center gap-2">
         <span className="mini-track-time">{formatTime(position)} / {formatTime(duration)}</span>
         <MiniTimeline />
       </div>
@@ -190,11 +190,13 @@ export function Toolbar() {
     <header className="toolbar glass-elevated backdrop-blur-lg border-b border-glass-border z-20">
       <Transport />
 
-      <div className="mx-auto flex min-w-0 max-w-[640px] flex-1 justify-center px-4">
+      {/* The grid already centres this zone — auto margins here would turn
+         the item into fit-content and let it overflow into the controls. */}
+      <div className="toolbar-track min-w-0 px-4">
         <MiniTrackCapsule />
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="toolbar-controls flex items-center gap-2">
         <button
           className="btn-glass icon-btn"
           data-active={lyricsOpen}
@@ -214,17 +216,19 @@ export function Toolbar() {
         <button className="btn-glass icon-btn hidden sm:grid" aria-label={muted ? t("toolbar.mute.off") : t("toolbar.mute.on")} onClick={toggleMute}>
           <VolIcon className="size-5" />
         </button>
-        <GlassSlider
-          className="hidden w-28 lg:block"
-          value={muted ? 0 : volume}
-          onChange={setVolume}
-          min={0}
-          max={1}
-          step={0.01}
-          showTooltip
-          formatTooltip={(v) => `${Math.round(v * 100)}%`}
-          aria-label={t("toolbar.volume")}
-        />
+        <div className="toolbar-volume">
+          <GlassSlider
+            className="hidden w-28 lg:block"
+            value={muted ? 0 : volume}
+            onChange={setVolume}
+            min={0}
+            max={1}
+            step={0.01}
+            showTooltip
+            formatTooltip={(v) => `${Math.round(v * 100)}%`}
+            aria-label={t("toolbar.volume")}
+          />
+        </div>
       </div>
     </header>
   );

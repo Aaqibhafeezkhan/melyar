@@ -135,7 +135,6 @@ export function Sidebar() {
           <button
             ref={createRef("queue")}
             className="text-btn relative z-10"
-            data-active={queueOpen}
             onClick={() => setQueueOpen(!queueOpen)}
           >
             <ListMusic className="size-[17px]" />

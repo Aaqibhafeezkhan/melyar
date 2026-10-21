@@ -18,6 +18,7 @@ export const de: Record<string, string> = {
   "nav.queue": "Warteschlange",
   "nav.aria.library": "Bibliotheksnavigation",
   "nav.search.placeholder": "Interpreten, Titel, Alben suchen",
+  "toolbar.seek": "Wiedergabeposition",
   "toolbar.shuffle": "Zufall",
   "toolbar.prev": "Zurück",
   "toolbar.play": "Abspielen",

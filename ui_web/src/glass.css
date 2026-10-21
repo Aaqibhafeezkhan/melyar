@@ -140,7 +140,7 @@
   --capsule-h: 48px;
   --card-min: 150px;
   --toolbar-track-min: 220px;
-  --toolbar-side-min: 210px;
+  --toolbar-side-min: 160px;
   --queue-w: 380px;
   --queue-w-narrow: 320px;
   /* Queue docks as its own grid column only at/above this window width;
@@ -1619,7 +1619,7 @@
 .mini-track-artist { font-size: var(--text-xs); color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Time + mini timeline: fixed as a group so only the track text ellipsizes. */
 .mini-track-meta { display: flex; align-items: center; gap: var(--space-2); flex: none; }
-.mini-track-time { font-size: var(--text-xs); font-variant-numeric: tabular-nums; color: var(--text-tertiary); white-space: nowrap; }
+.mini-track-time { font-size: var(--text-xs); font-variant-numeric: tabular-nums; color: var(--text-tertiary); white-space: nowrap; min-width: 0; }
 .mini-track-progress { position: relative; width: 100%; max-width: 180px; height: 3px; border-radius: var(--radius-full); background: var(--mute-25); margin-left: var(--space-2); cursor: pointer; overflow: visible; }
 .mini-track-progress:hover { height: 4px; }
 .mini-track-progress-fill { position: absolute; top: 0; left: 0; bottom: 0; border-radius: var(--radius-full); background: var(--accent); transform-origin: left center; transition: width 100ms linear; box-shadow: 0 0 6px var(--accent), 0 0 12px var(--accent-soft); }
@@ -2004,6 +2004,13 @@
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* The screen styles below used to sit INSIDE the @media print block above,
+   which meant the engine applied them only on paper: the expanded player's
+   80px play button lost its accent circle and rendered as a bare glyph, and
+   the large transport buttons lost their glass surface. They belong to the
+   screen, so they are declared here at the top level. */
 
 .glass-bar {
   background: var(--glass-bg);
@@ -2038,6 +2045,7 @@
 .transport-btn-large {
   display: grid; place-items: center;
   width: 56px; height: 56px;
+  flex: none;
   border-radius: var(--radius-pill);
   background: var(--glass-bg);
   color: #fff;
@@ -2049,11 +2057,20 @@
 }
 .transport-btn-large:hover { background: var(--glass-bg-hover); color: var(--accent); }
 .transport-btn-large:active { transform: scale(0.95); }
+.transport-btn-large:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+.transport-btn-large[data-active="true"] {
+  background: var(--glass-bg-hover);
+  color: var(--accent);
+}
 
 /* ---- Main Play/Pause (expanded player) ---- */
 .play-pause-main {
   display: grid; place-items: center;
   width: 80px; height: 80px;
+  flex: none;
   border-radius: var(--radius-pill);
   background: linear-gradient(135deg, var(--accent) 0%, #e0334d 100%);
   color: var(--on-accent);
@@ -2061,17 +2078,47 @@
   box-shadow: 0 8px 32px rgba(250, 35, 59, 0.4);
   transition: transform var(--duration-fast) var(--ease-spring);
 }
+.play-pause-main:hover { filter: brightness(1.08); }
 .play-pause-main:active { transform: scale(0.95); }
+.play-pause-main:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 3px;
+}
 
 /* ---- Queue panel track rows ---- */
 .track-row { cursor: pointer; user-select: none; }
 
-/* Mini-timeline width, mini-track capsule/artwork/info/title/artist/time,
-   cover-expanded, lyrics overlay + lyric lines, and the queue panel all live
-   in their canonical definitions above (button system, expanded-player block,
-   layout system). No redefinitions here — the trailing @apply copies forced
-   fixed 380px/72px geometry and dark overlays over the responsive system. */
+/* ============================================================
+   RESPONSIVE TOOLBAR — the queue panel narrows the toolbar without
+   changing the window, so width queries look at the toolbar itself.
+   Parts shed in the order the reference players do: first the volume
+   slider, then the seek bar inside the capsule. Icon buttons keep
+   their 40px hit target at every width — they are never squeezed.
+   ============================================================ */
+.toolbar { container-type: inline-size; }
 
+@container (max-width: 820px) {
+  .toolbar-volume { display: none; }
+}
+
+@container (max-width: 640px) {
+  .mini-track-end { display: none; }
+}
+
+/* The capsule's end group (time + seek) may shrink, and the capsule
+   clips anything that would spill into the neighbouring zones. */
+.mini-track-capsule { overflow: hidden; }
+.mini-track-end {
+  min-width: 0;
+  display: flex; align-items: center; gap: var(--space-2);
+}
+.mini-track-end .mini-timeline { flex: 1 1 64px; min-width: 44px; }
+
+/* Keyboard focus stays visible on every custom control. */
+.mini-timeline:focus-visible,
+.mini-track-capsule:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
 }
 
 /* ---- Ambient glow for active elements ---- */

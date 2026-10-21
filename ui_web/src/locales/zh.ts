@@ -18,6 +18,7 @@ export const zh: Record<string, string> = {
   "nav.queue": "播放队列",
   "nav.aria.library": "音乐库导航",
   "nav.search.placeholder": "搜索艺人、歌曲、专辑",
+  "toolbar.seek": "播放位置",
   "toolbar.shuffle": "随机播放",
   "toolbar.prev": "上一首",
   "toolbar.play": "播放",

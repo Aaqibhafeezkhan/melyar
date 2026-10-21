@@ -21,6 +21,7 @@ export const en: Record<string, string> = {
   "nav.search.placeholder": "Search artists, songs, albums",
 
   // Toolbar
+  "toolbar.seek": "Playback position",
   "toolbar.shuffle": "Shuffle",
   "toolbar.prev": "Previous",
   "toolbar.play": "Play",

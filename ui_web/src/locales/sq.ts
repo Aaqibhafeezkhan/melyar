@@ -15,6 +15,7 @@ export const sq: Record<string, string> = {
   "nav.search.placeholder": "Kërko artistë, këngë, albume",
 
   // Toolbar
+  "toolbar.seek": "Pozicioni i riprodhimit",
   "toolbar.shuffle": "Përziej",
   "toolbar.prev": "E mëparshmja",
   "toolbar.play": "Luaj",

@@ -21,6 +21,7 @@ export const tr: Record<string, string> = {
   "nav.search.placeholder": "Sanatçı, şarkı, albüm ara",
 
   // Araç çubuğu
+  "toolbar.seek": "Oynatma konumu",
   "toolbar.shuffle": "Karıştır",
   "toolbar.prev": "Önceki",
   "toolbar.play": "Çal",

@@ -82,7 +82,7 @@ export function SettingsPanel() {
 
   return (
     <div
-      className="settings-overlay fixed inset-0 z-50 flex items-center justify-center p-6"
+      className="settings-overlay fixed inset-0 z-[var(--z-modal-panel)] flex items-center justify-center p-6"
       onClick={(e) => {
         if (e.target === e.currentTarget) setOpen(false);
       }}

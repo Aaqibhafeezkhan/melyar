@@ -18,6 +18,7 @@ export const ja: Record<string, string> = {
   "nav.queue": "キュー",
   "nav.aria.library": "ライブラリのナビゲーション",
   "nav.search.placeholder": "アーティスト、曲、アルバムを検索",
+  "toolbar.seek": "再生位置",
   "toolbar.shuffle": "シャッフル",
   "toolbar.prev": "前へ",
   "toolbar.play": "再生",

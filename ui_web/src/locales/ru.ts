@@ -18,6 +18,7 @@ export const ru: Record<string, string> = {
   "nav.queue": "Очередь",
   "nav.aria.library": "Навигация по библиотеке",
   "nav.search.placeholder": "Исполнители, треки, альбомы",
+  "toolbar.seek": "Позиция воспроизведения",
   "toolbar.shuffle": "Перемешать",
   "toolbar.prev": "Назад",
   "toolbar.play": "Воспроизвести",

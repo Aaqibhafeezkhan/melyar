@@ -226,23 +226,32 @@ export function ExpandedPlayer() {
               {current?.artist ?? t("expanded.unknownArtist")}
             </p>
           </div>
-          <button
-            ref={moreBtnRef}
-            className="btn-glass text-white/90 hover:bg-white/10 hover:text-white"
-            aria-label={t("expanded.moreActions")}
-            onClick={handleMoreClick}
-          >
-            <MoreHorizontal className="size-6" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              className="btn-glass text-white/90 hover:bg-white/10 hover:text-white"
+              aria-label={t("settings.title")}
+              onClick={() => setSettingsOpen(true)}
+            >
+              <Settings className="size-6" />
+            </button>
+            <button
+              ref={moreBtnRef}
+              className="btn-glass text-white/90 hover:bg-white/10 hover:text-white"
+              aria-label={t("expanded.moreActions")}
+              onClick={handleMoreClick}
+            >
+              <MoreHorizontal className="size-6" />
+            </button>
+          </div>
         </header>
 
         {/* Main content — scrollable */}
         <div className="flex-1 overflow-y-auto px-5 py-6">
           {/* Cover artwork */}
-          <div className="flex justify-center mb-6 relative group">
+          <div className="flex justify-center mb-5 relative group">
             <div
               className="cover-expanded relative rounded-[20px] overflow-hidden shadow-2xl shadow-accent-glow/40 bg-panel glass-strong border border-white/10"
-              style={{ width: 260, height: 260 }}
+              style={{ width: "min(260px, 28vh)", height: "min(260px, 28vh)" }}
             >
               {current?.thumbnail ? (
                 <img src={current.thumbnail} alt="" className="h-full w-full object-cover" />
@@ -271,7 +280,7 @@ export function ExpandedPlayer() {
           </div>
 
           {/* Song info */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             {current?.album && (
               <p className="text-xs font-semibold uppercase tracking-widest text-text-tertiary mb-2">
                 {current.album}
@@ -280,7 +289,7 @@ export function ExpandedPlayer() {
             <h1 className="text-[22px] md:text-[28px] font-bold tracking-tight text-white mb-2">
               {current?.title ?? "Melyar"}
             </h1>
-            <p className="text-[15px] font-medium text-white/80 mb-6">
+            <p className="text-[15px] font-medium text-white/80 mb-5">
               {current?.artist ?? t("expanded.unknownArtist")}
             </p>
 
@@ -303,7 +312,7 @@ export function ExpandedPlayer() {
           </div>
 
           {/* Progress bar */}
-          <div className="mb-8">
+          <div className="mb-6">
             <div
               ref={timelineRef}
               className="relative h-6 bg-white/10 rounded-full cursor-pointer overflow-hidden"
@@ -314,7 +323,7 @@ export function ExpandedPlayer() {
               onMouseMove={handleTimelineMouseMove}
               onMouseLeave={handleTimelineMouseLeave}
               role="slider"
-              aria-label="Oynatma Konumu"
+              aria-label={t("toolbar.seek")}
               aria-valuemin={0}
               aria-valuemax={Math.floor(duration)}
               aria-valuenow={Math.floor(position)}
@@ -375,63 +384,58 @@ export function ExpandedPlayer() {
             <p className="text-center text-white/40 text-sm mt-4">{t("expanded.lyricsLoading")}</p>
           )}
 
-          {/* Controls row */}
-          <div className="flex items-center justify-between px-2">
-            {/* Left: timer + loop */}
-            <div className="flex items-center gap-3">
-              <div className="flex flex-col items-center gap-1">
-                <button className="btn-glass text-white/60 hover:bg-white/10 hover:text-white p-1.5" aria-label={t("expanded.repeat")} onClick={cycleRepeat}>
-                  {repeat === 2 ? (
-                    <Repeat1 className="size-5 text-accent" />
-                  ) : (
-                    <Repeat className={cn("size-5", repeat === 1 && "text-accent")} />
-                  )}
-                </button>
-              </div>
-              <button
-                className="btn-glass text-white/90 hover:bg-white/10 hover:text-white"
-                aria-label={t("toolbar.prev")}
-                onClick={prev}
-              >
-                <SkipBack className="size-7 fill-current" />
-              </button>
-            </div>
-
-            {/* Center: Play/Pause */}
+          {/* Controls row — one centered group, in the order every
+              reference player uses: shuffle, previous, play, next, repeat. */}
+          <div className="flex items-center justify-center gap-5 px-2">
+            <button
+              className="transport-btn-large"
+              data-active={shuffle}
+              aria-label={t("toolbar.shuffle")}
+              onClick={toggleShuffle}
+            >
+              <Shuffle className={cn("size-6", shuffle && "text-accent")} />
+            </button>
+            <button
+              className="transport-btn-large"
+              aria-label={t("toolbar.prev")}
+              onClick={prev}
+            >
+              <SkipBack className="size-7 fill-current" />
+            </button>
             <button
               className="play-pause-main"
               aria-label={playing ? t("toolbar.pause") : t("toolbar.play")}
               onClick={toggle}
             >
               {playing ? (
-                <Pause className="size-7 fill-current ml-0.5" />
+                <Pause className="size-8 fill-current ml-0.5" />
               ) : (
-                <Play className="size-7 fill-current ml-1" />
+                <Play className="size-8 fill-current ml-1" />
               )}
             </button>
-
-            {/* Right: next + settings */}
-            <div className="flex items-center gap-3">
-              <button
-                className="btn-glass text-white/90 hover:bg-white/10 hover:text-white"
-                aria-label="Sonraki"
-                onClick={next}
-              >
-                <SkipForward className="size-7 fill-current" />
-              </button>
-              <div className="flex flex-col items-center gap-1">
-                <button className="btn-glass text-white/60 hover:bg-white/10 hover:text-white p-1.5" aria-label={t("settings.title")} onClick={() => setSettingsOpen(true)}>
-                  <Settings className="size-5" />
-                </button>
-                <button className="btn-glass text-white/60 hover:bg-white/10 hover:text-white p-1.5" aria-label={t("expanded.shuffle")} onClick={toggleShuffle}>
-                  <Shuffle className={cn("size-5", shuffle && "text-accent")} />
-                </button>
-              </div>
-            </div>
+            <button
+              className="transport-btn-large"
+              aria-label={t("toolbar.next")}
+              onClick={next}
+            >
+              <SkipForward className="size-7 fill-current" />
+            </button>
+            <button
+              className="transport-btn-large"
+              data-active={repeat !== 0}
+              aria-label={t("toolbar.repeat")}
+              onClick={cycleRepeat}
+            >
+              {repeat === 2 ? (
+                <Repeat1 className="size-6 text-accent" />
+              ) : (
+                <Repeat className={cn("size-6", repeat === 1 && "text-accent")} />
+              )}
+            </button>
           </div>
 
           {/* Bottom row: lyrics + queue + external link */}
-          <div className="mt-8 flex items-center justify-center gap-4">
+          <div className="mt-6 flex items-center justify-center gap-4">
             <button
               className="btn-glass text-white/80 hover:bg-white/10 hover:text-white"
               aria-label={lyricsOpen ? t("toolbar.lyrics.close") : t("toolbar.lyrics.open")}

@@ -18,6 +18,7 @@ export const uk: Record<string, string> = {
   "nav.queue": "Черга",
   "nav.aria.library": "Навігація бібліотекою",
   "nav.search.placeholder": "Виконавці, треки, альбоми",
+  "toolbar.seek": "Позиція відтворення",
   "toolbar.shuffle": "Випадковий порядок",
   "toolbar.prev": "Назад",
   "toolbar.play": "Відтворити",

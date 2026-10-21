@@ -18,6 +18,7 @@ export const it: Record<string, string> = {
   "nav.queue": "Coda",
   "nav.aria.library": "Navigazione della libreria",
   "nav.search.placeholder": "Cerca artisti, brani, album",
+  "toolbar.seek": "Posizione di riproduzione",
   "toolbar.shuffle": "Casuale",
   "toolbar.prev": "Precedente",
   "toolbar.play": "Riproduci",
