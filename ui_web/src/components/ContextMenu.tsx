@@ -85,7 +85,7 @@ export function ContextMenu() {
             onClick={(e) => { e.stopPropagation(); toggleLike(track); closeMenu(); }}
           >
             <div className="flex items-center gap-3">
-              <Heart className={cn("size-4", isLiked && "fill-accent text-accent")} />
+              <Heart className={cn("size-4", isLiked && "fill-accent text-accent-text")} />
               <span className="text-sm font-medium text-text">
                 {isLiked ? t("menu.unlike") : t("menu.like")}
               </span>

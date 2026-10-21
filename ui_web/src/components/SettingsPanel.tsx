@@ -97,7 +97,7 @@ export function SettingsPanel() {
         <header className="flex items-center justify-between px-5 py-4 border-b border-line shrink-0">
           <div className="flex items-center gap-3">
             <div className="size-8 rounded-lg bg-accent/15 flex items-center justify-center">
-              <SettingsIcon className="size-5 text-accent" />
+              <SettingsIcon className="size-5 text-accent-text" />
             </div>
             <h2 className="text-[15px] font-bold tracking-tight text-text">{t("settings.title")}</h2>
           </div>
@@ -163,7 +163,7 @@ export function SettingsPanel() {
                       className={cn(
                         "rounded-md px-2 py-1 text-[11px] font-medium transition-colors truncate",
                         active
-                          ? "bg-accent/20 text-accent"
+                          ? "bg-accent/20 text-accent-text"
                           : "text-text-tertiary hover:text-text hover:bg-hover",
                       )}
                       aria-pressed={active}

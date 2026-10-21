@@ -69,7 +69,7 @@ export function QueuePanel() {
       <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-glass-border shrink-0">
         <div className="flex items-center gap-3">
           <div className="size-8 rounded-lg bg-panel flex items-center justify-center">
-            <ListMusic className="size-5 text-accent" />
+            <ListMusic className="size-5 text-accent-text" />
           </div>
           <div>
             <h2 className="text-[15px] font-bold tracking-tight text-text">{t("queue.title")}</h2>
@@ -128,7 +128,7 @@ export function QueuePanel() {
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <span className={cn("block truncate text-[14px] font-medium", active && "text-accent")}>
+                    <span className={cn("block truncate text-[14px] font-medium", active && "text-accent-text")}>
                       {track.title}
                     </span>
                     <span className="block truncate text-[12px] text-text-secondary">{track.artist}</span>

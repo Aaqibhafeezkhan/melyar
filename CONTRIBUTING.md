@@ -150,6 +150,12 @@ checks the light theme as well as the dark one, and it pushes deliberately
 awkward data through the interface, a title long enough to break any layout
 and a track with no artwork, because those are what a real library contains.
 
+The contrast is measured against the colour that is really behind the text,
+compositing every layer. Tailwind writes its tints in oklab() and color-mix(),
+so the measurement goes through a canvas, which the engine normalises. An
+earlier version of the check read the wrong background and reported a false
+problem; it is verified in both directions now.
+
 Run it yourself:
 
 ```bash

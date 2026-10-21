@@ -89,7 +89,7 @@ export function HomeView() {
         >
           <Artwork src={featured.thumbnail} className="size-24 lg:size-28" />
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-wider text-accent">{t("home.kicker.recent")}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-accent-text">{t("home.kicker.recent")}</p>
             <p className="mt-1 truncate text-2xl md:text-3xl font-bold tracking-tight">{featured.title}</p>
             <p className="truncate text-sm text-text-tertiary">{featured.artist}</p>
           </div>

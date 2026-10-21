@@ -113,7 +113,7 @@ function Transport() {
   return (
     <div className="flex items-center gap-1">
       <button className="btn-glass transport-btn" data-active={shuffle} aria-label={t("toolbar.shuffle")} onClick={toggleShuffle}>
-        <Shuffle className={cn("size-[17px]", shuffle && "text-accent")} />
+        <Shuffle className={cn("size-[17px]", shuffle && "text-accent-text")} />
       </button>
       <button className="btn-glass transport-btn" aria-label={t("toolbar.prev")} onClick={prev}>
         <SkipBack className="size-[19px] fill-current" />
@@ -127,7 +127,7 @@ function Transport() {
         <SkipForward className="size-[19px] fill-current" />
       </button>
       <button className="btn-glass transport-btn" data-active={repeat !== 0} aria-label="Tekrar" onClick={cycleRepeat}>
-        {repeat === 2 ? <Repeat1 className="size-[17px] text-accent" /> : <Repeat className={cn("size-[17px]", repeat === 1 && "text-accent")} />}
+        {repeat === 2 ? <Repeat1 className="size-[17px] text-accent-text" /> : <Repeat className={cn("size-[17px]", repeat === 1 && "text-accent-text")} />}
       </button>
     </div>
   );

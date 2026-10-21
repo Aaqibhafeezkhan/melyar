@@ -299,7 +299,7 @@ export const GlassButton = forwardRef<HTMLButtonElement, GlassButtonProps>(
         : variant === "ghost"
         ? "bg-transparent border-transparent hover:bg-glass-hover"
         : "glass-strong",
-      active && variant !== "primary" && "bg-accent/15 border-accent/30 text-accent",
+      active && variant !== "primary" && "bg-accent/15 border-accent/30 text-accent-text",
       loading && "opacity-50 cursor-wait",
       disabled && "opacity-30 pointer-events-none",
       className
@@ -381,7 +381,7 @@ export const GlassIconButton = forwardRef<HTMLButtonElement, GlassIconButtonProp
       "grid place-items-center rounded-full glass-interactive focus-ring",
       iconSizes[size],
       intensity === "strong" ? "glass-strong" : "glass-elevated",
-      active && "bg-accent/15 border-accent/30 text-accent",
+      active && "bg-accent/15 border-accent/30 text-accent-text",
       loading && "opacity-50 cursor-wait",
       disabled && "opacity-30 pointer-events-none",
       className
@@ -734,7 +734,7 @@ export const GlassSegmented = forwardRef<HTMLDivElement, GlassSegmentedProps>(
               "relative z-10 flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full",
               "transition-colors",
               value === option.value
-                ? "text-accent"
+                ? "text-accent-text"
                 : "text-text-secondary hover:text-text",
               "focus-ring"
             )}
@@ -829,7 +829,7 @@ export const GlassSearch = forwardRef<HTMLInputElement, GlassSearchProps>(
           <svg
             className={cn(
               "size-5 flex-shrink-0 transition-colors",
-              isFocused ? "text-accent" : "text-text-tertiary"
+              isFocused ? "text-accent-text" : "text-text-tertiary"
             )}
             viewBox="0 0 24 24"
             fill="none"

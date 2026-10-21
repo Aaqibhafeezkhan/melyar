@@ -60,7 +60,7 @@ function Row({
       <button className="group flex min-w-0 items-center gap-3 text-left" onClick={() => (isCurrent ? usePlayer.getState().toggle() : playTrack(track, context))}>
         <Artwork src={track.thumbnail} className="size-10" />
         <span className="min-w-0">
-          <span className={cn("track-title block truncate text-[13.5px] font-medium", isCurrent && "text-accent")}>
+          <span className={cn("track-title block truncate text-[13.5px] font-medium", isCurrent && "text-accent-text")}>
             {track.title}
           </span>
           <span className="block truncate text-[12px] text-text-tertiary hover:underline">{track.artist}</span>
@@ -85,7 +85,7 @@ function Row({
         aria-pressed={isLiked}
         onClick={() => toggleLike(track)}
       >
-        <Heart className={cn("size-[15px]", isLiked ? "fill-accent text-accent" : "text-text-tertiary")} />
+        <Heart className={cn("size-[15px]", isLiked ? "fill-accent text-accent-text" : "text-text-tertiary")} />
       </button>
 
       <button

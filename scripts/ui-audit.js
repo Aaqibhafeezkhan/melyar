@@ -93,12 +93,52 @@
   // The contrast of the text against what is behind it. A light surface with
   // light text is invisible, and the browser engine does not always blur
   // what is behind a panel, so this has to be checked rather than assumed.
+  //
+  // The colours have to be read carefully. Tailwind writes its tints in
+  // oklab() and color-mix(), so a plain regex over the computed value finds
+  // nothing and the measurement ends up against the wrong background. A
+  // canvas normalises any colour the engine understands.
+  const colourContext = document.createElement("canvas").getContext("2d");
+
   function parseColor(value) {
-    const m = /rgba?\(([^)]+)\)/.exec(value || "");
-    if (!m) return null;
-    const parts = m[1].split(",").map((p) => parseFloat(p.trim()));
-    if (parts.length < 3 || parts.some((p) => Number.isNaN(p))) return null;
-    return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
+    if (!value) return null;
+
+    // The common case, and the one that needs the alpha.
+    const m = /rgba?\(([^)]+)\)/.exec(value);
+    if (m) {
+      const parts = m[1].split(/[,/\s]+/).filter(Boolean).map(parseFloat);
+      if (parts.length >= 3 && !parts.some((p) => Number.isNaN(p))) {
+        return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
+      }
+    }
+
+    // Anything else, let the engine work it out.
+    try {
+      colourContext.fillStyle = "#000000";
+      colourContext.fillStyle = value;
+      const normalised = colourContext.fillStyle;
+      if (normalised && normalised !== value) {
+        const n = /rgba?\(([^)]+)\)/.exec(normalised);
+        if (n) {
+          const parts = n[1].split(/[,/\s]+/).filter(Boolean).map(parseFloat);
+          if (parts.length >= 3) {
+            return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
+          }
+        }
+        const hex = /^#([0-9a-f]{6})$/i.exec(normalised);
+        if (hex) {
+          return {
+            r: parseInt(hex[1].slice(0, 2), 16),
+            g: parseInt(hex[1].slice(2, 4), 16),
+            b: parseInt(hex[1].slice(4, 6), 16),
+            a: 1,
+          };
+        }
+      }
+    } catch (e) {
+      return null;
+    }
+    return null;
   }
 
   function blend(top, bottom) {
@@ -127,14 +167,26 @@
     return (lighter + 0.05) / (darker + 0.05);
   }
 
+  /**
+   * The colour behind an element: every layer between it and the first
+   * opaque one, composited together.
+   */
   function effectiveBackground(el) {
+    const layers = [];
     let node = el;
-    while (node && node !== document.documentElement) {
+    while (node) {
       const bg = parseColor(getComputedStyle(node).backgroundColor);
-      if (bg && bg.a > 0.9) return bg;
+      if (bg && bg.a > 0) {
+        layers.push(bg);
+        if (bg.a >= 0.99) break;
+      }
       node = node.parentElement;
     }
-    return { r: 255, g: 255, b: 255, a: 1 };
+    let result = { r: 255, g: 255, b: 255, a: 1 };
+    for (let i = layers.length - 1; i >= 0; i -= 1) {
+      result = blend(layers[i], result);
+    }
+    return result;
   }
 
   function checkContrast(tag) {
@@ -161,6 +213,8 @@
           (el.textContent || "").trim().slice(0, 24) +
             " (ratio " +
             ratio.toFixed(1) +
+            ", color " +
+            style.color +
             ", class " +
             String(el.className).slice(0, 40) +
             ")",

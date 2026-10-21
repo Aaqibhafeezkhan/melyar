@@ -176,7 +176,7 @@ export function Sidebar() {
                   className={cn(
                     "w-full flex items-center gap-2 px-3 py-1.5 text-[12px] transition-colors",
                     active
-                      ? "text-accent bg-accent/10"
+                      ? "text-accent-text bg-accent/10"
                       : "text-text-secondary hover:bg-hover hover:text-text",
                   )}
                   role="menuitemradio"

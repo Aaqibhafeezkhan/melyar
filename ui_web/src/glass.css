@@ -10,6 +10,12 @@
    ============================================================ */
 
 :root {
+  /* The accent is chosen by the user and it can be pale. On a light
+     surface a pale accent disappears as text, so the colour used for text
+     is a darkened version of it. It follows the accent, so changing the
+     accent changes both at once. */
+  --accent-text: var(--accent);
+
   /* ---- Temel Renkler (Apple Music benzeri derinlik) ---- */
   --bg: #0b0b0d;
   --bg-elevated: #111114;
@@ -143,6 +149,8 @@
 }
 
 [data-theme="light"] {
+  /* A pale accent has to be darkened before it is used as text. */
+  --accent-text: color-mix(in oklab, var(--accent), #000 34%);
   --bg: #f7f7fa;
   --bg-elevated: #ffffff;
   --bg-content: #ffffff;
@@ -203,6 +211,7 @@
   --color-glass-shadow-strong: var(--glass-shadow-strong);
   --color-glass-shadow-xl: var(--glass-shadow-xl);
   --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
   --color-accent-dim: var(--accent-dim);
   --color-accent-soft: var(--accent-soft);
   --color-accent-glow: var(--accent-glow);
@@ -653,7 +662,9 @@
 }
 .text-btn:active { background: var(--bg-active); }
 .text-btn[data-active="true"] {
-  color: var(--accent);
+  /* The accent can be pale, so the text uses the accent darkened for text
+     rather than the accent itself. */
+  color: var(--accent-text);
   background: var(--accent-soft);
   border-color: color-mix(in oklab, var(--accent) 25%, transparent);
   font-weight: 600;
