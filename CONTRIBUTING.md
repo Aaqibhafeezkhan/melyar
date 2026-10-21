@@ -18,6 +18,7 @@ This document is the contract for how changes land. It is deliberately short.
 - [Translations](#translations)
 - [Capturing a screenshot](#capturing-a-screenshot)
 - [Checks](#checks)
+- [Cutting a release](#cutting-a-release)
 - [Commit and branch conventions](#commit-and-branch-conventions)
 - [Pull request process](#pull-request-process)
 - [Code of conduct](#code-of-conduct)
@@ -320,6 +321,89 @@ cmake --build build -j"$(nproc)"
 `ui_web/dist/` is committed so that a plain `cmake` build produces a runnable
 binary. **If you change anything under `ui_web/src/`, rebuild the bundle and
 commit the regenerated `dist/`** with your changes.
+
+---
+
+## Cutting a release
+
+The version lives in four places, and all four have to move together:
+
+| File | Field |
+|---|---|
+| `Cargo.toml` | `[workspace.package] version` |
+| `PKGBUILD` | `pkgver` |
+| `README.md` | the tarball name and the `cd` under **Tarball** |
+| `debian/changelog` | a new entry at the top, `melyar (X.Y.Z-1)` |
+
+Then, in order:
+
+```bash
+# 1. Every check, green, on the release commit
+cargo fmt --all -- --check
+cargo clippy --manifest-path core_rs/Cargo.toml --all-targets -- -D warnings
+cargo test --manifest-path core_rs/Cargo.toml
+cd ui_web && pnpm exec tsc --noEmit && pnpm build && cd ..
+
+# 2. Commit, tag, and push the tag with it
+git commit -am "release: version X.Y.Z"
+git tag -a vX.Y.Z -m "Melyar vX.Y.Z"
+git push origin master --follow-tags
+```
+
+CI then builds the Debian package and validates it — it reads the control
+file, lists the contents, unpacks it and tests that the binary, the web
+interface, the desktop entry and the icon are where they should be — and
+uploads it as the `deb` artifact.
+
+```bash
+# 3. Take the package from that run
+RUNID=$(gh run list --repo MAKHMUDuz/melyar --limit 1 --json databaseId --jq '.[0].databaseId')
+gh run download "$RUNID" -n deb -D ./release-deb --repo MAKHMUDuz/melyar
+```
+
+The tarball is the same install tree the package uses, with `usr/` taken
+off and the repository's own files added:
+
+```bash
+# 4. Stage the install, then assemble the tree
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+cmake --build build -j"$(nproc)"
+DESTDIR=/tmp/stage cmake --install build
+
+mkdir -p /tmp/pkg/melyar-X.Y.Z
+cp -r /tmp/stage/usr/bin /tmp/stage/usr/share /tmp/pkg/melyar-X.Y.Z/
+cp PKGBUILD LICENSE LICENSE-APACHE LICENSE-MIT README.md README.tr.md \
+  /tmp/pkg/melyar-X.Y.Z/
+
+# 5. Pack it, and write the checksum beside it
+cd /tmp/pkg
+tar -czf melyar-vX.Y.Z-linux-x86_64.tar.gz melyar-X.Y.Z
+sha256sum melyar-vX.Y.Z-linux-x86_64.tar.gz \
+  > melyar-vX.Y.Z-linux-x86_64.tar.gz.sha256
+```
+
+**Run the tarball before publishing it, not the build tree.** It is a
+different file from the one a user downloads, it resolves the interface from
+its own `share/`, and that is worth proving:
+
+```bash
+tar xf melyar-vX.Y.Z-linux-x86_64.tar.gz -C /tmp/app
+XDG_DATA_HOME=$(mktemp -d) MELYAR_EVAL_FILE=scripts/ui-audit.js \
+  /tmp/app/melyar-X.Y.Z/bin/melyar
+```
+
+It has to report `problems=0`. A clean profile matters: a reused one carries
+a saved theme and accent, and the check would be measuring a different
+interface than the one that ships.
+
+```bash
+# 6. Publish: notes in the style of the previous release, three assets
+gh release create vX.Y.Z --repo MAKHMUDuz/melyar \
+  --title "Melyar vX.Y.Z" --notes-file notes.md \
+  /tmp/pkg/melyar-vX.Y.Z-linux-x86_64.tar.gz \
+  /tmp/pkg/melyar-vX.Y.Z-linux-x86_64.tar.gz.sha256 \
+  ./release-deb/melyar_X.Y.Z-1_amd64.deb
+```
 
 ---
 
