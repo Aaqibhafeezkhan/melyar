@@ -153,12 +153,27 @@ export function SettingsPanel() {
               </div>
             </Row>
             <Row label={t("settings.language")} description={t("settings.language.description")}>
-              <GlassSegmented
-                aria-label={t("settings.language")}
-                value={settings.language}
-                onChange={setStr("language")}
-                options={LOCALES.map((l) => ({ value: l.code, label: l.label }))}
-              />
+              <div className="grid grid-cols-3 gap-1 w-48">
+                {LOCALES.map((entry) => {
+                  const active = entry.code === settings.language;
+                  return (
+                    <button
+                      key={entry.code}
+                      type="button"
+                      className={cn(
+                        "rounded-md px-2 py-1 text-[11px] font-medium transition-colors truncate",
+                        active
+                          ? "bg-accent/20 text-accent"
+                          : "text-text-tertiary hover:text-text hover:bg-hover",
+                      )}
+                      aria-pressed={active}
+                      onClick={() => set("language", entry.code)}
+                    >
+                      {entry.label}
+                    </button>
+                  );
+                })}
+              </div>
             </Row>
             <Row label={t("settings.compactMode")} description={t("settings.compactMode.description")}>
               <GlassToggle

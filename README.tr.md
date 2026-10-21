@@ -53,8 +53,9 @@ Melyar (İngilizce):
 
 ![Melyar ana sayfa](docs/screenshots/home-en.png)
 
-Arayüz İngilizce ve Türkçe olarak sunuluyor; dil, kenar çubuğundaki seçiciden
-değiştirilebilir:
+Arayüz on iki dilde sunuluyor: İngilizce, Türkçe, İspanyolca, Almanca, Fransızca,
+İtalyanca, Portekizce, Rusça, Ukraynaca, Japonca, Çince ve Korece. Dil kenar
+çubuğundaki seçiciden ya da ayarlar panelinden değiştirilebilir:
 
 ![Melyar ana sayfa (Türkçe)](docs/screenshots/home-tr.png)
 

@@ -128,6 +128,9 @@ view, and `ShortcutEditor.qml` / `ShortcutRow.qml` render them.
 | `src/App.tsx` | The application shell and routing between views. |
 | `src/store.ts` | The Zustand store: playback state, queue, library, lyrics. |
 | `src/lib/client.ts` | The QWebChannel client. Every call into Rust goes through here. |
+| `src/lib/i18n.ts` | The translation layer: the message tables, `t()`, the locale detection and the `useLocale()` hook. |
+| `src/lib/settings.ts` | The settings store, the defaults, and the mapping from stored values to the document. |
+| `src/locales/` | One file per language, each with the same keys as `en.ts`. |
 | `src/lib/types.ts` | The TypeScript mirrors of the bridge structs. |
 | `src/lib/registry.ts` | The action/command registry used by the context menu and keyboard handling. |
 | `src/lib/motion.ts` | Central motion tokens. One place defines durations and easings, including the reduced-motion path. |

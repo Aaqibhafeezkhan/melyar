@@ -71,6 +71,11 @@ breadth - is stated plainly in the [roadmap](ROADMAP.md).
 - Personal library views for liked tracks, listening history, songs, albums, and artists.
 - **Liquid Glass-inspired UI** with translucent surfaces, artwork-focused layouts,
   and animated controls.
+- **Twelve languages** - English, Turkish, Spanish, German, French, Italian,
+  Portuguese, Russian, Ukrainian, Japanese, Chinese and Korean. The language
+  follows the system by default and can be changed at runtime.
+- **A settings panel** that remembers: theme, accent colour, language, compact
+  mode, animations and the playback preferences all survive a restart.
 - Desktop integration built around native playback controls, **Linux MPRIS**
   (D-Bus) and a **zero-latency Unix socket IPC** for Waybar / Polybar / i3status.
 - **Local-first direction:** Melyar does not require a Melyar account or a
@@ -87,8 +92,8 @@ Melyar in English:
 
 ![Melyar home view](docs/screenshots/home-en.png)
 
-The interface is available in English and Turkish, and the language is
-switchable from the sidebar:
+The interface is available in twelve languages and can be switched at runtime
+from the sidebar or the settings panel:
 
 ![Melyar home view in Turkish](docs/screenshots/home-tr.png)
 

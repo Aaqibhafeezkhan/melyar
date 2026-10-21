@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Heart, Home, Library, ListMusic, SearchIcon, Clock3 } from "lucide-react";
+import { Heart, Home, Library, ListMusic, SearchIcon, Clock3, Languages, ChevronUp, Check } from "lucide-react";
 import { usePlayer } from "@/store";
 import { GlassMorphIndicator } from "@/components/GlassComponents";
 import { cn } from "@/lib/cn";
@@ -36,6 +36,7 @@ function SideItem({
 
 export function Sidebar() {
   const locale = useLocale();
+  const [langOpen, setLangOpen] = useState(false);
   const query = usePlayer((s) => s.query);
   const setQuery = usePlayer((s) => s.setQuery);
   const navigate = usePlayer((s) => s.navigate);
@@ -143,32 +144,55 @@ export function Sidebar() {
         </nav>
       </div>
 
-      <div className="px-3 pb-3 pt-2 border-t border-glass-border">
-        <div
-          className="flex items-center gap-1 rounded-lg p-0.5 bg-white/[0.03]"
-          role="group"
+      <div className="px-3 pb-3 pt-2 border-t border-glass-border relative">
+        <button
+          type="button"
+          className="w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[12px] font-medium text-text-secondary hover:bg-hover transition-colors"
+          aria-haspopup="menu"
+          aria-expanded={langOpen}
           aria-label={t("settings.language")}
+          onClick={() => setLangOpen(!langOpen)}
         >
-          {LOCALES.map((entry) => {
-            const active = entry.code === locale;
-            return (
-              <button
-                key={entry.code}
-                type="button"
-                className={cn(
-                  "flex-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
-                  active
-                    ? "bg-accent/20 text-accent"
-                    : "text-text-tertiary hover:text-text-secondary hover:bg-white/5",
-                )}
-                aria-pressed={active}
-                onClick={() => setLocale(entry.code)}
-              >
-                {entry.label}
-              </button>
-            );
-          })}
-        </div>
+          <Languages className="size-4 text-text-tertiary" />
+          <span className="flex-1 text-left truncate">
+            {LOCALES.find((l) => l.code === locale)?.label ?? locale}
+          </span>
+          <ChevronUp
+            className={cn("size-3.5 text-text-tertiary transition-transform", !langOpen && "rotate-180")}
+          />
+        </button>
+
+        {langOpen ? (
+          <div
+            className="absolute bottom-full left-3 right-3 mb-1 max-h-64 overflow-y-auto scroll-thin rounded-xl border border-glass-border bg-content shadow-2xl py-1 z-50"
+            role="menu"
+          >
+            {LOCALES.map((entry) => {
+              const active = entry.code === locale;
+              return (
+                <button
+                  key={entry.code}
+                  type="button"
+                  className={cn(
+                    "w-full flex items-center gap-2 px-3 py-1.5 text-[12px] transition-colors",
+                    active
+                      ? "text-accent bg-accent/10"
+                      : "text-text-secondary hover:bg-hover hover:text-text",
+                  )}
+                  role="menuitemradio"
+                  aria-checked={active}
+                  onClick={() => {
+                    setLocale(entry.code);
+                    setLangOpen(false);
+                  }}
+                >
+                  <span className="flex-1 text-left truncate">{entry.label}</span>
+                  {active ? <Check className="size-3.5" /> : null}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
     </aside>
   );

@@ -1,21 +1,66 @@
 import { useSyncExternalStore } from "react";
 import { en } from "@/locales/en";
 import { tr } from "@/locales/tr";
+import { es } from "@/locales/es";
+import { de } from "@/locales/de";
+import { fr } from "@/locales/fr";
+import { it } from "@/locales/it";
+import { pt } from "@/locales/pt";
+import { ru } from "@/locales/ru";
+import { uk } from "@/locales/uk";
+import { ja } from "@/locales/ja";
+import { zh } from "@/locales/zh";
+import { ko } from "@/locales/ko";
 
-export type Locale = "en" | "tr";
+export type Locale =
+  | "en"
+  | "tr"
+  | "es"
+  | "de"
+  | "fr"
+  | "it"
+  | "pt"
+  | "ru"
+  | "uk"
+  | "ja"
+  | "zh"
+  | "ko";
 
 export const LOCALES: { code: Locale; label: string }[] = [
   { code: "en", label: "English" },
   { code: "tr", label: "Türkçe" },
+  { code: "es", label: "Español" },
+  { code: "de", label: "Deutsch" },
+  { code: "fr", label: "Français" },
+  { code: "it", label: "Italiano" },
+  { code: "pt", label: "Português" },
+  { code: "ru", label: "Русский" },
+  { code: "uk", label: "Українська" },
+  { code: "ja", label: "日本語" },
+  { code: "zh", label: "简体中文" },
+  { code: "ko", label: "한국어" },
 ];
 
-const MESSAGES: Record<Locale, Record<string, string>> = { en, tr };
+const MESSAGES: Record<Locale, Record<string, string>> = {
+  en,
+  tr,
+  es,
+  de,
+  fr,
+  it,
+  pt,
+  ru,
+  uk,
+  ja,
+  zh,
+  ko,
+};
 
 const STORAGE_KEY = "melyar.locale";
 const FALLBACK: Locale = "en";
 
 function isLocale(value: unknown): value is Locale {
-  return value === "en" || value === "tr";
+  return typeof value === "string" && value in MESSAGES;
 }
 
 function detect(): Locale {
@@ -35,7 +80,8 @@ function detect(): Locale {
   }
 
   const nav = typeof navigator !== "undefined" ? navigator.language : "";
-  if (nav.toLowerCase().startsWith("tr")) return "tr";
+  const short = nav.toLowerCase().split("-")[0];
+  if (isLocale(short)) return short;
   return FALLBACK;
 }
 

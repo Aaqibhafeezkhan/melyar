@@ -14,6 +14,9 @@ This document is the contract for how changes land. It is deliberately short.
 - [Before you start](#before-you-start)
 - [Development setup](#development-setup)
 - [Running the app](#running-the-app)
+- [Settings](#settings)
+- [Translations](#translations)
+- [Capturing a screenshot](#capturing-a-screenshot)
 - [Checks](#checks)
 - [Commit and branch conventions](#commit-and-branch-conventions)
 - [Pull request process](#pull-request-process)
@@ -150,6 +153,49 @@ Adding a setting means touching all three, plus a default in
 > QWebChannel calls are asynchronous. A method that returns a value gives you
 > a promise, not the value itself - `await` it. This is the single most
 > common mistake when adding a bridge method.
+
+---
+
+## Translations
+
+The interface ships in twelve languages: English, Turkish, Spanish, German,
+French, Italian, Portuguese, Russian, Ukrainian, Japanese, Chinese and
+Korean. Adding one is a translation job, not a programming job.
+
+1. Copy `ui_web/src/locales/en.ts` to `ui_web/src/locales/<code>.ts`, where
+   `<code>` is the two letter code (`es`, `de`, `fr`, `it`, `pt`, `ru`, `uk`,
+   `ja`, `zh`, `ko`).
+2. Translate the **values**. Keep the **keys** exactly as they are.
+3. Register the language in `ui_web/src/lib/i18n.ts`:
+   - import the table
+   - add it to `MESSAGES`
+   - add it to `LOCALES` with the language name in its own language
+   - widen the `Locale` type
+4. Run the checks:
+   ```bash
+   cd ui_web
+   pnpm exec tsc --noEmit
+   pnpm build
+   ```
+5. Try it:
+   ```bash
+   MELYAR_LANG=<code> ./build/melyar
+   ```
+
+**Rules**
+
+- **Do not translate the keys.** They are identifiers, not text.
+- **Keep the `{placeholders}`** exactly as they are. `"{n} tracks · {time}"`
+  becomes `"{n} pistas · {time}"` in Spanish, not `"{n} canciones"` - the count
+  and the duration are inserted at runtime.
+- Keep it short. These are interface labels, not sentences.
+- Translate the `aria-label` values too. Screen readers read them.
+- Every locale file must have the same keys as `en.ts`. A missing key shows
+  the key itself in the interface, so it is easy to spot.
+
+**Right-to-left languages** need a little more: the layout still uses a few
+physical margins, so they have to be converted to logical properties first.
+Open an issue before starting one, so the work can be agreed on.
 
 ---
 
