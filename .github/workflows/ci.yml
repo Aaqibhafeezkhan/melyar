@@ -69,11 +69,13 @@ jobs:
         # runnable binary. A contributor who rebuilds it from a checkout that
         # is not up to date would commit a bundle that does not match the
         # sources, so the build is repeated here and the result compared.
+        # The pathspec is anchored to the repository root, because this job
+        # runs in ui_web.
         run: |
-          if ! git diff --quiet -- ui_web/dist; then
+          if ! git diff --quiet -- ':(top)ui_web/dist'; then
             echo "::error::ui_web/dist does not match the sources."
             echo "Run 'cd ui_web && pnpm build' and commit the result."
-            git diff --stat -- ui_web/dist
+            git diff --stat -- ':(top)ui_web/dist'
             exit 1
           fi
 
@@ -81,7 +83,6 @@ jobs:
         # A missing key shows the key itself in the interface, so the files
         # have to stay in step with en.ts.
         run: |
-          cd ui_web
           node -e '
             const fs = require("fs");
             const path = require("path");
