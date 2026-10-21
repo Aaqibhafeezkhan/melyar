@@ -121,7 +121,18 @@ jobs:
           dpkg-deb --info ../melyar_*.deb
           dpkg-deb --contents ../melyar_*.deb | head -20
 
+      - name: Free the disk
+        # The Rust build tree is several gigabytes and the runner does not
+        # have the room to unpack the package next to it.
+        run: |
+          rm -rf build target
+          sudo apt-get clean
+          df -h /
+
       - name: Check the package installs
         run: |
           sudo dpkg -i ../melyar_*.deb
-          melyar --version || true
+          dpkg -l melyar
+          test -x /usr/bin/melyar
+          test -f /usr/share/melyar/web/index.html
+          test -f /usr/share/applications/melyar.desktop
