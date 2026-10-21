@@ -208,15 +208,20 @@
 
   /**
    * The colour behind an element: every layer between it and the first
-   * opaque one, composited together.
+   * opaque one, composited together. The layers come back as well, so a
+   * measurement that looks wrong can be read rather than guessed at.
    */
-  function effectiveBackground(el) {
+  function backgroundBehind(el) {
     const layers = [];
+    const labels = [];
     let node = el;
     while (node) {
       const bg = parseColor(getComputedStyle(node).backgroundColor);
       if (bg && bg.a > 0) {
         layers.push(bg);
+        labels.push(
+          String(node.className || node.tagName).slice(0, 26) + " @" + bg.a.toFixed(2),
+        );
         if (bg.a >= 0.99) break;
       }
       node = node.parentElement;
@@ -225,6 +230,7 @@
     for (let i = layers.length - 1; i >= 0; i -= 1) {
       result = blend(layers[i], result);
     }
+    result.over = labels.join(" over ") || "the page default";
     return result;
   }
 
@@ -245,7 +251,7 @@
       if (style.visibility === "hidden" || style.opacity === "0") return;
       const fg = parseColor(style.color);
       if (!fg || fg.a === 0) return;
-      const bg = effectiveBackground(el);
+      const bg = backgroundBehind(el);
       const ratio = contrast(fg.a < 1 ? blend(fg, bg) : fg, bg);
       if (ratio < 2.4) {
         bad.push(
@@ -254,6 +260,10 @@
             ratio.toFixed(1) +
             ", color " +
             style.color +
+            ", behind rgb(" +
+            [bg.r, bg.g, bg.b].map((v) => Math.round(v)).join(", ") +
+            ") from " +
+            bg.over +
             ", class " +
             String(el.className).slice(0, 40) +
             ")",
