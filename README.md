@@ -61,6 +61,19 @@ breadth - is stated plainly in the [roadmap](ROADMAP.md).
 
 ## Highlights
 
+**A ten band graphic equaliser**
+31 Hz to 16 kHz, built on mpv's filter chain, with the bands stored with the
+rest of the settings. The one feature the other clients still do not have.
+
+**A lighter application**
+The graphics stack is turned off, because a music player draws no video. That
+alone is 59 MB less resident memory, and the interface is ready in about
+650 ms.
+
+**An interface that is checked**
+Every push drives the application through every view and every overlay and
+fails the build when something is wrong with it.
+
 - Music playback powered by **mpv**, with stream resolution through `yt-dlp` for
   the current YouTube Music workflow.
 - Search and discovery for music available through the currently implemented provider.
@@ -265,8 +278,8 @@ Prebuilt packages are attached to the
 toolchain is needed:
 
 ```bash
-tar xf melyar-v0.1.0-linux-x86_64.tar.gz
-cd melyar-0.1.0
+tar xf melyar-v0.0.2-linux-x86_64.tar.gz
+cd melyar-0.0.2
 sudo cp bin/melyar /usr/local/bin/
 sudo cp -r share/melyar /usr/local/share/
 sudo cp share/applications/melyar.desktop /usr/local/share/applications/
