@@ -89,6 +89,11 @@ export function LyricsOverlay() {
     const lineDuration = lineEnd - line.time;
     karaokeWidth = lineDuration > 0 ? Math.min(1, Math.max(0, (position - line.time) / lineDuration)) : 0;
   }
+  // A soft leading edge instead of a hard cut, so the fill reads as a wipe
+  // travelling across the line rather than a block snapping into place.
+  const wipeEdge = 8;
+  const wipeStop = karaokeWidth * 100;
+  const karaokeWipe = `linear-gradient(to right, black ${Math.max(0, wipeStop - wipeEdge)}%, transparent ${Math.min(100, wipeStop + wipeEdge)}%)`;
 
   return (
     <div
@@ -151,10 +156,8 @@ export function LyricsOverlay() {
                   key={`${line.time}-${i}`}
                   data-active={isActive}
                   className={cn(
-                    "lyric-line text-center px-4",
-                    isActive ? "text-white font-bold" : "text-white/60",
-                    isPast ? "text-white/50" : "",
-                    "transition-all duration-300 ease-out"
+                    "lyric-line relative text-center px-4 transition-all duration-300 ease-out",
+                    isActive ? "font-bold" : "",
                   )}
                   style={{
                     fontSize: isActive ? "34px" : "24px",
@@ -163,23 +166,33 @@ export function LyricsOverlay() {
                   }}
                   onClick={() => seekSec(line.time)}
                 >
-                  {/* Karaoke fill overlay on active line */}
-                  {isActive && (
+                  {/* The glyphs sit in one box sized to themselves, and the
+                      karaoke copy is painted over exactly that box. Without
+                      this wrapper the overlay's `inset-0` resolved against
+                      the scroller instead of the line, so the active line's
+                      text was swept across the whole pane as a white bar —
+                      and because the base copy was conditional on the line
+                      not being active, the active line itself rendered
+                      blank. The line is now always readable, and the fill
+                      brightens what has already been sung. */}
+                  <span className="relative inline-block">
                     <span
-                      className="absolute inset-0 bg-gradient-to-r from-white via-white to-transparent"
-                      style={{
-                        width: `${karaokeWidth * 100}%`,
-                        maskImage: "linear-gradient(to right, black, transparent)",
-                        maskSize: "200% 100%",
-                        maskPosition: "100% 0",
-                        transition: "mask-position 0.1s linear",
-                        pointerEvents: "none",
-                      }}
+                      className={cn(
+                        isActive ? "text-white/50" : isPast ? "text-white/45" : "text-white/65",
+                      )}
                     >
                       {line.text}
                     </span>
-                  )}
-                  {!isActive && line.text}
+                    {isActive && karaokeWidth > 0 && (
+                      <span
+                        aria-hidden
+                        className="absolute inset-0 text-white pointer-events-none"
+                        style={{ WebkitMaskImage: karaokeWipe, maskImage: karaokeWipe }}
+                      >
+                        {line.text}
+                      </span>
+                    )}
+                  </span>
                 </p>
               );
             })
