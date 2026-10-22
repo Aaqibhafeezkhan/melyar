@@ -25,7 +25,20 @@ Depends: ${shlibs:Depends},
          qt6-webengine,
          qt6-webchannel,
          mpv
-Recommends: yt-dlp
+# The QML modules Main.qml imports. They are declared as Recommends rather
+# than Depends on purpose: apt installs Recommends by default, so a normal
+# install gets a working application, but a module whose package name moved
+# between Debian releases warns instead of making the package uninstallable.
+# Without them at all the shell reports "module QtQuick.Controls is not
+# installed" and shows nothing.
+Recommends: qml6-module-qtquick,
+            qml6-module-qtquick-controls,
+            qml6-module-qtquick-dialogs,
+            qml6-module-qtquick-window,
+            qml6-module-qtwebchannel,
+            qml6-module-qtwebengine,
+            qml6-module-qtwebengine-controlsdelegates,
+            yt-dlp
 Description: native YouTube Music desktop client
  Melyar is a lightweight YouTube Music client for Linux. A Rust core handles
  the InnerTube API, the stream cipher, mpv playback, the local library and the

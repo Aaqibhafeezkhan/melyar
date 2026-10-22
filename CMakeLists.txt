@@ -52,11 +52,14 @@ file(GLOB_RECURSE MELYAR_QML_FILES CONFIGURE_DEPENDS
     "ui_cpp/qml/**/qmldir"
 )
 
-# Application resources (icons) embedded into the binary
+# Application resources (icons) embedded into the binary. Only what the
+# program actually opens is embedded: the desktop entry declares Icon=melyar
+# and CMake installs the SVG to the scalable icon directory, so the raster
+# copies were being carried inside the executable for no reason - two of them
+# identical to each other, 162 KB between them.
 file(GLOB MELYAR_RESOURCE_FILES CONFIGURE_DEPENDS
     RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
     "resources/*.svg"
-    "resources/*.png"
 )
 
 qt6_add_resources(melyar "melyar_qml"

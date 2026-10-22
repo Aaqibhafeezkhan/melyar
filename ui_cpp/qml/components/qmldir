@@ -1,7 +1,0 @@
-module components
-GlassCard 1.0 GlassCard.qml
-LiquidMeshBackground 1.0 LiquidMeshBackground.qml
-GlassSidebar 1.0 GlassSidebar.qml
-FloatingLiquidPlayer 1.0 FloatingLiquidPlayer.qml
-LiquidLyricsView 1.0 LiquidLyricsView.qml
-TrackListView 1.0 TrackListView.qml

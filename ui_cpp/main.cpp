@@ -65,7 +65,6 @@ int main(int argc, char *argv[]) {
     appIcon.addFile(":/melyar/resources/melyar.svg");
     app.setWindowIcon(appIcon);
 
-    qmlRegisterSingletonType(QUrl(QStringLiteral("qrc:/melyar/ui_cpp/qml/theme/Style.qml")), "Melyar.Theme", 1, 0, "Style");
     QQmlApplicationEngine engine;
     engine.addImportPath(":/melyar");
     engine.addImportPath("qrc:/melyar");
