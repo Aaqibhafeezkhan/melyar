@@ -156,6 +156,16 @@ impl TrackQueue {
         let mut repeat = self.repeat_mode.write();
         *repeat = mode.clamp(0, 2);
     }
+
+    /// Whether the queue is shuffled, as the desktop needs to show it.
+    pub fn shuffle(&self) -> bool {
+        *self.shuffle.read()
+    }
+
+    /// 0 = off, 1 = repeat the queue, 2 = repeat one track.
+    pub fn repeat_mode(&self) -> i32 {
+        *self.repeat_mode.read()
+    }
 }
 
 impl Default for TrackQueue {

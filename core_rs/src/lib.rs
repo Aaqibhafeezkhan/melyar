@@ -121,7 +121,9 @@ pub struct MelyarCore {
     queue: Arc<TrackQueue>,
     storage: Arc<DbStorage>,
     audio: Mutex<Option<Arc<MelyarAudioEngine>>>,
-    _mpris: Mutex<Option<Arc<MprisManager>>>,
+    /// Keeps the MPRIS service alive, and answers the desktop when it asks
+    /// what is playing.
+    mpris: Mutex<Option<Arc<MprisManager>>>,
     _waybar: Mutex<Option<Arc<WaybarIpc>>>,
     runtime: Arc<Runtime>,
 }
@@ -254,12 +256,17 @@ impl MprisCommandHandler for MprisHandlerImpl {
     fn on_previous(&self) {
         let _ = previous_track();
     }
-    fn on_seek(&self, offset_micros: i64) {
-        let secs = (offset_micros as f64) / 1_000_000.0;
-        let _ = seek(secs);
+    fn on_seek_absolute(&self, seconds: f64) {
+        let _ = seek(seconds);
     }
     fn on_set_volume(&self, volume: f64) {
         let _ = set_volume(volume * 100.0);
+    }
+    fn shuffle(&self) -> bool {
+        self.queue.shuffle()
+    }
+    fn repeat_mode(&self) -> i32 {
+        self.queue.repeat_mode()
     }
 }
 
@@ -332,7 +339,7 @@ fn get_core() -> &'static Arc<MelyarCore> {
             queue,
             storage,
             audio: Mutex::new(audio),
-            _mpris: Mutex::new(Some(mpris)),
+            mpris: Mutex::new(Some(mpris)),
             _waybar: Mutex::new(Some(waybar)),
             runtime,
         })
@@ -371,7 +378,7 @@ pub fn play_track(track_id: String) -> bool {
     let innertube = core.innertube.clone();
     let audio_opt = core.audio.lock().clone();
     let storage = core.storage.clone();
-    let mpris_opt = core._mpris.lock().clone();
+    let mpris_opt = core.mpris.lock().clone();
     let waybar_opt = core._waybar.lock().clone();
     let queue = core.queue.clone();
     let rt = core.runtime.clone();
@@ -474,11 +481,16 @@ pub fn seek(seconds: f64) -> bool {
 
 pub fn set_volume(volume: f64) -> bool {
     let core = get_core();
-    if let Some(ref audio) = *core.audio.lock() {
+    let ok = if let Some(ref audio) = *core.audio.lock() {
         audio.set_volume(volume).is_ok()
     } else {
         false
+    };
+    // The desktop's own volume slider has to move too, and it speaks 0-1.
+    if let Some(ref mpris) = *core.mpris.lock() {
+        mpris.update_volume(volume / 100.0);
     }
+    ok
 }
 
 pub fn next_track() -> bool {
@@ -572,12 +584,18 @@ pub fn get_history() -> Vec<ffi::CxxTrackMetadata> {
 pub fn set_shuffle(enabled: bool) -> bool {
     let core = get_core();
     core.queue.set_shuffle(enabled);
+    if let Some(ref mpris) = *core.mpris.lock() {
+        mpris.update_queue_modes();
+    }
     true
 }
 
 pub fn set_repeat_mode(mode: i32) -> bool {
     let core = get_core();
     core.queue.set_repeat_mode(mode);
+    if let Some(ref mpris) = *core.mpris.lock() {
+        mpris.update_queue_modes();
+    }
     true
 }
 
