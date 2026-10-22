@@ -168,12 +168,15 @@ impl MelyarAudioEngine {
                                             current_pos = unsafe { *(prop.data as *const f64) };
                                             handler.on_progress(current_pos, current_dur);
 
-                                            // Gapless prefetch trigger: 5 seconds before end
+                                            // Gapless prefetch trigger: 5 seconds before end.
+                                            // The flag is raised by queue_next_url() only once
+                                            // mpv has actually accepted the appended file, so a
+                                            // failed resolve cannot make the end of the track
+                                            // look like the next one is already loaded.
                                             if current_dur > 10.0
                                                 && (current_dur - current_pos) <= 5.0
                                                 && !prefetched_clone.load(Ordering::Relaxed)
                                             {
-                                                prefetched_clone.store(true, Ordering::Relaxed);
                                                 handler.on_gapless_prefetch_needed();
                                             }
                                         }
@@ -199,7 +202,37 @@ impl MelyarAudioEngine {
                             }
                         }
                     } else if event.event_id == mpv_sys::mpv_event_id_MPV_EVENT_END_FILE {
-                        handler.on_track_ended();
+                        // mpv reports END_FILE for every reason a file stops, not only for a
+                        // file that ran out. `loadfile … replace` and `stop` both arrive as
+                        // REASON_STOP, so advancing on all of them made Stop start the next
+                        // track and made clicking a row mid-playback walk the queue forward
+                        // one hop per click until it ran dry.
+                        let reason = if event.data.is_null() {
+                            mpv_sys::mpv_end_file_reason_MPV_END_FILE_REASON_EOF as i32
+                        } else {
+                            unsafe { &*(event.data as *const mpv_sys::mpv_event_end_file) }.reason
+                        };
+                        match reason {
+                            r if r
+                                == mpv_sys::mpv_end_file_reason_MPV_END_FILE_REASON_EOF as i32 =>
+                            {
+                                handler.on_track_ended()
+                            }
+                            // The file was replaced or playback stopped on purpose.
+                            r if r
+                                == mpv_sys::mpv_end_file_reason_MPV_END_FILE_REASON_STOP as i32 => {
+                            }
+                            // It could not be played. Do not silently walk past it, but do
+                            // stop claiming to be playing a track that is not audible.
+                            r if r
+                                == mpv_sys::mpv_end_file_reason_MPV_END_FILE_REASON_ERROR
+                                    as i32 =>
+                            {
+                                is_playing_clone.store(false, Ordering::Relaxed);
+                                handler.on_state_changed(false);
+                            }
+                            _ => {}
+                        }
                     }
                 }
             })
@@ -222,7 +255,17 @@ impl MelyarAudioEngine {
 
     pub fn queue_next_url(&self, url: &str) -> Result<()> {
         let cmd = format!("loadfile \"{}\" append-play\n", url);
-        self.command_string(&cmd)
+        self.command_string(&cmd)?;
+        // mpv moves to this file by itself once the current one runs out, so the
+        // end of the track must not resolve and load it a second time.
+        self.prefetched_next.store(true, Ordering::Relaxed);
+        Ok(())
+    }
+
+    /// Whether the next track was already appended to mpv's playlist. The claim
+    /// is spent, so a flag raised for one track boundary cannot cover the next.
+    pub fn take_prefetched(&self) -> bool {
+        self.prefetched_next.swap(false, Ordering::Relaxed)
     }
 
     pub fn toggle_play(&self) -> Result<bool> {

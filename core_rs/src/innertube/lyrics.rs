@@ -1,6 +1,26 @@
 use anyhow::{anyhow, Result};
 use reqwest::Client;
 use serde::Deserialize;
+use std::sync::OnceLock;
+
+/// One shared client for every lyrics request, with a deadline.
+///
+/// Each call used to build its own client, which sets no total timeout, and the
+/// C++ side runs this from the shared QtConcurrent pool. A server that accepted
+/// the connection and then went quiet parked a pool thread for good; a handful
+/// of those exhaust the pool and search, playback and library loading all stop
+/// together. The InnerTube client has carried a 15 s deadline all along — this
+/// one now has one too.
+pub fn lyrics_client() -> &'static Client {
+    static CLIENT: OnceLock<Client> = OnceLock::new();
+    CLIENT.get_or_init(|| {
+        Client::builder()
+            .connect_timeout(std::time::Duration::from_secs(5))
+            .timeout(std::time::Duration::from_secs(8))
+            .build()
+            .unwrap_or_default()
+    })
+}
 
 #[derive(Deserialize, Debug)]
 pub struct LrclibResponse {
@@ -84,13 +104,16 @@ mod tests {
 
     #[tokio::test]
     async fn test_lrclib_live() {
-        let client = reqwest::Client::new();
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(8))
+            .build()
+            .unwrap_or_default();
         let res = fetch_lyrics(&client, "Let It Happen", "Tame Impala", Some(468.0)).await;
         match res {
             Ok(lrc) => println!(
                 "LYRICS OK len={} preview={:?}",
                 lrc.len(),
-                &lrc[..lrc.len().min(80)]
+                lrc.get(..lrc.len().min(80)).unwrap_or_default()
             ),
             Err(e) => println!("LYRICS ERR: {e:#}"),
         }

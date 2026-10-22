@@ -160,45 +160,76 @@ impl AudioEventHandler for EngineEvents {
     }
 
     fn on_track_ended(&self) {
-        if let Some(next) = self.queue.next_track() {
-            let innertube = self.innertube.clone();
-            let audio_opt = self.audio_holder.lock().clone();
-            let storage = self.storage.clone();
-            let mpris_opt = self.mpris_holder.lock().clone();
-            let waybar_opt = self.waybar_holder.lock().clone();
-            let rt = self.runtime.clone();
+        let audio_opt = self.audio_holder.lock().clone();
+        // Gapless already appended the next file and mpv started it on its own.
+        // Replacing it here would restart it from zero, and resolve it twice.
+        let already_started = audio_opt
+            .as_ref()
+            .map(|audio| audio.take_prefetched())
+            .unwrap_or(false);
 
-            rt.spawn(async move {
-                if let Ok(url) = innertube.get_stream_url(&next.id).await {
-                    if let Some(audio) = audio_opt {
-                        let _ = audio.play_url(&url);
-                        let _ = storage.add_history(&next);
-                        if let Some(ref mpris) = mpris_opt {
-                            mpris.update_track(Some(next.clone()));
-                        }
-                        if let Some(ref waybar) = waybar_opt {
-                            waybar.update_track(Some(next.clone()));
-                        }
-                        ffi::on_track_changed(next.clone());
+        let Some(next) = self.queue.next_track() else {
+            ffi::on_state_changed(false);
+            return;
+        };
 
-                        // Fetch lyrics
-                        if let Ok(lrc) = innertube::lyrics::fetch_lyrics(
-                            &reqwest::Client::new(),
-                            &next.title,
-                            &next.artist,
-                            Some(next.duration_secs),
-                        )
-                        .await
-                        {
-                            let _ = storage.cache_lyrics(&next.id, &lrc);
-                            ffi::on_lyrics_loaded(next.id.clone(), lrc);
+        let innertube = self.innertube.clone();
+        let storage = self.storage.clone();
+        let mpris_opt = self.mpris_holder.lock().clone();
+        let waybar_opt = self.waybar_holder.lock().clone();
+        let rt = self.runtime.clone();
+
+        rt.spawn(async move {
+            let mut started = false;
+            if already_started {
+                started = true;
+            } else {
+                match innertube.get_stream_url(&next.id).await {
+                    Ok(url) => {
+                        if let Some(audio) = audio_opt {
+                            match audio.play_url(&url) {
+                                Ok(()) => started = true,
+                                Err(err) => {
+                                    // The index has already moved. Saying so beats leaving the
+                                    // desktop on "Playing" with nothing audible.
+                                    tracing::error!("failed to start {}: {err}", next.id);
+                                    ffi::on_state_changed(false);
+                                }
+                            }
                         }
                     }
+                    Err(err) => {
+                        tracing::error!("no stream for {}: {err}", next.id);
+                        ffi::on_state_changed(false);
+                    }
                 }
-            });
-        } else {
-            ffi::on_state_changed(false);
-        }
+            }
+
+            if !started {
+                return;
+            }
+
+            let _ = storage.add_history(&next);
+            if let Some(ref mpris) = mpris_opt {
+                mpris.update_track(Some(next.clone()));
+            }
+            if let Some(ref waybar) = waybar_opt {
+                waybar.update_track(Some(next.clone()));
+            }
+            ffi::on_track_changed(next.clone());
+
+            if let Ok(lrc) = innertube::lyrics::fetch_lyrics(
+                innertube::lyrics::lyrics_client(),
+                &next.title,
+                &next.artist,
+                Some(next.duration_secs),
+            )
+            .await
+            {
+                let _ = storage.cache_lyrics(&next.id, &lrc);
+                ffi::on_lyrics_loaded(next.id.clone(), lrc);
+            }
+        });
     }
 
     fn on_gapless_prefetch_needed(&self) {
@@ -362,7 +393,10 @@ pub fn search(query: String) -> Vec<ffi::CxxTrackMetadata> {
 
     match res {
         Ok(tracks) => {
-            core.queue.set_queue(tracks.clone(), 0);
+            // Deliberately not pushed into the queue. Typing in the search box is not
+            // a request to replace what is playing: auto-advance and the media keys
+            // follow the queue, so this one line turned a search into a queue reset.
+            // The UI pushes a queue on purpose through replace_queue().
             ffi::on_search_results(tracks.clone());
             tracks
         }
@@ -438,7 +472,7 @@ pub fn play_track(track_id: String) -> bool {
                             if let Ok(Some(cached)) = st.get_cached_lyrics(&tid) {
                                 ffi::on_lyrics_loaded(tid, cached);
                             } else if let Ok(lrc) = innertube::lyrics::fetch_lyrics(
-                                &reqwest::Client::new(),
+                                innertube::lyrics::lyrics_client(),
                                 &title,
                                 &artist,
                                 Some(dur),
@@ -531,8 +565,13 @@ pub fn fetch_lyrics_live(track_id: String, title: String, artist: String, durati
         return String::new();
     }
     let res = core.runtime.block_on(async {
-        innertube::lyrics::fetch_lyrics(&reqwest::Client::new(), &title, &artist, Some(duration))
-            .await
+        innertube::lyrics::fetch_lyrics(
+            innertube::lyrics::lyrics_client(),
+            &title,
+            &artist,
+            Some(duration),
+        )
+        .await
     });
     match res {
         Ok(lrc) => {
