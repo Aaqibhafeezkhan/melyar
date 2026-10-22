@@ -64,7 +64,13 @@ pub struct MprisState {
 fn track_object_path(id: &str) -> String {
     let safe: String = id
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect();
     format!("{OBJECT_PATH}/track/{safe}")
 }
@@ -345,10 +351,7 @@ pub struct MprisManager {
 }
 
 impl MprisManager {
-    pub fn new(
-        handler: Arc<dyn MprisCommandHandler>,
-        runtime: Arc<Runtime>,
-    ) -> Self {
+    pub fn new(handler: Arc<dyn MprisCommandHandler>, runtime: Arc<Runtime>) -> Self {
         let state = Arc::new(MprisState {
             handler,
             current_track: RwLock::new(None),
@@ -367,7 +370,12 @@ impl MprisManager {
                 let conn = Builder::session()?
                     .name("org.mpris.MediaPlayer2.melyar")?
                     .serve_at(OBJECT_PATH, MediaPlayer2 {})?
-                    .serve_at(OBJECT_PATH, MediaPlayer2Player { state: player_state })?
+                    .serve_at(
+                        OBJECT_PATH,
+                        MediaPlayer2Player {
+                            state: player_state,
+                        },
+                    )?
                     .build()
                     .await?;
                 // Held here rather than dropped, and published to the state
@@ -421,10 +429,7 @@ impl MprisManager {
     pub fn update_volume(&self, volume: f64) {
         *self.state.volume.write() = volume.clamp(0.0, 1.0);
         let mut changed = HashMap::new();
-        changed.insert(
-            "Volume".to_string(),
-            Value::from(*self.state.volume.read()),
-        );
+        changed.insert("Volume".to_string(), Value::from(*self.state.volume.read()));
         self.state
             .emit_properties_changed(PLAYER_INTERFACE, changed, Vec::new());
     }
@@ -439,7 +444,10 @@ impl MprisManager {
             "LoopStatus".to_string(),
             Value::from(loop_status(self.state.handler.repeat_mode())),
         );
-        changed.insert("Shuffle".to_string(), Value::from(self.state.handler.shuffle()));
+        changed.insert(
+            "Shuffle".to_string(),
+            Value::from(self.state.handler.shuffle()),
+        );
         self.state
             .emit_properties_changed(PLAYER_INTERFACE, changed, Vec::new());
     }
