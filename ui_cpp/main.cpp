@@ -42,7 +42,9 @@ int main(int argc, char *argv[]) {
                 "--disable-gpu --disable-gpu-compositing --disable-software-rasterizer "
                 "--disable-dev-shm-usage");
     }
-    qputenv("QT_QUICK_CONTROLS_STYLE", "Basic");
+    if (!qEnvironmentVariableIsSet("QT_QUICK_CONTROLS_STYLE")) {
+        qputenv("QT_QUICK_CONTROLS_STYLE", "Basic");
+    }
 
     QtWebEngineQuick::initialize();
 
@@ -55,6 +57,10 @@ int main(int argc, char *argv[]) {
     app.setApplicationDisplayName("Melyar");
     app.setOrganizationName("Melyar");
     app.setOrganizationDomain("melyar.org");
+    // The desktop file calls itself melyar and declares StartupWMClass=melyar.
+    // Without this the session cannot match the window to the entry on Wayland,
+    // so the launcher gets a generic icon and the window cannot be pinned.
+    app.setDesktopFileName(QStringLiteral("melyar"));
     QIcon appIcon;
     appIcon.addFile(":/melyar/resources/melyar.svg");
     app.setWindowIcon(appIcon);
@@ -104,6 +110,18 @@ int main(int argc, char *argv[]) {
     }
 
     std::cout << "Loading Web UI from: " << webUrlStr.toStdString() << std::endl;
+
+    // Connected before load, so the very first - and most likely to fail -
+    // parse of Main.qml is reported instead of being dropped silently.
+    QObject::connect(&engine, &QQmlApplicationEngine::warnings,
+                     [](const QList<QQmlError> &warnings) {
+        if (!warnings.isEmpty()) {
+            std::cerr << "QML Warnings:" << std::endl;
+            for (const auto &warning : warnings) {
+                std::cerr << "  " << warning.toString().toStdString() << std::endl;
+            }
+        }
+    });
 
     // Race-free WebChannel protocol:
     // 1. QML creates the WebChannel + WebEngineView WITHOUT any url bound.
@@ -238,15 +256,19 @@ int main(int argc, char *argv[]) {
                 if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
                     script = QString::fromUtf8(file.readAll());
                 } else {
-                    std::cerr << "Could not read " << evalFile.toStdString() << std::endl;
-                    return;
+                    // Keep the inline script instead of running nothing.
+                    std::cerr << "Could not read " << evalFile.toStdString()
+                              << "; falling back to MELYAR_EVAL_JS" << std::endl;
                 }
             }
+            if (script.isEmpty()) return;
             const QJSValue undefined;
             QMetaObject::invokeMethod(webViewObj, "runJavaScript", Qt::DirectConnection,
                                       Q_ARG(QString, script),
                                       Q_ARG(QJSValue, undefined));
-            std::cout << "[C++] evaluated " << evalFile.toStdString().size() << " byte script"
+            // The path was being logged here, not the script, so a forty
+            // character file name reported a forty byte program.
+            std::cout << "[C++] evaluated " << script.toUtf8().size() << " byte script"
                       << std::endl;
         });
     }
