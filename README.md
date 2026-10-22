@@ -92,9 +92,9 @@ fails the build when something is wrong with it.
   against YouTube Music and adds the ones it recognises.
 - **Liquid Glass-inspired UI** with translucent surfaces, artwork-focused layouts,
   and animated controls.
-- **Twelve languages** - English, Turkish, Spanish, German, French, Italian,
-  Portuguese, Russian, Ukrainian, Japanese, Chinese and Korean. The language
-  follows the system by default and can be changed at runtime.
+- **Thirteen languages** - English, Turkish, Spanish, German, French, Italian,
+  Portuguese, Russian, Ukrainian, Japanese, Chinese, Korean and Albanian. The
+  language follows the system by default and can be changed at runtime.
 - **A settings panel** that remembers: theme, accent colour, language, compact
   mode, animations and the playback preferences all survive a restart.
 - Desktop integration built around native playback controls, **Linux MPRIS**
@@ -113,7 +113,7 @@ Melyar in English:
 
 ![Melyar home view](docs/screenshots/home-en.png)
 
-The interface is available in twelve languages and can be switched at runtime
+The interface is available in thirteen languages and can be switched at runtime
 from the sidebar or the settings panel:
 
 ![Melyar home view in Turkish](docs/screenshots/home-tr.png)
@@ -171,7 +171,8 @@ still being polished:
   plain-text fallback.
 - Browse songs, liked tracks, history, albums, and artists.
 - Use an artwork-focused player and a larger Now Playing view.
-- Control playback through the application UI and supported desktop media integrations.
+- Control playback through the application UI, the desktop's own media keys
+  and tray applet over MPRIS, or any MPRIS client.
 
 External streaming sources can change their APIs, availability, and access
 requirements. Melyar cannot guarantee that every track or provider will always
@@ -344,11 +345,37 @@ checked against a real Debian system.
 
 ---
 
-## Waybar / status bar integration
+## Desktop integration
 
-Melyar runs a zero-latency Unix Domain Socket IPC server at
-`$XDG_RUNTIME_DIR/melyar.sock`, for use with Waybar, Polybar, Hyprland and
-i3status.
+### MPRIS
+
+Melyar answers on the session bus as `org.mpris.MediaPlayer2.melyar`, which is
+how a Linux desktop finds out what is playing. The tray applet, the media keys,
+the lock-screen widget, the volume OSD and the keyboard's play button all speak
+it and nothing else, so the title, artist, cover, position and playback state
+appear in KDE Plasma and GNOME without any configuration.
+
+It works in both directions: play, pause, next, previous, seeking and the
+desktop's own volume slider all move Melyar, and repeat and shuffle are
+reported as `LoopStatus` and `Shuffle`. A seek aimed at a track that has
+already been replaced is ignored rather than moving the new one.
+
+The service is part of the application — no extra dependency and no setting to
+turn on. It registers only when a session bus is present, so a build, a sandbox
+or a CI run without one starts normally.
+
+To check that it is working:
+
+```bash
+busctl --user get-property org.mpris.MediaPlayer2.melyar \
+    /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player Metadata
+```
+
+### Waybar / status bar
+
+For status bars that do not speak D-Bus, Melyar runs a zero-latency Unix Domain
+Socket IPC server at `$XDG_RUNTIME_DIR/melyar.sock`, for use with Waybar,
+Polybar, Hyprland and i3status.
 
 `~/.config/waybar/config.jsonc`:
 
