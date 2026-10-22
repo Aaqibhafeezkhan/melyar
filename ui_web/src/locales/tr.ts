@@ -170,6 +170,8 @@ export const tr: Record<string, string> = {
   "toast.playNext": "Sıradaki olarak eklendi",
   "toast.queued": "Sıraya eklendi",
   "toast.linkCopied": "Bağlantı kopyalandı",
+  "toast.queueCleared": "Kuyruk temizlendi",
+  "toast.undo": "Geri al",
 
   // Ayarlar
   "settings.title": "Ayarlar",

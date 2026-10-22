@@ -166,6 +166,8 @@ export const en: Record<string, string> = {
   "toast.playNext": "Set as next",
   "toast.queued": "Added to queue",
   "toast.linkCopied": "Link copied",
+  "toast.queueCleared": "Queue cleared",
+  "toast.undo": "Undo",
 
   // Settings
   "settings.title": "Settings",

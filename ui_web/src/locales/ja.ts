@@ -148,6 +148,8 @@ export const ja: Record<string, string> = {
   "toast.playNext": "次に再生します",
   "toast.queued": "キューに追加しました",
   "toast.linkCopied": "リンクをコピーしました",
+  "toast.queueCleared": "キューをクリアしました",
+  "toast.undo": "元に戻す",
   "settings.title": "設定",
   "settings.reset": "すべての設定をリセット",
   "settings.section.appearance": "外観",

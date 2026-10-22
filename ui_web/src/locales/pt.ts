@@ -148,6 +148,8 @@ export const pt: Record<string, string> = {
   "toast.playNext": "Será tocada em seguida",
   "toast.queued": "Adicionada à fila",
   "toast.linkCopied": "Link copiado",
+  "toast.queueCleared": "Fila esvaziada",
+  "toast.undo": "Desfazer",
   "settings.title": "Configurações",
   "settings.reset": "Redefinir todas as configurações",
   "settings.section.appearance": "Aparência",

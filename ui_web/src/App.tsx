@@ -50,8 +50,23 @@ function Stage() {
 
 function Toast() {
   const toast = usePlayer((s) => s.toast);
+  const action = usePlayer((s) => s.toastAction);
   if (!toast) return null;
-  return <div className="toast">{toast}</div>;
+  return (
+    <div className="toast" role="status">
+      <span>{toast}</span>
+      {action ? (
+        <button
+          className="toast-action"
+          onClick={() => {
+            action.run();
+          }}
+        >
+          {action.label}
+        </button>
+      ) : null}
+    </div>
+  );
 }
 
 // Overlay portal for proper stacking

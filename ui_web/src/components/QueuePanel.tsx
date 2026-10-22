@@ -18,6 +18,7 @@ export function QueuePanel() {
   const openMenu = usePlayer((s) => s.openMenu);
 
   const panelRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const isNarrow = typeof window !== "undefined" && window.innerWidth < 1200;
 
   const handleEscape = useCallback((e: KeyboardEvent) => {
@@ -80,13 +81,22 @@ export function QueuePanel() {
           {queue.length > 0 ? (
             <button
               className="btn-glass chip text-xs"
-              onClick={(e) => { e.stopPropagation(); clearQueue(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                clearQueue();
+                // The queue is now empty, so this button is about to unmount
+                // and would drop keyboard focus to the page body. Hand it to
+                // the close button, which is the next thing a keyboard user
+                // needs anyway. The undo affordance lives in the toast.
+                closeRef.current?.focus();
+              }}
               aria-label={t("queue.clear")}
             >
               {t("queue.clearButton")}
             </button>
           ) : null}
           <button
+            ref={closeRef}
             className="btn-glass icon-btn text-text hover:bg-panel hover:text-text"
             aria-label={t("queue.close")}
             onClick={(e) => { e.stopPropagation(); setOpen(false); }}

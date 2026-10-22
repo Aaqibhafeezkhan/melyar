@@ -148,6 +148,8 @@ export const fr: Record<string, string> = {
   "toast.playNext": "Sera lu ensuite",
   "toast.queued": "Ajouté à la file d'attente",
   "toast.linkCopied": "Lien copié",
+  "toast.queueCleared": "File d'attente vidée",
+  "toast.undo": "Annuler",
   "settings.title": "Paramètres",
   "settings.reset": "Réinitialiser tous les paramètres",
   "settings.section.appearance": "Apparence",

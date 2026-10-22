@@ -148,6 +148,8 @@ export const ru: Record<string, string> = {
   "toast.playNext": "Будет воспроизведён следующим",
   "toast.queued": "Добавлено в очередь",
   "toast.linkCopied": "Ссылка скопирована",
+  "toast.queueCleared": "Очередь очищена",
+  "toast.undo": "Отменить",
   "settings.title": "Настройки",
   "settings.reset": "Сбросить все настройки",
   "settings.section.appearance": "Внешний вид",

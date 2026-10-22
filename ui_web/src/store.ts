@@ -35,6 +35,9 @@ type State = {
   expandedPlayerOpen: boolean;
   menu: Menu;
   toast: string | null;
+  // An optional action offered alongside the toast text. "Clear queue" is
+  // reversible, so it gets an Undo button instead of a confirmation dialog.
+  toastAction: { label: string; run: () => void } | null;
   booted: boolean;
   bridgeError: string | null;
 };
@@ -111,6 +114,7 @@ export const usePlayer = create<State & Actions>()((set, get) => ({
   expandedPlayerOpen: false,
   menu: null,
   toast: null,
+  toastAction: null,
   booted: false,
   bridgeError: null,
 
@@ -257,6 +261,7 @@ export const usePlayer = create<State & Actions>()((set, get) => ({
     set({
       liked: isLiked ? liked.filter((t) => t.id !== track.id) : [track, ...liked],
       toast: isLiked ? t("toast.unliked") : t("toast.liked"),
+      toastAction: null,
       menu: null,
     });
     if (toastTimer) clearTimeout(toastTimer);
@@ -267,7 +272,7 @@ export const usePlayer = create<State & Actions>()((set, get) => ({
     const b = bridge();
     if (!b) return;
     b.addToQueue(track.id);
-    set({ menu: null, toast: t("toast.playNext") });
+    set({ menu: null, toast: t("toast.playNext"), toastAction: null });
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(() => set({ toast: null }), 1700);
   },
@@ -276,7 +281,7 @@ export const usePlayer = create<State & Actions>()((set, get) => ({
     const b = bridge();
     if (!b) return;
     b.addToQueue(track.id);
-    set({ menu: null, toast: t("toast.queued") });
+    set({ menu: null, toast: t("toast.queued"), toastAction: null });
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(() => set({ toast: null }), 1700);
   },
@@ -294,7 +299,40 @@ export const usePlayer = create<State & Actions>()((set, get) => ({
   },
 
   clearQueue: () => {
-    bridge()?.clearQueue();
+    const b = bridge();
+    if (!b) return;
+    const queue = get().queue;
+    if (queue.length === 0) return;
+    // Snapshot before the bridge clears its mirror, so Undo can restore the
+    // exact list and the position within it. replaceQueue only swaps the
+    // list — it never starts playback — so the undo is non-destructive.
+    const snapshot = [...queue];
+    const start = Math.max(0, snapshot.findIndex((track) => track.id === get().current?.id));
+    b.clearQueue();
+    set({
+      toast: t("toast.queueCleared"),
+      toastAction: {
+        label: t("toast.undo"),
+        run: () => {
+          b.replaceQueue(
+            snapshot.map((track) => ({
+              id: track.id,
+              title: track.title,
+              artist: track.artist,
+              album: track.album,
+              duration: track.duration,
+              thumbnail: track.thumbnail,
+            })),
+            start,
+          );
+          set({ toast: null, toastAction: null });
+        },
+      },
+    });
+    // An undo affordance needs more than the 1.7s a plain note gets: the
+    // window has to be long enough to notice and aim at the button.
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => set({ toast: null, toastAction: null }), 5000);
   },
 
   openMenu: (menu) => set({ menu }),
@@ -307,7 +345,7 @@ export const usePlayer = create<State & Actions>()((set, get) => ({
   setExpandedPlayerOpen: (expandedPlayerOpen) => set({ expandedPlayerOpen }),
 
   toastNote: (text) => {
-    set({ toast: text });
+    set({ toast: text, toastAction: null });
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(() => set({ toast: null }), 1700);
   },

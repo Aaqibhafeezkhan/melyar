@@ -164,6 +164,8 @@ export const sq: Record<string, string> = {
   "toast.playNext": "Do të luhet në vijim",
   "toast.queued": "U shtua në radhë",
   "toast.linkCopied": "Lidhja u kopjua",
+  "toast.queueCleared": "Radha u pastrua",
+  "toast.undo": "Zhbëj",
 
   // Settings
   "settings.title": "Cilësimet",

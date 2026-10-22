@@ -148,6 +148,8 @@ export const ko: Record<string, string> = {
   "toast.playNext": "다음에 재생합니다",
   "toast.queued": "대기열에 추가했습니다",
   "toast.linkCopied": "링크를 복사했습니다",
+  "toast.queueCleared": "대기열을 비웠습니다",
+  "toast.undo": "실행 취소",
   "settings.title": "설정",
   "settings.reset": "모든 설정 초기화",
   "settings.section.appearance": "모양",

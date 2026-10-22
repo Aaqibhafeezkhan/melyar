@@ -148,6 +148,8 @@ export const zh: Record<string, string> = {
   "toast.playNext": "将作为下一首播放",
   "toast.queued": "已添加到队列",
   "toast.linkCopied": "链接已复制",
+  "toast.queueCleared": "队列已清空",
+  "toast.undo": "撤销",
   "settings.title": "设置",
   "settings.reset": "重置所有设置",
   "settings.section.appearance": "外观",

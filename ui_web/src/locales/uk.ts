@@ -148,6 +148,8 @@ export const uk: Record<string, string> = {
   "toast.playNext": "Буде відтворено наступним",
   "toast.queued": "Додано до черги",
   "toast.linkCopied": "Посилання скопійовано",
+  "toast.queueCleared": "Чергу очищено",
+  "toast.undo": "Скасувати",
   "settings.title": "Налаштування",
   "settings.reset": "Скинути всі налаштування",
   "settings.section.appearance": "Вигляд",
