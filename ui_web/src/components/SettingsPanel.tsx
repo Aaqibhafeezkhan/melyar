@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { Settings as SettingsIcon, X, RotateCcw } from "lucide-react";
+import { X, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { t, useLocale, LOCALES } from "@/lib/i18n";
 import { useSettings, EQUALIZER_BAND_FREQUENCIES, type Settings } from "@/lib/settings";
@@ -10,14 +10,24 @@ const ACCENT_PRESETS = ["#fa233b", "#1db954", "#ff8a00", "#7c5cff", "#00a6c8", "
 function Row({
   label,
   description,
+  align = "center",
   children,
 }: {
   label: string;
   description?: string;
+  /** A control taller than one line — the language grid is five — reads
+      better with its label as a heading at the top than floating at half
+      its height. */
+  align?: "center" | "start";
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-2.5">
+    <div
+      className={cn(
+        "flex justify-between gap-4 py-3",
+        align === "start" ? "items-start" : "items-center",
+      )}
+    >
       <div className="min-w-0">
         <div className="text-[13px] font-medium text-text">{label}</div>
         {description ? (
@@ -31,13 +41,16 @@ function Row({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mb-6 last:mb-0">
-      <h3 className="text-[11px] font-bold uppercase tracking-wider text-text-tertiary mb-1.5 px-1">
+    <section className="mb-5 last:mb-0">
+      <h3 className="text-[11px] font-bold uppercase tracking-wider text-text-tertiary mb-0.5 px-1">
         {title}
       </h3>
-      <div className="rounded-xl bg-panel border border-line px-3.5 py-1.5 divide-y divide-line">
-        {children}
-      </div>
+      {/* The rows sit directly on the panel, separated by hairlines.
+          Wrapping each group in its own bordered card nested one more box
+          inside a panel that is already a box, so the eye counted three
+          borders before it reached a single setting — and the group's title
+          floated above a container that had nothing to do with it. */}
+      <div className="divide-y divide-line">{children}</div>
     </section>
   );
 }
@@ -67,10 +80,11 @@ export function SettingsPanel() {
 
   useEffect(() => {
     if (open && panelRef.current) {
-      const focusable = panelRef.current.querySelector<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      );
-      focusable?.focus();
+      // The dialog takes focus, not the first control inside it. The first
+      // control is "reset everything", so opening the panel used to arm the
+      // one action the user is least likely to want — a stray Enter keypress
+      // threw away every setting, with no confirmation and no undo.
+      panelRef.current.focus();
     }
   }, [open]);
 
@@ -92,25 +106,21 @@ export function SettingsPanel() {
         role="dialog"
         aria-modal="true"
         aria-label={t("settings.title")}
+        tabIndex={-1}
         className="settings-panel w-full max-w-lg max-h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
       >
-        <header className="flex items-center justify-between px-5 py-4 border-b border-line shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="size-8 rounded-lg bg-accent/15 flex items-center justify-center">
-              <SettingsIcon className="size-5 text-accent-text" />
-            </div>
-            <h2 className="text-[15px] font-bold tracking-tight text-text">{t("settings.title")}</h2>
-          </div>
-          <div className="flex items-center gap-2">
+        <header className="flex items-center justify-between px-5 py-3.5 shrink-0">
+          <h2 className="text-[15px] font-bold tracking-tight text-text">{t("settings.title")}</h2>
+          <div className="flex items-center gap-1">
             <button
-              className="btn-glass icon-btn text-text hover:bg-hover hover:text-text"
+              className="size-8 rounded-full grid place-items-center text-text-tertiary transition-colors hover:bg-hover hover:text-text"
               aria-label={t("settings.reset")}
               onClick={() => reset()}
             >
               <RotateCcw className="size-4" />
             </button>
             <button
-              className="btn-glass icon-btn text-text hover:bg-hover hover:text-text"
+              className="size-8 rounded-full grid place-items-center text-text-tertiary transition-colors hover:bg-hover hover:text-text"
               aria-label={t("common.close")}
               onClick={() => setOpen(false)}
             >
@@ -152,8 +162,12 @@ export function SettingsPanel() {
                 ))}
               </div>
             </Row>
-            <Row label={t("settings.language")} description={t("settings.language.description")}>
-              <div className="grid grid-cols-3 gap-1 w-48">
+            <Row
+              label={t("settings.language")}
+              description={t("settings.language.description")}
+              align="start"
+            >
+              <div className="grid grid-cols-3 gap-1 w-60">
                 {LOCALES.map((entry) => {
                   const active = entry.code === settings.language;
                   return (

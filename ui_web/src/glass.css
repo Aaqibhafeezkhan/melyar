@@ -25,6 +25,10 @@
   --bg-content: #151519;
   --bg-side: rgba(18, 18, 22, 0.85);
   --panel: rgba(10, 10, 10, 0.85);
+  /* The settings dialog's own surface. It is darker than the content
+     behind it because the accent-coloured labels inside it were
+     contrast-checked against the darker ground the rows used to sit on. */
+  --bg-settings: #0b0b0d;
   --bg-lcd: #1a1a1f;
   --bg-hover: rgba(255, 255, 255, 0.035);
   --bg-active: rgba(255, 255, 255, 0.07);
@@ -190,6 +194,7 @@
   --bg: #f7f7fa;
   --bg-elevated: #ffffff;
   --bg-content: #ffffff;
+  --bg-settings: #ffffff;
   --bg-side: rgba(248, 248, 250, 0.92);
   --panel: rgba(255, 255, 255, 0.85);
   --bg-lcd: #eeeef2;
@@ -1200,6 +1205,7 @@
   --bg-elevated: #111114;
   --bg-content: #151519;
   --bg-content-94: rgba(21, 21, 25, 0.94);
+  --bg-settings: #0b0b0d;
   --bg-elevated-92: rgba(17, 17, 20, 0.92);
   --bg-hover: rgba(255, 255, 255, 0.035);
   --accent-text: var(--accent-text-dark);
@@ -1506,16 +1512,15 @@
 /* Volume: an icon and a short track that widens under the pointer. A long,
    saturated bar at rest is the loudest thing on the screen, and it should
    not be. */
-.pb-volume { display: flex; align-items: center; gap: 2px; }
-.pb-volume-track {
-  width: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition: width var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out);
-}
-.pb-volume:hover .pb-volume-track,
-.pb-volume:focus-within .pb-volume-track { width: 84px; opacity: 1; }
-.pb-volume-track > * { width: 84px; }
+.pb-volume { display: flex; align-items: center; gap: var(--space-2); }
+/* The slider is always visible, the way every desktop player shows it.
+   Hiding it until the pointer arrived turned a working control into what
+   looked like a mute button and gave the user no way to see or set the
+   level, and growing it on hover moved the cluster from 34px to 118px
+   under the hand. A fixed width is also a width the rest of the bar can be
+   laid out against, so nothing shifts while the pointer travels. */
+.pb-volume-track { width: 72px; }
+.pb-volume-track > * { width: 72px; }
 
 
 /* ============================================================
@@ -2388,7 +2393,14 @@
    glass treatment relies on backdrop-filter, which does not always apply
    inside the overlay stacking context, so the panel is drawn opaque. */
 .settings-panel {
-  background: var(--bg-content);
+  /* The rows used to sit in cards of `--panel` over the content surface,
+     and the accent-coloured labels were contrast-checked against that
+     darker ground. Flattening the groups moved them onto the lighter one,
+     which took three of them below the floor in the dark theme (5.06 down
+     to 4.54 against a required 4.6) and one in the light theme. The panel
+     now carries its own surface per theme, so nothing that passed before
+     has to be re-argued. */
+  background: var(--bg-settings);
   border: 1px solid var(--line);
 }
 
