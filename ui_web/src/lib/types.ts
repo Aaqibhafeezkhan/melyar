@@ -30,8 +30,10 @@ export type View =
   | { name: "artists" }
   | { name: "liked" }
   | { name: "history" }
-  | { name: "album"; key: string }
-  | { name: "artist"; key: string };
+  // The detail views carry the name they were opened from, so the header can
+  // show what you are looking at instead of the word "Albums".
+  | { name: "album"; key: string; label?: string }
+  | { name: "artist"; key: string; label?: string };
 
 export type RepeatMode = 0 | 1 | 2; // off / all / one
 

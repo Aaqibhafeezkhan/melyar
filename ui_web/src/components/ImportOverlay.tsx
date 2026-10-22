@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 import { useLibraryImport } from "@/lib/import";
-import { t, tCount } from "@/lib/i18n";
+import { t, tCount, useLocale } from "@/lib/i18n";
 import { usePlayer } from "@/store";
 
 /**
@@ -8,6 +8,8 @@ import { usePlayer } from "@/store";
  * many tracks were matched so far and how many could not be found.
  */
 export function ImportOverlay() {
+  // Subscribe, or the headings stay in the previous language after a switch.
+  useLocale();
   const running = useLibraryImport((s) => s.running);
   const progress = useLibraryImport((s) => s.progress);
   const cancel = useLibraryImport((s) => s.cancel);
@@ -31,7 +33,10 @@ export function ImportOverlay() {
               {t("import.title")}
             </h2>
             <p className="text-[12px] text-text-tertiary mt-1">
-              {tCount("import.progress", progress.total, { current: progress.current })}
+              {tCount("import.progress", progress.total, {
+                total: progress.total,
+                current: progress.current,
+              })}
             </p>
           </div>
           <button

@@ -13,6 +13,10 @@ export type ImportProgress = {
 
 const EMPTY: ImportProgress = { current: 0, total: 0, matched: 0, skipped: 0, done: false };
 
+/** The native dialog is one at a time; a second click must not arm a second
+ * pick, or two answers would arrive for one question. */
+let pickInFlight = false;
+
 type ImportState = {
   progress: ImportProgress;
   running: boolean;
@@ -29,26 +33,44 @@ export const useLibraryImport = create<ImportState>()((set, get) => ({
   start: async () => {
     const b = getBridge();
     if (!b) return;
+    if (pickInFlight) return;
 
     // The native file dialog is opened by the QML side, because the web
     // layer cannot reach the file system. The bridge asks for it and
     // answers with the picked path.
     if (typeof b.requestFilePick !== "function") return;
 
-    const path = await new Promise<string>((resolve) => {
-      const timer = setTimeout(() => resolve(""), 5 * 60 * 1000);
-      b.filePicked?.connect((picked: string) => {
-        clearTimeout(timer);
-        resolve(String(picked || ""));
+    pickInFlight = true;
+    try {
+      const path = await new Promise<string>((resolve) => {
+        let settled = false;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+
+        // The handler is detached however the promise ends. Leaving it attached
+        // meant a cancelled dialog kept it alive, so the next pick woke both the
+        // stale and the fresh one and the file was imported twice.
+        const done = (value: string) => {
+          if (settled) return;
+          settled = true;
+          if (timer !== undefined) clearTimeout(timer);
+          b.filePicked?.disconnect?.(handler);
+          resolve(value);
+        };
+        const handler = (picked: string) => done(String(picked || ""));
+
+        timer = setTimeout(() => done(""), 5 * 60 * 1000);
+        b.filePicked?.connect?.(handler);
+        b.requestFilePick();
       });
-      b.requestFilePick();
-    });
 
-    if (!path) return;
-    if (typeof b.importLibrary !== "function") return;
+      if (!path) return;
+      if (typeof b.importLibrary !== "function") return;
 
-    b.importLibrary(path);
-    set({ running: true, progress: { ...EMPTY } });
+      b.importLibrary(path);
+      set({ running: true, progress: { ...EMPTY } });
+    } finally {
+      pickInFlight = false;
+    }
   },
 
   cancel: () => {
@@ -86,7 +108,10 @@ export function bindImportProgress() {
 
       const st = usePlayer.getState();
       st.toastNote(
-        tCount("import.finished", progress.matched, { skipped: progress.skipped }),
+        tCount("import.finished", progress.matched, {
+          matched: progress.matched,
+          skipped: progress.skipped,
+        }),
       );
     }
   });

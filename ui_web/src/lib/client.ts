@@ -142,10 +142,13 @@ export function initBridge() {
       });
 
       b.lyricsChanged.connect(() => {
-        // Guard against stale lyrics from a previous track overwriting the
-        // current track's lyrics (race with currentTrackChanged + polling).
-        const st = usePlayer.getState();
-        if (st.lyricsRequestId !== null && st.lyricsRequestId !== Date.now()) return;
+        // No id check here on purpose. The bridge only ever assigns lyrics whose
+        // track matches the current one (MelyarBridge::handleLyricsLoaded) and
+        // clears them on every track change, so the signal carries the right
+        // lyrics by construction. The guard this used to have compared the
+        // stored request id against Date.now() at delivery time - two different
+        // milliseconds, always - so it rejected every signal and lyrics only
+        // arrived through the 500 ms poll, half a second late.
         usePlayer.setState({ lyricsRaw: (b.currentLyrics || "") || null });
       });
 

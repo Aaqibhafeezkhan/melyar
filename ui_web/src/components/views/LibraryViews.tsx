@@ -159,7 +159,7 @@ export function AlbumsView() {
         {albums.map((album) => (
           <div key={album.key} className="grid-item group flex flex-col gap-3">
             <button
-              onClick={() => navigate({ name: "album", key: album.key })}
+              onClick={() => navigate({ name: "album", key: album.key, label: album.name })}
               className="relative"
               aria-label={t("library.openAlbum", { name: album.name })}
             >
@@ -179,7 +179,7 @@ export function AlbumsView() {
               </div>
             </button>
             <div className="min-w-0">
-              <button className="block w-full truncate text-left text-[13.5px] font-semibold hover:underline" onClick={() => navigate({ name: "album", key: album.key })}>
+              <button className="block w-full truncate text-left text-[13.5px] font-semibold hover:underline" onClick={() => navigate({ name: "album", key: album.key, label: album.name })}>
                 {album.name}
               </button>
               <p className="truncate text-[12px] text-text-tertiary">{album.artist}</p>
@@ -208,7 +208,7 @@ export function ArtistsView() {
       ) : (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
           {artists.map((a) => (
-            <button key={a.key} className="grid-item group flex flex-col gap-3" onClick={() => navigate({ name: "artist", key: a.key })}>
+            <button key={a.key} className="grid-item group flex flex-col gap-3" onClick={() => navigate({ name: "artist", key: a.key, label: a.name })}>
               <Artwork src={a.cover} label={a.name} className="aspect-square w-full rounded-full" />
               <div className="min-w-0 text-center">
                 <p className="truncate text-[13.5px] font-semibold">{a.name}</p>
@@ -223,6 +223,9 @@ export function ArtistsView() {
 }
 
 export function AlbumDetailView({ albumKey }: { albumKey: string }) {
+  // Subscribe. Without it the headings stay in the previous language after a
+  // switch, because this view was the one that read t() without listening.
+  useLocale();
   const playTrack = usePlayer((s) => s.playTrack);
   const navigate = usePlayer((s) => s.navigate);
   const album = findAlbum(allKnown(), albumKey);
@@ -258,6 +261,8 @@ export function AlbumDetailView({ albumKey }: { albumKey: string }) {
 }
 
 export function ArtistDetailView({ artistKey }: { artistKey: string }) {
+  // Subscribe, as in AlbumDetailView: this view read t() without listening.
+  useLocale();
   const playTrack = usePlayer((s) => s.playTrack);
   const navigate = usePlayer((s) => s.navigate);
   const artist = findArtist(allKnown(), artistKey);
@@ -289,7 +294,7 @@ export function ArtistDetailView({ artistKey }: { artistKey: string }) {
           <h2 className="mb-4 text-xl font-bold tracking-tight">{t("library.albums.title")}</h2>
           <div className="flex gap-4 overflow-x-auto pb-2">
             {albums.map((album) => (
-              <button key={album.key} className="card w-36 shrink-0" onClick={() => navigate({ name: "album", key: album.key })}>
+              <button key={album.key} className="card w-36 shrink-0" onClick={() => navigate({ name: "album", key: album.key, label: album.name })}>
                 <Artwork src={album.cover} label={album.name} className="mb-3 aspect-square w-full" />
                 <p className="truncate text-left text-[13px] font-semibold">{album.name}</p>
                 <p className="text-left text-[11.5px] text-text-tertiary">{tCount("library.count", album.tracks.length)}</p>

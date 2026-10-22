@@ -88,7 +88,10 @@ export function ExpandedPlayer() {
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverX, setHoverX] = useState<number | null>(null);
   const [showControls, setShowControls] = useState(true);
-  const [controlsTimer, setControlsTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  // Held in a ref for the same reason as LyricsOverlay: a timer in state gave
+  // the effect a new dependency on every reset, so it re-ran forever and the
+  // controls never actually hid.
+  const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const parsed = useMemo(() => parseLyrics(lyricsRaw), [lyricsRaw]);
   const active = parsed.synced ? activeLineIndex(parsed.lines, position) : -1;
@@ -97,15 +100,16 @@ export function ExpandedPlayer() {
 
   // Auto-hide controls after 4s of inactivity (lyrics-only style)
   const resetControlsTimer = useCallback(() => {
-    if (controlsTimer) clearTimeout(controlsTimer);
+    if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
     setShowControls(true);
-    const t = setTimeout(() => setShowControls(false), 4000);
-    setControlsTimer(t);
-  }, [controlsTimer]);
+    controlsTimerRef.current = setTimeout(() => setShowControls(false), 4000);
+  }, []);
 
   useEffect(() => {
     resetControlsTimer();
-    return () => { if (controlsTimer) clearTimeout(controlsTimer); };
+    return () => {
+      if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
+    };
   }, [resetControlsTimer]);
 
   // Close on Escape
@@ -262,9 +266,14 @@ export function ExpandedPlayer() {
                   </svg>
                 </div>
               )}
-              {/* Volume slider on right side of cover */}
-              <div className="absolute top-1/2 right-[-14px] -translate-y-1/2 h-24 w-2 bg-white/10 rounded-full backdrop-blur-sm border border-white/20 flex flex-col justify-between p-1">
+              {/* Volume column beside the cover. It is a vertical slider in its
+                  own right: rotating a horizontal one mapped the pointer across
+                  a rotated bounding box eight pixels wide, so a millimetre of
+                  jitter threw the volume from one end to the other, and the bar
+                  itself was squeezed into a container with no room to draw. */}
+              <div className="absolute top-1/2 right-[-14px] -translate-y-1/2 h-24 w-3 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
                 <GlassSlider
+                  orientation="vertical"
                   value={muted ? 0 : volume}
                   onChange={handleVolumeChange}
                   min={0}
@@ -272,8 +281,8 @@ export function ExpandedPlayer() {
                   step={0.01}
                   trackHeight={VOLUME_BAR_H}
                   thumbSize={14}
-                  className="rotate-180 h-full w-2"
-                  style={{ height: "100%" }}
+                  className="h-full"
+                  aria-label={t("toolbar.volume")}
                 />
               </div>
             </div>

@@ -213,7 +213,7 @@ const VIEW_TITLE: Record<string, string> = {
   liked: "nav.liked",
   history: "nav.history",
   albums: "nav.albums",
-  artists: "nav.albums",
+  artists: "nav.artists",
   album: "nav.albums",
   artist: "nav.albums",
 };
@@ -274,7 +274,10 @@ export function Header() {
   const canBack = navIndex > 0;
   const canForward = navIndex < navStack.length - 1;
   const key = view.name as string;
-  const title = t(VIEW_TITLE[key] ?? "nav.home");
+  // An album or an artist opens onto one named thing. The label travels with
+  // the view so the bar can say which, rather than naming the list you came
+  // from.
+  const title = ("label" in view && view.label) || t(VIEW_TITLE[key] ?? "nav.home");
 
   return (
     <header className="header-bar">

@@ -34,15 +34,19 @@ export function LyricsOverlay() {
 
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [showControls, setShowControls] = useState(true);
-  const [controlsTimer, setControlsTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  // The timer lives in a ref, not in state. In state it fed itself: every reset
+  // produced a new callback identity, the effect listed that identity as a
+  // dependency, so it re-ran on each timer change - re-adding the window
+  // listeners and re-arming the hide timer forever. The controls therefore
+  // never hid, and the overlay redrew without pause for as long as it was open.
+  const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auto-hide controls after 4s of inactivity
   const resetControlsTimer = useCallback(() => {
-    if (controlsTimer) clearTimeout(controlsTimer);
+    if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
     setShowControls(true);
-    const t = setTimeout(() => setShowControls(false), 4000);
-    setControlsTimer(t);
-  }, [controlsTimer]);
+    controlsTimerRef.current = setTimeout(() => setShowControls(false), 4000);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -53,9 +57,9 @@ export function LyricsOverlay() {
     return () => {
       window.removeEventListener("pointermove", onPointer);
       window.removeEventListener("scroll", onPointer);
-      if (controlsTimer) clearTimeout(controlsTimer);
+      if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
     };
-  }, [open, resetControlsTimer, controlsTimer]);
+  }, [open, resetControlsTimer]);
 
   const { ref: lyricsScrollerRef, scrollToActive } = useLyricsScroll(
     open && parsed.synced,

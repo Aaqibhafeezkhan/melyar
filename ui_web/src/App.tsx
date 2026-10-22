@@ -74,6 +74,28 @@ function OverlayPortal({ children }: { children: React.ReactNode }) {
   return <div className="overlay-portal">{children}</div>;
 }
 
+/**
+ * Elements that own their own keys. The window-level shortcuts below are for
+ * when nothing in particular has focus.
+ */
+const OWNED_KEYS = [
+  "a[href]",
+  "button",
+  "input",
+  "select",
+  "textarea",
+  "[contenteditable]",
+  '[role="button"]',
+  '[role="switch"]',
+  '[role="slider"]',
+  '[role="menuitem"]',
+  '[role="tab"]',
+  '[role="option"]',
+  '[role="dialog"]',
+  '[role="menu"]',
+  "[tabindex]",
+].join(", ");
+
 export default function App() {
   const view = usePlayer((s) => s.view);
   const queueOpen = usePlayer((s) => s.queueOpen);
@@ -88,6 +110,13 @@ export default function App() {
         if (e.key === "Escape") (target as HTMLInputElement).blur();
         return;
       }
+      // A focused control keeps its own keys. Space on a focused button has to
+      // press that button: the preventDefault below used to eat the key-up that
+      // fires it, so Space toggled playback while a button sat there ready to be
+      // used. Arrow keys inside a slider, a menu or a dialog step and scroll
+      // there, instead of seeking the song and changing the volume underneath.
+      // Escape is still let through, so a dialog closes from within.
+      if (target?.closest?.(OWNED_KEYS) && e.key !== "Escape") return;
       const st = usePlayer.getState();
       switch (e.key) {
         case " ":

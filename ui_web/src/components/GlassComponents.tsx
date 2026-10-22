@@ -525,6 +525,11 @@ interface GlassSliderProps {
   className?: string;
   style?: React.CSSProperties;
   onChange?: (value: number) => void;
+  /** A vertical slider reads height as value, top being the maximum. Without a
+   * real vertical mode the only way to stand a slider up was to rotate a
+   * horizontal one, which maps the pointer across the rotated bounding box -
+   * a few pixels of jitter sweeping the whole range. */
+  orientation?: "horizontal" | "vertical";
   "aria-label"?: string;
 }
 
@@ -536,6 +541,7 @@ export const GlassSlider = forwardRef<HTMLDivElement, GlassSliderProps>(
       step = 0.01,
       showTooltip = false,
       formatTooltip,
+      orientation = "horizontal",
       trackHeight = 4,
       thumbSize = 16,
       className,
@@ -552,26 +558,33 @@ export const GlassSlider = forwardRef<HTMLDivElement, GlassSliderProps>(
     const thumbRef = useRef<HTMLDivElement>(null);
     const tokens = getMotionTokens();
 
-    const ratio = (value - min) / (max - min);
+    const vertical = orientation === "vertical";
+    const ratio = max === min ? 0 : (value - min) / (max - min);
 
-    const getValueFromClientX = (clientX: number) => {
+    const localFraction = (clientX: number, clientY: number, rect: DOMRect) => {
+      if (rect.width === 0 || rect.height === 0) return null;
+      return vertical
+        ? 1 - Math.max(0, Math.min(1, (clientY - rect.top) / rect.height))
+        : Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    };
+
+    const getValueFromPoint = (clientX: number, clientY: number) => {
       const rect = trackRef.current?.getBoundingClientRect();
       if (!rect) return value;
-      const localX = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-      return min + localX * (max - min);
+      const local = localFraction(clientX, clientY, rect);
+      if (local === null) return value;
+      return min + local * (max - min);
     };
 
     const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
       e.currentTarget.setPointerCapture(e.pointerId);
       setIsDragging(true);
-      const newValue = getValueFromClientX(e.clientX);
-      onChange?.(newValue);
+      onChange?.(getValueFromPoint(e.clientX, e.clientY));
     };
 
     const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
       if (!isDragging) return;
-      const newValue = getValueFromClientX(e.clientX);
-      onChange?.(newValue);
+      onChange?.(getValueFromPoint(e.clientX, e.clientY));
     };
 
     const handlePointerUp = () => {
@@ -581,28 +594,71 @@ export const GlassSlider = forwardRef<HTMLDivElement, GlassSliderProps>(
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
       if (isDragging) return;
       const rect = trackRef.current?.getBoundingClientRect();
-      if (rect) {
-        const localX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-        setHoverValue(min + localX * (max - min));
-      }
+      if (!rect) return;
+      const local = localFraction(e.clientX, e.clientY, rect);
+      if (local === null) return;
+      setHoverValue(min + local * (max - min));
     };
 
     const handleMouseLeave = () => {
       setHoverValue(null);
     };
 
+    // The div is the slider and it has to answer the keyboard itself, because
+    // the native input behind it is deliberately out of the tab order. Without
+    // this, focus here handed every arrow key to the window-level shortcut,
+    // which seeks and changes the volume while this thumb never moved - and
+    // settings sliders could not be set from the keyboard at all.
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+      let next: number | null = null;
+      switch (e.key) {
+        case "ArrowRight":
+        case "ArrowUp":
+          next = value + step;
+          break;
+        case "ArrowLeft":
+        case "ArrowDown":
+          next = value - step;
+          break;
+        case "PageUp":
+          next = value + (max - min) / 10;
+          break;
+        case "PageDown":
+          next = value - (max - min) / 10;
+          break;
+        case "Home":
+          next = min;
+          break;
+        case "End":
+          next = max;
+          break;
+        default:
+          return;
+      }
+      e.preventDefault();
+      // Stop the window-level shortcut from also seeking or changing volume.
+      e.stopPropagation();
+      onChange?.(Math.max(min, Math.min(max, next)));
+    };
+
     return (
       <div
         ref={ref}
-        className="relative w-full cursor-pointer select-none"
-        style={{ height: trackHeight, ...style }}
+        className={cn(
+          "relative cursor-pointer select-none",
+          vertical ? "h-full" : "w-full",
+          className,
+        )}
+        style={vertical ? { width: trackHeight, ...style } : { height: trackHeight, ...style }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
+        onKeyDown={handleKeyDown}
         role="slider"
+        aria-orientation={vertical ? "vertical" : "horizontal"}
         aria-valuemin={min}
         aria-valuemax={max}
         aria-valuenow={value}
@@ -618,27 +674,56 @@ export const GlassSlider = forwardRef<HTMLDivElement, GlassSliderProps>(
         />
 
         <div
-          className="absolute top-0 left-0 bottom-0 rounded-full"
-          style={{
-            width: `${ratio * 100}%`,
-            background: "var(--accent)",
-            borderRadius: "999px",
-            boxShadow: "0 0 6px var(--accent), 0 0 12px var(--accent-soft)",
-            transition: `width ${tokens.duration.press}ms linear`,
-          }}
+          className="absolute rounded-full"
+          style={
+            vertical
+              ? {
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: `${ratio * 100}%`,
+                  background: "var(--accent)",
+                  borderRadius: "999px",
+                  boxShadow: "0 0 6px var(--accent), 0 0 12px var(--accent-soft)",
+                  transition: `height ${tokens.duration.press}ms linear`,
+                }
+              : {
+                  top: 0,
+                  left: 0,
+                  bottom: 0,
+                  width: `${ratio * 100}%`,
+                  background: "var(--accent)",
+                  borderRadius: "999px",
+                  boxShadow: "0 0 6px var(--accent), 0 0 12px var(--accent-soft)",
+                  transition: `width ${tokens.duration.press}ms linear`,
+                }
+          }
         />
 
         <div
           ref={thumbRef}
-          className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
-          style={{
-            left: `${ratio * 100}%`,
-            transform: `translate(-50%, -50%) scale(${isDragging ? 1.2 : isHovering ? 1.15 : 1})`,
-            transition: prefersReducedMotion()
-              ? "none"
-              : `transform ${tokens.duration.press}ms ${tokens.easing.spring}, left ${tokens.duration.press}ms linear`,
-            willChange: "transform, left",
-          }}
+          className="absolute pointer-events-none"
+          style={
+            vertical
+              ? {
+                  left: "50%",
+                  bottom: `${ratio * 100}%`,
+                  transform: `translate(-50%, 50%) scale(${isDragging ? 1.2 : isHovering ? 1.15 : 1})`,
+                  transition: prefersReducedMotion()
+                    ? "none"
+                    : `transform ${tokens.duration.press}ms ${tokens.easing.spring}, bottom ${tokens.duration.press}ms linear`,
+                  willChange: "transform, bottom",
+                }
+              : {
+                  top: "50%",
+                  left: `${ratio * 100}%`,
+                  transform: `translate(-50%, -50%) scale(${isDragging ? 1.2 : isHovering ? 1.15 : 1})`,
+                  transition: prefersReducedMotion()
+                    ? "none"
+                    : `transform ${tokens.duration.press}ms ${tokens.easing.spring}, left ${tokens.duration.press}ms linear`,
+                  willChange: "transform, left",
+                }
+          }
         >
           <div
             className="rounded-full bg-white"
