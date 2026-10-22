@@ -150,6 +150,68 @@
     }
   }
 
+  // Reduced motion is a request the user makes to their operating system,
+  // not to us. Answering it only where somebody remembered to soften an
+  // animation means the next animation added is answered to nobody, so the
+  // stylesheet needs one rule that swallows everything.
+  //
+  // Merely finding a `*` selector is not enough: this file used to carry
+  // three copies of the suppression, and a check that accepted any wildcard
+  // would have passed whether the rule reset the durations or described
+  // them. So the declarations are read, and they have to actually stop the
+  // motion.
+  let reducedMotionChecked = false;
+  function checkReducedMotion(tag) {
+    if (reducedMotionChecked) return;
+    reducedMotionChecked = true;
+    let swallowsEverything = 0;
+    const walk = (rules) => {
+      Array.prototype.slice.call(rules || []).forEach((rule) => {
+        if (rule.type !== 4 /* CSSRule.MEDIA_RULE */) return;
+        const condition = rule.conditionText || (rule.media && rule.media.mediaText) || "";
+        if (!/prefers-reduced-motion:\s*reduce/.test(condition)) return;
+        Array.prototype.slice.call(rule.cssRules || []).forEach((inner) => {
+          if (!inner.selectorText || !inner.style) return;
+          if (inner.selectorText.indexOf("*") === -1) return;
+          // A duration stops motion when it is gone, or stepped down to
+          // where nobody can see it: the standard reset writes 0.01ms, and
+          // a bare number is seconds.
+          const stops = (property) => {
+            const value = (inner.style.getPropertyValue(property) || "").trim();
+            if (!value) return false;
+            if (/none/.test(value)) return true;
+            const tokens = value.split(/[\s,]+/).filter(Boolean);
+            return (
+              tokens.length > 0 &&
+              tokens.every((token) => {
+                const number = parseFloat(token);
+                if (Number.isNaN(number)) return false;
+                return number * (/ms$/.test(token) ? 1 : 1000) <= 1;
+              })
+            );
+          };
+          if (stops("transition-duration") || stops("animation-duration")) {
+            swallowsEverything++;
+          }
+        });
+        walk(rule.cssRules);
+      });
+    };
+    Array.prototype.slice.call(document.styleSheets).forEach((sheet) => {
+      try {
+        walk(sheet.cssRules);
+      } catch {
+        // A cross-origin sheet cannot be read; ours are all local.
+      }
+    });
+    if (!swallowsEverything) {
+      note(
+        "reduced-motion",
+        tag + ": nothing stops every animation when the system asks for reduced motion",
+      );
+    }
+  }
+
   // The contrast of the text against what is behind it. A light surface with
   // light text is invisible, and the browser engine does not always blur
   // what is behind a panel, so this has to be checked rather than assumed.
@@ -547,6 +609,7 @@
         checkText(tag);
         checkAccessibleNames(tag);
         checkLocaleLabels(tag);
+        checkReducedMotion(tag);
         checkContrast(tag);
         if (step[2]) step[2]();
       } catch (e) {

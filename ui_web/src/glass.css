@@ -1617,13 +1617,12 @@
 
 /* ============================================================
    REDUCED MOTION
+
+   The suppression itself lives at the end of this file, once, beside the
+   animations switch it mirrors. What belongs here are the components that
+   want the animation gone rather than merely shortened.
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
   .eq-bars i { animation: none; }
 }
 
@@ -2166,12 +2165,8 @@
 
 /* ---- Reduced Motion Override ---- */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-
+  /* The blanket suppression is at the end of this file, once. What is here
+     are the components that want the movement gone, not merely shortened. */
   .glass-morph-indicator,
   .play-pause-morph,
   .glass-toggle-thumb,
@@ -2363,6 +2358,23 @@
 
 /* Animations turned off: the motion settings already respect the reduced
    motion preference, this covers the CSS side as well. */
+/* A user who has asked their system for less motion has to get less motion,
+   and they asked their operating system rather than us. This is the one
+   place that answers: everything is shortened to a step, so the request is
+   answered for the animations that exist and for the ones added later that
+   nobody remembered to soften. It is shortened rather than removed, so
+   transitions still finish and still fire the events that depend on them. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 [data-animations="false"] *,
 [data-animations="false"] *::before,
 [data-animations="false"] *::after {
