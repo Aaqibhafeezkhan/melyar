@@ -80,7 +80,7 @@ export function SearchView() {
               <div className="flex gap-4 overflow-x-auto pb-2">
                 {artists.map((a) => (
                   <button key={a.key} className="card w-28 shrink-0" onClick={() => navigate({ name: "artist", key: a.key })}>
-                    <Artwork src={a.cover} className="mb-3 aspect-square w-full rounded-full" />
+                    <Artwork src={a.cover} label={a.name} className="mb-3 aspect-square w-full rounded-full" />
                     <p className="truncate text-center text-[12.5px] font-medium">{a.name}</p>
                     <p className="text-center text-[11px] text-text-tertiary">{t("library.col.artist")}</p>
                   </button>

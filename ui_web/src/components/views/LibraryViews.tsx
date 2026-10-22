@@ -163,7 +163,7 @@ export function AlbumsView() {
               className="relative"
               aria-label={t("library.openAlbum", { name: album.name })}
             >
-              <Artwork src={album.cover} className="aspect-square w-full" />
+              <Artwork src={album.cover} label={album.name} className="aspect-square w-full" />
               <div className="absolute inset-0 grid place-items-center opacity-0 transition-opacity group-hover:opacity-100">
                 <span
                   className="grid size-11 place-items-center rounded-full bg-accent text-white shadow-xl"
@@ -209,7 +209,7 @@ export function ArtistsView() {
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
           {artists.map((a) => (
             <button key={a.key} className="grid-item group flex flex-col gap-3" onClick={() => navigate({ name: "artist", key: a.key })}>
-              <Artwork src={a.cover} className="aspect-square w-full rounded-full" />
+              <Artwork src={a.cover} label={a.name} className="aspect-square w-full rounded-full" />
               <div className="min-w-0 text-center">
                 <p className="truncate text-[13.5px] font-semibold">{a.name}</p>
                 <p className="text-[11.5px] text-text-tertiary">{t("library.col.artist")}</p>
@@ -239,7 +239,7 @@ export function AlbumDetailView({ albumKey }: { albumKey: string }) {
   return (
     <div className="px-6 pb-10 pt-6 lg:px-9">
       <header className="mb-8 flex flex-col items-center gap-6 text-center sm:flex-row sm:items-end sm:text-left">
-        <Artwork src={album.cover} className="size-40 shrink-0 lg:size-48" />
+        <Artwork src={album.cover} label={album.name} className="size-40 shrink-0 lg:size-48" />
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-wider text-text-tertiary">{t("library.albums.label")}</p>
           <h1 className="mt-1 truncate text-4xl font-bold tracking-tight lg:text-5xl">{album.name}</h1>
@@ -274,7 +274,7 @@ export function ArtistDetailView({ artistKey }: { artistKey: string }) {
   return (
     <div className="px-6 pb-10 pt-6 lg:px-9">
       <header className="mb-8 flex flex-col items-center gap-6 text-center sm:flex-row sm:items-end sm:text-left">
-        <Artwork src={artist.cover} className="size-36 shrink-0 rounded-full lg:size-44" />
+        <Artwork src={artist.cover} label={artist.name} className="size-36 shrink-0 rounded-full lg:size-44" />
         <div className="min-w-0">
           <p className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider text-text-tertiary sm:justify-start">
             <Music2 className="size-3.5" /> {t("library.artists.label")}
@@ -290,7 +290,7 @@ export function ArtistDetailView({ artistKey }: { artistKey: string }) {
           <div className="flex gap-4 overflow-x-auto pb-2">
             {albums.map((album) => (
               <button key={album.key} className="card w-36 shrink-0" onClick={() => navigate({ name: "album", key: album.key })}>
-                <Artwork src={album.cover} className="mb-3 aspect-square w-full" />
+                <Artwork src={album.cover} label={album.name} className="mb-3 aspect-square w-full" />
                 <p className="truncate text-left text-[13px] font-semibold">{album.name}</p>
                 <p className="text-left text-[11.5px] text-text-tertiary">{tCount("library.count", album.tracks.length)}</p>
               </button>

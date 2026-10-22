@@ -18,6 +18,7 @@ export const tr: Record<string, string> = {
   "nav.playlists": "Çalma Listeleri",
   "nav.queue": "Çalma Sırası",
   "nav.aria.library": "Kitaplık navigasyonu",
+  "nav.aria.listen": "Dinleme navigasyonu",
   "nav.search.placeholder": "Sanatçı, şarkı, albüm ara",
 
   // Araç çubuğu
@@ -28,6 +29,8 @@ export const tr: Record<string, string> = {
   "toolbar.pause": "Duraklat",
   "toolbar.next": "Sonraki",
   "toolbar.repeat": "Döngü",
+  "toolbar.back": "Geri",
+  "toolbar.forward": "İleri",
   "toolbar.expand": "Genişletilmiş oynatıcıyı aç",
   "toolbar.noTrack": "Çalmaya başlamak için bir parça seç",
   "toolbar.lyrics.open": "Sözleri Aç",
@@ -195,6 +198,10 @@ export const tr: Record<string, string> = {
   "settings.normalizeVolume": "Sesi normalize et",
   "settings.quality": "Yayın kalitesi",
   "settings.quality.description": "Daha yüksek kalite daha iyi bağlantı ister.",
+  "settings.quality.low": "Düşük",
+  "settings.quality.medium": "Orta",
+  "settings.quality.high": "Yüksek",
+  "settings.quality.lossless": "Kayıpsız",
   "settings.showLyricsAutomatically": "Sözleri otomatik göster",
   "settings.showNotifications": "Bildirimler",
   "settings.showAlbumArt": "Albüm kapağı",

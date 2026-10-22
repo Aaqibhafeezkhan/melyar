@@ -241,10 +241,10 @@ export function SettingsPanel() {
                 value={settings.streamingQuality}
                 onChange={setStr("streamingQuality")}
                 options={[
-                  { value: "low", label: "Low" },
-                  { value: "medium", label: "Med" },
-                  { value: "high", label: "High" },
-                  { value: "lossless", label: "Lossless" },
+                  { value: "low", label: t("settings.quality.low") },
+                  { value: "medium", label: t("settings.quality.medium") },
+                  { value: "high", label: t("settings.quality.high") },
+                  { value: "lossless", label: t("settings.quality.lossless") },
                 ]}
               />
             </Row>

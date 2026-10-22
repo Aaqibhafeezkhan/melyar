@@ -191,7 +191,7 @@ export function LyricsOverlay() {
             ))
           ) : (
             <div className="grid place-items-center gap-3 text-center py-20">
-              <Artwork src={current?.thumbnail} className="size-24" />
+              <Artwork src={current?.thumbnail} label={current?.title} className="size-24" />
               <p className="text-lg font-semibold text-white/80">{t("lyrics.notFound")}</p>
               <p className="text-sm text-white/50">{t("lyrics.notFoundHint")}</p>
             </div>
@@ -216,7 +216,7 @@ export function LyricsOverlay() {
         />
         <button
           className="btn-glass text-white/90 hover:bg-white/10 hover:text-white"
-          aria-label="Sonraki"
+          aria-label={t("toolbar.next")}
           onClick={next}
         >
           <SkipForward className="size-7 fill-current" />

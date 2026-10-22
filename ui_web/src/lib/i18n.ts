@@ -93,6 +93,16 @@ function detect(): Locale {
 let current: Locale = detect();
 const listeners = new Set<() => void>();
 
+// The audit has to know which strings the interface is allowed to show, so
+// it can hold every accessible label to them instead of trusting that a
+// label was translated. Only the audit reads this.
+function publishDict() {
+  if (typeof window === "undefined") return;
+  (window as unknown as Record<string, unknown>).__melyarDict = MESSAGES[current];
+  (window as unknown as Record<string, unknown>).__melyarDictEn = MESSAGES[FALLBACK];
+}
+publishDict();
+
 function emit() {
   for (const listener of listeners) listener();
 }
@@ -110,6 +120,7 @@ export function setLocale(locale: Locale) {
     // Persisting is best effort; the session still switches language.
   }
   document.documentElement.lang = locale;
+  publishDict();
   emit();
 }
 

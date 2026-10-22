@@ -90,6 +90,66 @@
     }
   }
 
+  // Every accessible label has to come out of the language that is actually
+  // selected. This is the check the others cannot make: they only care that
+  // a label exists, and a Turkish label in the English interface does exist.
+  // It is also the one a screen-reader user cannot reconcile with the button
+  // they are looking at, so it is worth catching by name rather than by
+  // eye, once, rather than in every screenshot forever.
+  //
+  // i18n.ts publishes the active dictionary. A label counts as translated
+  // when it matches a value exactly, or matches a template whose
+  // {placeholders} have been filled in. Everything else is prose somebody
+  // typed by hand — except strings carrying data no translation can
+  // predict, such as a frequency or a percentage.
+  function localeLabelPatterns() {
+    const out = [];
+    const dicts = [window.__melyarDict || {}, window.__melyarDictEn || {}];
+    dicts.forEach((dict) => {
+      Object.keys(dict).forEach((key) => {
+        const value = dict[key];
+        if (typeof value !== "string" || !value) return;
+        if (value.indexOf("{") === -1) {
+          out.push({ exact: value, key });
+          return;
+        }
+        const pattern = value
+          .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+          .replace(/\\\{[^}]*\\\}/g, "[\\s\\S]*");
+        out.push({ re: new RegExp("^" + pattern + "$"), key });
+      });
+    });
+    return out;
+  }
+
+  function checkLocaleLabels(tag) {
+    if (!window.__melyarDict) {
+      note(
+        "no-locale-dictionary",
+        tag + ": i18n did not publish its dictionary, so accessible labels cannot be checked",
+      );
+      return;
+    }
+    const patterns = localeLabelPatterns();
+    const foreign = [];
+    Array.prototype.slice.call(document.querySelectorAll("[aria-label]")).forEach((el) => {
+      if (el.getAttribute("aria-hidden") === "true") return;
+      const label = el.getAttribute("aria-label");
+      if (!label) return;
+      if (/\d/.test(label)) return; // "440 Hz", "100%" — data, not prose
+      if (label.length < 3) return;
+      const known = patterns.some((p) => (p.re ? p.re.test(label) : p.exact === label));
+      if (!known) foreign.push(label + " <" + el.tagName.toLowerCase() + "." + String(el.className).slice(0, 40) + ">");
+    });
+    if (foreign.length) {
+      note(
+        "untranslated-label",
+        tag + ": " + foreign.length + " accessible labels are not in the active dictionary: " +
+          foreign.slice(0, 5).join(" | "),
+      );
+    }
+  }
+
   // The contrast of the text against what is behind it. A light surface with
   // light text is invisible, and the browser engine does not always blur
   // what is behind a panel, so this has to be checked rather than assumed.
@@ -359,7 +419,13 @@
       const labels = Array.prototype.slice
         .call(panel.querySelectorAll("h3"))
         .map((e) => (e.textContent || "").trim());
-      ["Appearance", "Playback", "Interface", "Advanced"].forEach((want) => {
+      // The sections are translated, so the audit asks the dictionary what
+      // they are called in the language that is selected rather than
+      // expecting English — otherwise every non-English run reports four
+      // sections missing that are on screen, under their own names.
+      const dict = window.__melyarDict || {};
+      ["appearance", "playback", "interface", "advanced"].forEach((name) => {
+        const want = dict["settings.section." + name] || name;
         if (labels.indexOf(want) === -1) {
           note("missing-section", "settings: no '" + want + "' section, found: " + labels.join(", "));
         }
@@ -480,6 +546,7 @@
         checkOverflow(tag);
         checkText(tag);
         checkAccessibleNames(tag);
+        checkLocaleLabels(tag);
         checkContrast(tag);
         if (step[2]) step[2]();
       } catch (e) {

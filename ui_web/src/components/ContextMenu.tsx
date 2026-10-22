@@ -51,7 +51,7 @@ export function ContextMenu() {
         <div className="px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <Artwork src={track.thumbnail} className="size-12 rounded-lg" />
+              <Artwork src={track.thumbnail} label={track.title} className="size-12 rounded-lg" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[15px] font-medium text-text">{track.title}</p>

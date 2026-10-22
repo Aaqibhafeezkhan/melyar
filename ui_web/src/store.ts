@@ -8,6 +8,10 @@ type Menu = { track: TrackMeta; x: number; y: number } | null;
 
 type State = {
   view: View;
+  // Where the user has been, so Back and Forward work the way every desktop
+  // music client works. The list is capped: nobody goes back forty steps.
+  navStack: View[];
+  navIndex: number;
   query: string;
   results: TrackMeta[];
   searching: boolean;
@@ -37,6 +41,8 @@ type State = {
 
 type Actions = {
   navigate: (view: View) => void;
+  goBack: () => void;
+  goForward: () => void;
   setQuery: (q: string) => void;
   playTrack: (track: TrackMeta, context?: TrackMeta[]) => void;
   toggle: () => void;
@@ -69,12 +75,19 @@ type Actions = {
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 let lastVolume = 0.8;
 
+/** Two views are the same step when they would render the same screen. */
+function viewKey(v: View): string {
+  return v.name === "album" || v.name === "artist" ? `${v.name}:${v.key}` : v.name;
+}
+
 function bridge(): any | null {
   return (typeof window !== "undefined" && window.bridge) || null;
 }
 
 export const usePlayer = create<State & Actions>()((set, get) => ({
   view: { name: "home" },
+  navStack: [{ name: "home" }],
+  navIndex: 0,
   query: "",
   results: [],
   searching: false,
@@ -108,7 +121,30 @@ export const usePlayer = create<State & Actions>()((set, get) => ({
     if (b && typeof b.loadFavorites === "function") b.loadFavorites();
   },
 
-  navigate: (view) => set({ view, menu: null }),
+  navigate: (view) => {
+    const { navStack, navIndex } = get();
+    // A view the user is already on is not a new step. Typing in the search
+    // box navigates on every keystroke, and that must not bury the history.
+    if (viewKey(navStack[navIndex] ?? { name: "home" }) === viewKey(view)) {
+      return set({ view, menu: null });
+    }
+    const stack = navStack.slice(0, navIndex + 1);
+    stack.push(view);
+    const trimmed = stack.slice(-40);
+    set({ view, menu: null, navStack: trimmed, navIndex: trimmed.length - 1 });
+  },
+  goBack: () => {
+    const { navStack, navIndex } = get();
+    if (navIndex <= 0) return;
+    const i = navIndex - 1;
+    set({ view: navStack[i], navIndex: i, menu: null });
+  },
+  goForward: () => {
+    const { navStack, navIndex } = get();
+    if (navIndex >= navStack.length - 1) return;
+    const i = navIndex + 1;
+    set({ view: navStack[i], navIndex: i, menu: null });
+  },
 
   setQuery: (query) => set({ query }),
 

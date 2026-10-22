@@ -18,6 +18,7 @@ export const en: Record<string, string> = {
   "nav.playlists": "Playlists",
   "nav.queue": "Queue",
   "nav.aria.library": "Library navigation",
+  "nav.aria.listen": "Listen navigation",
   "nav.search.placeholder": "Search artists, songs, albums",
 
   // Toolbar
@@ -28,6 +29,8 @@ export const en: Record<string, string> = {
   "toolbar.pause": "Pause",
   "toolbar.next": "Next",
   "toolbar.repeat": "Repeat",
+  "toolbar.back": "Go back",
+  "toolbar.forward": "Go forward",
   "toolbar.expand": "Open expanded player",
   "toolbar.noTrack": "Pick a track to start playing",
   "toolbar.lyrics.open": "Show lyrics",
@@ -191,6 +194,10 @@ export const en: Record<string, string> = {
   "settings.normalizeVolume": "Normalize volume",
   "settings.quality": "Streaming quality",
   "settings.quality.description": "Higher quality needs a better connection.",
+  "settings.quality.low": "Low",
+  "settings.quality.medium": "Med",
+  "settings.quality.high": "High",
+  "settings.quality.lossless": "Lossless",
   "settings.showLyricsAutomatically": "Show lyrics automatically",
   "settings.showNotifications": "Notifications",
   "settings.showAlbumArt": "Album art",

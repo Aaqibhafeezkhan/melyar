@@ -12,6 +12,7 @@ export const sq: Record<string, string> = {
   "nav.playlists": "Playlistat",
   "nav.queue": "Radha",
   "nav.aria.library": "Navigimi i bibliotekës",
+  "nav.aria.listen": "Navigimi i dëgjimit",
   "nav.search.placeholder": "Kërko artistë, këngë, albume",
 
   // Toolbar
@@ -22,6 +23,8 @@ export const sq: Record<string, string> = {
   "toolbar.pause": "Ndalo",
   "toolbar.next": "Tjetra",
   "toolbar.repeat": "Përsërit",
+  "toolbar.back": "Kthehu",
+  "toolbar.forward": "Përpara",
   "toolbar.expand": "Hap luajtësin e zgjeruar",
   "toolbar.noTrack": "Zgjidh një këngë për ta dëgjuar",
   "toolbar.lyrics.open": "Shfaq tekstin",
@@ -189,6 +192,10 @@ export const sq: Record<string, string> = {
   "settings.normalizeVolume": "Normalizo zërin",
   "settings.quality": "Cilësia e transmetimit",
   "settings.quality.description": "Cilësia më e lartë kërkon lidhje më të mirë.",
+  "settings.quality.low": "E ulët",
+  "settings.quality.medium": "E mesme",
+  "settings.quality.high": "E lartë",
+  "settings.quality.lossless": "Pa humbje",
   "settings.showLyricsAutomatically": "Shfaq tekstin automatikisht",
   "settings.showNotifications": "Njoftimet",
   "settings.showAlbumArt": "Kopertina e albumit",

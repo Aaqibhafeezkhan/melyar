@@ -117,7 +117,7 @@ export function QueuePanel() {
                   title={`${track.title} — ${track.artist}`}
                 >
                   <div className="relative flex-shrink-0">
-                    <Artwork src={track.thumbnail} className="size-12 rounded-lg" />
+                    <Artwork src={track.thumbnail} label={track.title} className="size-12 rounded-lg" />
                     {active && (
                       <div className="absolute inset-0 rounded-lg flex items-center justify-center text-text">
                         <ListMusic className="size-5" />

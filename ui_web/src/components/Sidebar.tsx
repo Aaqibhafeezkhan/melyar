@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
-import { Heart, Home, Library, ListMusic, SearchIcon, Clock3, Languages, ChevronUp, Check } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { Heart, Home, Library, ListMusic, SearchIcon, Clock3 } from "lucide-react";
 import { usePlayer } from "@/store";
 import { GlassMorphIndicator } from "@/components/GlassComponents";
 import { cn } from "@/lib/cn";
-import { t, useLocale, setLocale, LOCALES } from "@/lib/i18n";
+import { t, useLocale } from "@/lib/i18n";
 import type { View } from "@/lib/types";
 
 function SideItem({
@@ -35,8 +35,7 @@ function SideItem({
 }
 
 export function Sidebar() {
-  const locale = useLocale();
-  const [langOpen, setLangOpen] = useState(false);
+  useLocale();
   const query = usePlayer((s) => s.query);
   const setQuery = usePlayer((s) => s.setQuery);
   const navigate = usePlayer((s) => s.navigate);
@@ -105,7 +104,7 @@ export function Sidebar() {
 
       <div className="scroll-thin min-h-0 flex-1 overflow-y-auto px-3 pb-4">
         <p className="side-section">{t("nav.section.listen")}</p>
-        <nav ref={listenNavRef} className="flex flex-col gap-0.5 relative" role="navigation" aria-label="Ana navigasyon">
+        <nav ref={listenNavRef} className="flex flex-col gap-0.5 relative" role="navigation" aria-label={t("nav.aria.listen")}>
           <GlassMorphIndicator
             targetRef={activeRef}
             containerRef={listenNavRef}
@@ -143,56 +142,6 @@ export function Sidebar() {
         </nav>
       </div>
 
-      <div className="px-3 pb-3 pt-2 border-t border-glass-border relative">
-        <button
-          type="button"
-          className="w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[12px] font-medium text-text-secondary hover:bg-hover transition-colors"
-          aria-haspopup="menu"
-          aria-expanded={langOpen}
-          aria-label={t("settings.language")}
-          onClick={() => setLangOpen(!langOpen)}
-        >
-          <Languages className="size-4 text-text-tertiary" />
-          <span className="flex-1 text-left truncate">
-            {LOCALES.find((l) => l.code === locale)?.label ?? locale}
-          </span>
-          <ChevronUp
-            className={cn("size-3.5 text-text-tertiary transition-transform", !langOpen && "rotate-180")}
-          />
-        </button>
-
-        {langOpen ? (
-          <div
-            className="absolute bottom-full left-3 right-3 mb-1 max-h-64 overflow-y-auto scroll-thin rounded-xl border border-glass-border bg-content shadow-2xl py-1 z-50"
-            role="menu"
-          >
-            {LOCALES.map((entry) => {
-              const active = entry.code === locale;
-              return (
-                <button
-                  key={entry.code}
-                  type="button"
-                  className={cn(
-                    "w-full flex items-center gap-2 px-3 py-1.5 text-[12px] transition-colors",
-                    active
-                      ? "text-accent-text bg-accent/10"
-                      : "text-text-secondary hover:bg-hover hover:text-text",
-                  )}
-                  role="menuitemradio"
-                  aria-checked={active}
-                  onClick={() => {
-                    setLocale(entry.code);
-                    setLangOpen(false);
-                  }}
-                >
-                  <span className="flex-1 text-left truncate">{entry.label}</span>
-                  {active ? <Check className="size-3.5" /> : null}
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
-      </div>
     </aside>
   );
 }

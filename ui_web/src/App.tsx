@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Sidebar } from "@/components/Sidebar";
-import { Toolbar } from "@/components/Toolbar";
+import { Header, PlayerBar } from "@/components/Toolbar";
 import { ContextMenu } from "@/components/ContextMenu";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { ImportOverlay } from "@/components/ImportOverlay";
@@ -134,11 +134,16 @@ export default function App() {
     <div className={cn("app-root", queueOpen && "queue-open")}>
       <Sidebar />
       <div className="main-col">
-        <Toolbar />
+        <Header />
         <main className="content-scroll" key={viewKey}>
           <Stage />
         </main>
       </div>
+
+      {/* The player sits along the bottom edge, full width, where every
+          desktop music client puts it: the hand is already there, and it
+          leaves the top of the window for position and history. */}
+      <PlayerBar />
 
       {/* Docked Queue Panel - part of layout */}
       <QueuePanel />

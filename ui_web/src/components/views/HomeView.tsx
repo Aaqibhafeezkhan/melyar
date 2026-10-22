@@ -43,7 +43,7 @@ function CardTile({
   return (
     <button className="grid-item group flex flex-col gap-3" onClick={onOpen}>
       <div className="relative">
-        <Artwork src={track?.thumbnail} className={round ? "aspect-square w-full rounded-full" : "aspect-square w-full"} />
+        <Artwork src={track?.thumbnail} label={label} className={round ? "aspect-square w-full rounded-full" : "aspect-square w-full"} />
         <div className="absolute inset-0 grid place-items-center opacity-0 transition-opacity group-hover:opacity-100">
           <span className="grid size-11 place-items-center rounded-full bg-accent text-white shadow-xl">
             <svg viewBox="0 0 24 24" className="ml-0.5 size-5 fill-current"><path d="M8 5v14l11-7z" /></svg>
@@ -87,7 +87,7 @@ export function HomeView() {
           className="mb-8 card flex w-full items-center gap-5 overflow-hidden"
           onClick={() => playTrack(featured, history)}
         >
-          <Artwork src={featured.thumbnail} className="size-24 lg:size-28" />
+          <Artwork src={featured.thumbnail} label={featured.title} className="size-24 lg:size-28" />
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-wider text-accent-text">{t("home.kicker.recent")}</p>
             <p className="mt-1 truncate text-2xl md:text-3xl font-bold tracking-tight">{featured.title}</p>

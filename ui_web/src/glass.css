@@ -137,6 +137,10 @@
   /* Toolbar height: sized to the real control need (40px buttons, 44px play).
      Consumed by .toolbar, .track-head sticky offset and queue geometry. */
   --bar-h: 64px;
+  /* The bars that frame the working area: a slim header, and the player
+     beneath everything. */
+  --header-h: 52px;
+  --player-h: 76px;
   --capsule-h: 48px;
   --card-min: 150px;
   --toolbar-track-min: 220px;
@@ -677,14 +681,18 @@
 }
 
 .text-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   border-radius: var(--radius-md);
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
   width: 100%;
+  min-height: 34px;
   text-align: left;
   background: transparent;
   border: 1px solid transparent;
   color: var(--text);
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
   font-weight: 500;
   transition:
     background var(--duration-fast) var(--ease-out),
@@ -936,6 +944,9 @@
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   box-shadow: 0 6px 20px var(--glass-shadow-strong);
+  /* Inline-size only: the tile keeps its own height, but the initials on a
+     fallback sleeve can be sized as a share of its width. */
+  container-type: inline-size;
   transition:
     transform var(--duration-slow) var(--ease-out),
     box-shadow var(--duration-slow) var(--ease-out);
@@ -955,8 +966,22 @@
 .cover-fallback {
   display: flex; align-items: center; justify-content: center;
   width: 100%; height: 100%;
-  background: linear-gradient(135deg, var(--cover-start), var(--cover-end));
+  /* A solid base under the gradient. The audit reads background-color, and
+     a tile it cannot see is a tile it cannot vouch for. */
+  background-color: var(--cover-end);
+  background-image: linear-gradient(135deg, var(--cover-start), var(--cover-end));
   color: var(--on-accent);
+}
+/* The record sleeve whose artwork has not arrived: the title's initials on
+   the same tint, rather than a grey box that reads as "nothing here". */
+.cover-initials {
+  font-size: clamp(12px, 32cqw, 30px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--on-accent);
+  opacity: 0.92;
+  line-height: 1;
+  user-select: none;
 }
 
 .grid-item {
@@ -1271,57 +1296,227 @@
    TOOLBAR / MINI PLAYER BAR
    ============================================================ */
 
-/* Toolbar: exactly three logical zones — transport | current-track capsule |
-   secondary controls (lyrics, queue, mute, volume). The grid keeps each zone's
-   minimum so groups can never overlap or get pushed past the window edge.
-   Geometry stays constant across playback states (see §Playback states). */
-.toolbar {
+/* Header: where you are and how to get back. Slim, and it never competes
+   with the content below it or the player beneath that. */
+.header-bar {
   position: relative;
   z-index: var(--z-toolbar);
   flex: none;
-  height: var(--bar-h);
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
   border-bottom: 1px solid var(--glass-border);
   background: var(--bg-elevated-92);
   backdrop-filter: var(--blur-xl) var(--sat-strong);
   -webkit-backdrop-filter: var(--blur-xl) var(--sat-strong);
-  box-shadow:
-    0 1px 0 var(--glass-highlight),
-    0 2px 12px var(--glass-shadow);
+  box-shadow: 0 1px 0 var(--glass-highlight);
+}
+.hb-nav { display: flex; align-items: center; gap: 2px; flex: none; }
+.hb-title {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hb-right { display: flex; align-items: center; gap: 2px; flex: none; }
+
+/* The round, quiet control used for every secondary action in both bars. */
+.pb-icon {
   display: grid;
-  grid-template-columns:
-    auto
-    minmax(var(--toolbar-track-min), 1fr)
-    minmax(var(--toolbar-side-min), auto);
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+.pb-icon:hover { background: var(--bg-hover); color: var(--text); }
+.pb-icon:active { background: var(--bg-active); }
+.pb-icon[data-active="true"] { color: var(--accent-text); background: var(--accent-soft); }
+.pb-icon:disabled { opacity: 0.35; pointer-events: none; }
+
+.hb-menu { position: relative; }
+.hb-menu-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 168px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-border);
+  background: var(--bg-content);
+  box-shadow: 0 12px 40px var(--glass-shadow-strong);
+  z-index: 50;
+}
+.hb-menu-item {
+  display: flex;
   align-items: center;
-  column-gap: var(--space-4);
-  padding: 0 var(--space-5);
-}
-
-/* Toolbar zone wrappers (class names set in Toolbar.tsx). */
-.toolbar-transport {
-  display: flex; align-items: center; gap: var(--space-1);
-  min-width: 0;
-}
-.toolbar-track {
-  display: flex; align-items: center; justify-content: center;
-  min-width: 0;
-}
-.toolbar-controls {
-  display: flex; align-items: center; justify-content: flex-end;
   gap: var(--space-2);
-  min-width: 0;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
 }
-/* Controls keep their intrinsic size at every window width — the middle zone
-   is the only one allowed to give up space. */
-.toolbar-transport > *,
-.toolbar-controls > * { flex: none; }
+.hb-menu-item:hover { background: var(--bg-hover); color: var(--text); }
+.hb-menu-item.is-active { color: var(--accent-text); background: var(--accent-soft); }
 
-/* Volume control: always usable (100–140px on wide windows, 80–100px narrow),
-   never clipped by the right edge, never hidden by viewport utilities. */
-.volume-slider {
-  width: clamp(80px, 9vw, 140px);
+/* ------------------------------------------------------------
+   Player bar: one bar across the bottom, full width, three zones.
+   ------------------------------------------------------------ */
+.player-bar {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  position: relative;
+  z-index: var(--z-toolbar);
+  height: var(--player-h);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--space-4);
+  border-top: 1px solid var(--glass-border);
+  background: var(--bg-elevated-92);
+  backdrop-filter: var(--blur-xl) var(--sat-strong);
+  -webkit-backdrop-filter: var(--blur-xl) var(--sat-strong);
+  box-shadow: 0 -1px 0 var(--glass-highlight), 0 -2px 16px var(--glass-shadow);
+}
+.pb-zone { display: flex; align-items: center; min-width: 0; }
+.pb-left { gap: var(--space-2); }
+.pb-center { flex-direction: column; gap: 6px; }
+.pb-right { justify-content: flex-end; gap: var(--space-1); }
+
+/* What is playing. */
+.pb-track {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  max-width: 320px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  text-align: left;
+}
+.pb-track:not(:disabled):hover { background: var(--bg-hover); }
+.pb-track:disabled { cursor: default; }
+.pb-artwork { width: 44px; height: 44px; border-radius: var(--radius-sm); overflow: hidden; flex: none; }
+.pb-meta { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.pb-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pb-artist {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pb-like {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: var(--radius-pill);
+  color: var(--text-tertiary);
+  transition: color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
+}
+.pb-like:hover { background: var(--bg-hover); color: var(--text); }
+.pb-like.is-liked { color: var(--accent-text); }
+.pb-playing-indicator { display: flex; align-items: flex-end; height: 16px; flex: none; }
+
+/* Five controls on one surface, not five floating circles. The play button
+   is the only filled element, so the eye lands where the hand wants to go. */
+.transport-capsule {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 1px 2px var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
+}
+.tc-btn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary);
+  transition: color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
+}
+.tc-btn:hover { color: var(--text); background: var(--bg-hover); }
+.tc-btn[data-active="true"] { color: var(--accent-text); }
+
+/* Seek. Thin at rest, thicker under the pointer, as every player does. */
+.pb-timeline { display: flex; align-items: center; gap: var(--space-2); width: 100%; }
+.pb-time {
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+  min-width: 34px;
+  text-align: center;
   flex: none;
 }
+.pb-progress {
+  position: relative;
+  flex: 1;
+  min-width: 100px;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--mute-25);
+  cursor: pointer;
+  transition: height var(--duration-fast) var(--ease-out);
+}
+.pb-progress:hover,
+.pb-progress:focus-visible { height: 6px; }
+.pb-progress-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  transition: width 120ms linear;
+}
+
+/* Volume: an icon and a short track that widens under the pointer. A long,
+   saturated bar at rest is the loudest thing on the screen, and it should
+   not be. */
+.pb-volume { display: flex; align-items: center; gap: 2px; }
+.pb-volume-track {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: width var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out);
+}
+.pb-volume:hover .pb-volume-track,
+.pb-volume:focus-within .pb-volume-track { width: 84px; opacity: 1; }
+.pb-volume-track > * { width: 84px; }
+
 
 /* ============================================================
    TRACK TABLE / LIST ROWS
@@ -1446,7 +1641,10 @@
 .app-root {
   display: grid;
   grid-template-columns: var(--side-w) minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
+  /* Row 1 is the working area. Row 2 is the player, which spans every
+     column and sizes to its content, so it is always reachable and never
+     takes room the lists need. */
+  grid-template-rows: minmax(0, 1fr) auto;
   height: 100%;
   min-height: 0;
   overflow: hidden;
@@ -1473,6 +1671,9 @@
   min-width: 0;
   min-height: 0;
   background: var(--bg-content);
+  /* Depth without decoration: the working area is not a flat sheet, it has
+     a ceiling. Two percent of the highlight is all it takes. */
+  background-image: linear-gradient(180deg, var(--glass-highlight), transparent 240px);
   border-top-left-radius: var(--radius-xl);
   overflow: hidden;
 }

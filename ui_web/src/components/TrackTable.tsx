@@ -58,7 +58,7 @@ function Row({
       </button>
 
       <button className="group flex min-w-0 items-center gap-3 text-left" onClick={() => (isCurrent ? usePlayer.getState().toggle() : playTrack(track, context))}>
-        <Artwork src={track.thumbnail} className="size-10" />
+        <Artwork src={track.thumbnail} label={track.title} className="size-10" />
         <span className="min-w-0">
           <span className={cn("track-title block truncate text-[13.5px] font-medium", isCurrent && "text-accent-text")}>
             {track.title}

@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  ChevronLeft,
+  ChevronRight,
+  Heart,
+  Languages,
+  Check,
   Mic2,
-  Pause,
-  Play,
   Repeat,
   Repeat1,
+  Settings,
   Shuffle,
   SkipBack,
   SkipForward,
@@ -17,19 +21,48 @@ import { cn } from "@/lib/cn";
 import { formatTime } from "@/lib/lyrics";
 import { usePlayer } from "@/store";
 import { PlayPauseMorph, GlassSlider } from "@/components/GlassComponents";
+import { handleUri } from "@/lib/client";
 import type { TrackMeta } from "@/lib/types";
-import { t, useLocale } from "@/lib/i18n";
+import { t, useLocale, setLocale, LOCALES } from "@/lib/i18n";
 
-export function Artwork({ src, alt, className }: { src?: string; alt?: string; className?: string }) {
+/**
+ * Cover art, with a designed tile when there is none.
+ *
+ * A grey box with a note in it reads as "nothing here". The fallback is the
+ * first letters of the title on a tinted tile instead, which reads as a
+ * record sleeve whose artwork has not loaded — which is what it is.
+ */
+export function Artwork({
+  src,
+  alt,
+  className,
+  label,
+}: {
+  src?: string;
+  alt?: string;
+  className?: string;
+  label?: string;
+}) {
+  const text = (label ?? alt ?? "").trim();
+  const initials = text
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
   return (
     <div className={cn("cover shrink-0", className)}>
       {src ? (
         <img src={src} alt={alt ?? ""} draggable={false} className="h-full w-full object-cover" loading="lazy" />
       ) : (
-        <div className="cover-fallback">
-          <svg viewBox="0 0 64 64" className="size-1/3 opacity-70">
-            <path d="M20 44V20l14 8 14-8v24" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+        <div className="cover-fallback" aria-hidden>
+          {initials ? (
+            <span className="cover-initials">{initials}</span>
+          ) : (
+            <svg viewBox="0 0 64 64" className="size-1/3 opacity-70">
+              <path d="M20 44V20l14 8 14-8v24" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
         </div>
       )}
     </div>
@@ -40,7 +73,7 @@ function WaveBars() {
   const playing = usePlayer((s) => s.playing);
   if (!playing) return null;
   return (
-    <div className="eq-bars flex items-end gap-1 h-4">
+    <div className="eq-bars flex items-end gap-1 h-4" aria-hidden>
       {[1, 2, 3, 4].map((i) => (
         <i key={i} className="rounded-full bg-accent animate-[eqb_0.8s_ease-in-out_infinite_alternate]" style={{ height: `${30 + i * 15}%`, animationDelay: `${i * 0.15}s` }} />
       ))}
@@ -48,7 +81,8 @@ function WaveBars() {
   );
 }
 
-function MiniTimeline() {
+/** The seek bar. Thin at rest, thicker under the pointer, as every player does. */
+export function MiniTimeline() {
   const position = usePlayer((s) => s.position);
   const duration = usePlayer((s) => s.duration);
   const seekRatio = usePlayer((s) => s.seekRatio);
@@ -80,7 +114,7 @@ function MiniTimeline() {
   return (
     <div
       ref={barRef}
-      className="mini-timeline h-1 bg-white/10 rounded-full cursor-pointer overflow-hidden"
+      className="pb-progress"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -92,14 +126,20 @@ function MiniTimeline() {
       aria-valuenow={Math.floor(position)}
       tabIndex={0}
     >
-      <div className="h-full bg-gradient-to-r from-accent to-[#d61d33] shadow-[0_0_8px_rgba(250,35,59,0.6)]"
-        style={{ width: `${ratio * 100}%` }}
-      />
+      <span className="pb-progress-fill" style={{ width: `${ratio * 100}%` }} />
     </div>
   );
 }
 
-function Transport() {
+/**
+ * Five controls on one surface, not five floating circles.
+ *
+ * A row of equally weighted pills reads as widgets assembled from a parts
+ * bin. A single capsule reads as one control with modes — which is what it
+ * is — and leaves the play button as the only filled element, so the eye
+ * lands where the hand wants to go.
+ */
+function TransportCapsule() {
   useLocale();
   const playing = usePlayer((s) => s.playing);
   const shuffle = usePlayer((s) => s.shuffle);
@@ -111,127 +151,235 @@ function Transport() {
   const cycleRepeat = usePlayer((s) => s.cycleRepeat);
 
   return (
-    <div className="toolbar-transport flex items-center gap-1">
-      <button className="btn-glass transport-btn" data-active={shuffle} aria-label={t("toolbar.shuffle")} onClick={toggleShuffle}>
-        <Shuffle className={cn("size-[17px]", shuffle && "text-accent-text")} />
+    <div className="transport-capsule">
+      <button className="tc-btn" data-active={shuffle} aria-label={t("toolbar.shuffle")} onClick={toggleShuffle}>
+        <Shuffle className={cn("size-[15px]", shuffle && "text-accent-text")} />
       </button>
-      <button className="btn-glass transport-btn" aria-label={t("toolbar.prev")} onClick={prev}>
-        <SkipBack className="size-[19px] fill-current" />
+      <button className="tc-btn" aria-label={t("toolbar.prev")} onClick={prev}>
+        <SkipBack className="size-[17px] fill-current" />
       </button>
-      <PlayPauseMorph
-        size="main"
-        playing={playing}
-        onToggle={toggle}
-      />
-      <button className="btn-glass transport-btn" aria-label={t("toolbar.next")} onClick={next}>
-        <SkipForward className="size-[19px] fill-current" />
+      <PlayPauseMorph size="compact" playing={playing} onToggle={toggle} />
+      <button className="tc-btn" aria-label={t("toolbar.next")} onClick={next}>
+        <SkipForward className="size-[17px] fill-current" />
       </button>
-      <button className="btn-glass transport-btn" data-active={repeat !== 0} aria-label={t("toolbar.repeat")} onClick={cycleRepeat}>
-        {repeat === 2 ? <Repeat1 className="size-[17px] text-accent-text" /> : <Repeat className={cn("size-[17px]", repeat === 1 && "text-accent-text")} />}
+      <button className="tc-btn" data-active={repeat !== 0} aria-label={t("toolbar.repeat")} onClick={cycleRepeat}>
+        {repeat === 2 ? <Repeat1 className="size-[15px] text-accent-text" /> : <Repeat className={cn("size-[15px]", repeat === 0 ? "text-text-secondary" : "text-accent-text")} />}
       </button>
     </div>
   );
 }
 
-function MiniTrackCapsule() {
-  useLocale();
-  const current = usePlayer((s) => s.current);
-  const position = usePlayer((s) => s.position);
-  const duration = usePlayer((s) => s.duration);
-  const playing = usePlayer((s) => s.playing);
-  const setExpandedPlayerOpen = usePlayer((s) => s.setExpandedPlayerOpen);
-  const track: TrackMeta | null = current;
-
-  const ratio = duration > 0 ? Math.min(1, position / duration) : 0;
-
-  const handleCapsuleClick = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (target.closest('.mini-timeline') || target.closest('button')) return;
-    setExpandedPlayerOpen(true);
-  };
-
-  return (
-    <div
-      className="mini-track-capsule cursor-pointer group"
-      onClick={handleCapsuleClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpandedPlayerOpen(true); } }}
-      aria-label={t("toolbar.expand")}
-    >
-      <Artwork src={track?.thumbnail} className="mini-track-artwork" />
-      <div className="mini-track-info">
-        <p className="mini-track-title">{track ? track.title : "Melyar"}</p>
-        <p className="mini-track-artist">{track ? track.artist : t("toolbar.noTrack")}</p>
-        <WaveBars />
-      </div>
-      <div className="mini-track-end flex items-center gap-2">
-        <span className="mini-track-time">{formatTime(position)} / {formatTime(duration)}</span>
-        <MiniTimeline />
-      </div>
-    </div>
-  );
-}
-
-export function Toolbar() {
+/** Volume: an icon and a short track that widens under the pointer. */
+function VolumeControl() {
   useLocale();
   const volume = usePlayer((s) => s.volume);
   const muted = usePlayer((s) => s.muted);
   const setVolume = usePlayer((s) => s.setVolume);
   const toggleMute = usePlayer((s) => s.toggleMute);
-  const queueOpen = usePlayer((s) => s.queueOpen);
-  const setQueueOpen = usePlayer((s) => s.setQueueOpen);
-  const setLyricsOpen = usePlayer((s) => s.setLyricsOpen);
-  const lyricsOpen = usePlayer((s) => s.lyricsOpen);
 
   const VolIcon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
 
+  const onWheel = (e: React.WheelEvent) => {
+    const step = 0.05;
+    const next = Math.min(1, Math.max(0, (muted ? 0 : volume) + (e.deltaY < 0 ? step : -step)));
+    setVolume(next);
+  };
+
   return (
-    <header className="toolbar glass-elevated backdrop-blur-lg border-b border-glass-border z-20">
-      <Transport />
-
-      {/* The grid already centres this zone — auto margins here would turn
-         the item into fit-content and let it overflow into the controls. */}
-      <div className="toolbar-track min-w-0 px-4">
-        <MiniTrackCapsule />
+    <div className="pb-volume" onWheel={onWheel}>
+      <button className="pb-icon" aria-label={muted ? t("toolbar.mute.off") : t("toolbar.mute.on")} onClick={toggleMute}>
+        <VolIcon className="size-[18px]" />
+      </button>
+      <div className="pb-volume-track">
+        <GlassSlider
+          value={muted ? 0 : volume}
+          onChange={setVolume}
+          min={0}
+          max={1}
+          step={0.01}
+          showTooltip
+          formatTooltip={(v) => `${Math.round(v * 100)}%`}
+          aria-label={t("toolbar.volume")}
+        />
       </div>
+    </div>
+  );
+}
 
-      <div className="toolbar-controls flex items-center gap-2">
-        <button
-          className="btn-glass icon-btn"
-          data-active={lyricsOpen}
-          aria-label={lyricsOpen ? t("toolbar.lyrics.close") : t("toolbar.lyrics.open")}
-          onClick={() => setLyricsOpen(!lyricsOpen)}
-        >
-          <Mic2 className="size-5" />
-        </button>
-        <button
-          className="btn-glass icon-btn"
-          data-active={queueOpen}
-          aria-label={t("toolbar.queue")}
-          onClick={() => setQueueOpen(!queueOpen)}
-        >
-          <ListMusic className="size-5" />
-        </button>
-        <button className="btn-glass icon-btn hidden sm:grid" aria-label={muted ? t("toolbar.mute.off") : t("toolbar.mute.on")} onClick={toggleMute}>
-          <VolIcon className="size-5" />
-        </button>
-        <div className="toolbar-volume">
-          <GlassSlider
-            className="hidden w-28 lg:block"
-            value={muted ? 0 : volume}
-            onChange={setVolume}
-            min={0}
-            max={1}
-            step={0.01}
-            showTooltip
-            formatTooltip={(v) => `${Math.round(v * 100)}%`}
-            aria-label={t("toolbar.volume")}
-          />
+const VIEW_TITLE: Record<string, string> = {
+  home: "nav.home",
+  search: "nav.search",
+  songs: "nav.songs",
+  liked: "nav.liked",
+  history: "nav.history",
+  albums: "nav.albums",
+  artists: "nav.albums",
+  album: "nav.albums",
+  artist: "nav.albums",
+};
+
+function LanguageMenu() {
+  const locale = useLocale();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="hb-menu">
+      <button
+        type="button"
+        className="pb-icon"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={t("settings.language")}
+        onClick={() => setOpen(!open)}
+      >
+        <Languages className="size-[18px]" />
+      </button>
+      {open ? (
+        <div className="hb-menu-list" role="menu">
+          {LOCALES.map((entry) => {
+            const active = entry.code === locale;
+            return (
+              <button
+                key={entry.code}
+                type="button"
+                className={cn("hb-menu-item", active && "is-active")}
+                role="menuitemradio"
+                aria-checked={active}
+                onClick={() => {
+                  setLocale(entry.code);
+                  setOpen(false);
+                }}
+              >
+                <span className="flex-1 text-left truncate">{entry.label}</span>
+                {active ? <Check className="size-3.5" /> : null}
+              </button>
+            );
+          })}
         </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * The slim bar above the content: where you are, and how to go back.
+ */
+export function Header() {
+  useLocale();
+  const view = usePlayer((s) => s.view);
+  const navIndex = usePlayer((s) => s.navIndex);
+  const navStack = usePlayer((s) => s.navStack);
+  const goBack = usePlayer((s) => s.goBack);
+  const goForward = usePlayer((s) => s.goForward);
+
+  const canBack = navIndex > 0;
+  const canForward = navIndex < navStack.length - 1;
+  const key = view.name as string;
+  const title = t(VIEW_TITLE[key] ?? "nav.home");
+
+  return (
+    <header className="header-bar">
+      <div className="hb-nav">
+        <button className="pb-icon" aria-label={t("toolbar.back")} onClick={goBack} disabled={!canBack}>
+          <ChevronLeft className="size-[19px]" />
+        </button>
+        <button className="pb-icon" aria-label={t("toolbar.forward")} onClick={goForward} disabled={!canForward}>
+          <ChevronRight className="size-[19px]" />
+        </button>
+      </div>
+      <h1 className="hb-title">{title}</h1>
+      <div className="hb-right">
+        <LanguageMenu />
+        <button className="pb-icon" aria-label={t("settings.title")} onClick={() => void handleUri("melyar://settings")}>
+          <Settings className="size-[18px]" />
+        </button>
       </div>
     </header>
   );
 }
 
-export { MiniTimeline };
+/**
+ * The bar across the bottom: what is playing, the controls, and the volume.
+ *
+ * Every desktop music client puts the player here, and for a reason — the
+ * bottom edge is where the hand already is, and it leaves the top of the
+ * window for the two things that belong there: where you are, and how to
+ * get back.
+ */
+export function PlayerBar() {
+  useLocale();
+  const current = usePlayer((s) => s.current);
+  const position = usePlayer((s) => s.position);
+  const duration = usePlayer((s) => s.duration);
+  const playing = usePlayer((s) => s.playing);
+  const liked = usePlayer((s) => s.liked);
+  const toggleLike = usePlayer((s) => s.toggleLike);
+  const setExpandedPlayerOpen = usePlayer((s) => s.setExpandedPlayerOpen);
+  const queueOpen = usePlayer((s) => s.queueOpen);
+  const setQueueOpen = usePlayer((s) => s.setQueueOpen);
+  const lyricsOpen = usePlayer((s) => s.lyricsOpen);
+  const setLyricsOpen = usePlayer((s) => s.setLyricsOpen);
+
+  const track: TrackMeta | null = current;
+  const isLiked = track ? liked.some((x) => x.id === track.id) : false;
+
+  return (
+    <footer className="player-bar">
+      <div className="pb-zone pb-left">
+        <button
+          className="pb-track"
+          onClick={() => setExpandedPlayerOpen(true)}
+          aria-label={t("toolbar.expand")}
+          disabled={!track}
+        >
+          <Artwork src={track?.thumbnail} label={track?.title} className="pb-artwork" />
+          <span className="pb-meta">
+            <span className="pb-title">{track ? track.title : t("toolbar.noTrack")}</span>
+            <span className="pb-artist">{track ? track.artist : "Melyar"}</span>
+          </span>
+        </button>
+        {track ? (
+          <button
+            className={cn("pb-like", isLiked && "is-liked")}
+            aria-label={isLiked ? t("track.unlike") : t("track.like")}
+            aria-pressed={isLiked}
+            onClick={() => toggleLike(track)}
+          >
+            <Heart className={cn("size-[16px]", isLiked && "fill-current")} />
+          </button>
+        ) : null}
+        <span className="pb-playing-indicator">
+          <WaveBars />
+        </span>
+      </div>
+
+      <div className="pb-zone pb-center">
+        <TransportCapsule />
+        <div className="pb-timeline">
+          <span className="pb-time">{formatTime(position)}</span>
+          <MiniTimeline />
+          <span className="pb-time">{formatTime(duration)}</span>
+        </div>
+      </div>
+
+      <div className="pb-zone pb-right">
+        <button
+          className="pb-icon"
+          data-active={lyricsOpen}
+          aria-label={lyricsOpen ? t("toolbar.lyrics.close") : t("toolbar.lyrics.open")}
+          onClick={() => setLyricsOpen(!lyricsOpen)}
+        >
+          <Mic2 className="size-[18px]" />
+        </button>
+        <button
+          className="pb-icon"
+          data-active={queueOpen}
+          aria-label={t("toolbar.queue")}
+          onClick={() => setQueueOpen(!queueOpen)}
+        >
+          <ListMusic className="size-[18px]" />
+        </button>
+        <VolumeControl />
+      </div>
+    </footer>
+  );
+}
