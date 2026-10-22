@@ -101,6 +101,11 @@ pub mod ffi {
         fn set_repeat_mode(mode: i32) -> bool;
         fn replace_queue(tracks: Vec<CxxTrackMetadata>, start_index: i32) -> bool;
         fn get_queue() -> Vec<CxxTrackMetadata>;
+        fn append_to_queue(track: CxxTrackMetadata) -> bool;
+        fn insert_next_in_queue(track: CxxTrackMetadata) -> bool;
+        fn remove_from_queue(index: i32) -> bool;
+        fn clear_queue() -> bool;
+        fn set_current_queue_index(index: i32) -> bool;
         fn get_track_metadata(track_id: String) -> CxxTrackMetadata;
         fn get_library_albums() -> Vec<CxxLibraryAlbum>;
         fn get_library_artists() -> Vec<CxxLibraryArtist>;
@@ -649,6 +654,40 @@ pub fn replace_queue(tracks: Vec<ffi::CxxTrackMetadata>, start_index: i32) -> bo
 pub fn get_queue() -> Vec<ffi::CxxTrackMetadata> {
     let core = get_core();
     core.queue.list()
+}
+
+/// The interface used to keep its own copy of the queue for adding, removing
+/// and clearing, and never told the core about any of it. What the panel
+/// showed and what actually played were two different lists: a track you
+/// queued was drawn and skipped, and one you removed came back at the end of
+/// the album. All three now land here, and the interface reads the list back.
+pub fn append_to_queue(track: ffi::CxxTrackMetadata) -> bool {
+    get_core().queue.append(track);
+    true
+}
+
+pub fn insert_next_in_queue(track: ffi::CxxTrackMetadata) -> bool {
+    get_core().queue.insert_next(track);
+    true
+}
+
+pub fn remove_from_queue(index: i32) -> bool {
+    if index < 0 {
+        return false;
+    }
+    get_core().queue.remove(index as usize)
+}
+
+pub fn clear_queue() -> bool {
+    get_core().queue.clear();
+    true
+}
+
+pub fn set_current_queue_index(index: i32) -> bool {
+    if index < 0 {
+        return false;
+    }
+    get_core().queue.set_current_index(index as usize)
 }
 
 pub fn get_track_metadata(track_id: String) -> ffi::CxxTrackMetadata {

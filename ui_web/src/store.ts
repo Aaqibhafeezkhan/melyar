@@ -60,6 +60,7 @@ type Actions = {
   toggleLike: (track: TrackMeta) => void;
   playNextInQueue: (track: TrackMeta) => void;
   addToQueue: (track: TrackMeta) => void;
+  removeFromQueue: (track: TrackMeta) => void;
   playQueueIndex: (index: number) => void;
   clearQueue: () => void;
   openMenu: (menu: Menu) => void;
@@ -271,7 +272,10 @@ export const usePlayer = create<State & Actions>()((set, get) => ({
   playNextInQueue: (track) => {
     const b = bridge();
     if (!b) return;
-    b.addToQueue(track.id);
+    // The core inserts after the track that is playing. Adding to the end
+    // instead would bury it behind everything already queued and the toast
+    // would be promising something else.
+    b.playNextInQueue(track.id);
     set({ menu: null, toast: t("toast.playNext"), toastAction: null });
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(() => set({ toast: null }), 1700);
@@ -284,6 +288,20 @@ export const usePlayer = create<State & Actions>()((set, get) => ({
     set({ menu: null, toast: t("toast.queued"), toastAction: null });
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(() => set({ toast: null }), 1700);
+  },
+
+  removeFromQueue: (track) => {
+    const b = bridge();
+    if (!b) return;
+    // The core is the list that plays, so the position has to be found there
+    // rather than assumed from what the panel happens to be showing.
+    const index = get().queue.findIndex((q) => q.id === track.id);
+    if (index < 0) return;
+    b.removeFromQueue(index);
+    // No toast: the row leaves the panel in the same frame, which is the
+    // confirmation. The queue is short again, and nothing was destroyed that
+    // an Undo would have to put back.
+    set({ menu: null });
   },
 
   playQueueIndex: (index) => {

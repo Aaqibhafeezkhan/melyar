@@ -1,4 +1,4 @@
-import { Heart, ListEnd, ListPlus, Mic2, Share2, Download, ExternalLink, X, Trash2, Edit3, Play } from "lucide-react";
+import { Heart, ListPlus, Mic2, Share2, X, Trash2, Play } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { usePlayer } from "@/store";
 import { Artwork } from "@/components/Toolbar";
@@ -12,6 +12,8 @@ export function ContextMenu() {
   const toggleLike = usePlayer((s) => s.toggleLike);
   const playNextInQueue = usePlayer((s) => s.playNextInQueue);
   const addToQueue = usePlayer((s) => s.addToQueue);
+  const removeFromQueue = usePlayer((s) => s.removeFromQueue);
+  const queue = usePlayer((s) => s.queue);
   const navigate = usePlayer((s) => s.navigate);
   const setLyricsOpen = usePlayer((s) => s.setLyricsOpen);
   const toastNote = usePlayer((s) => s.toastNote);
@@ -96,30 +98,6 @@ export function ContextMenu() {
           </button>
           <button
             className="compact-tile flex items-center justify-between gap-3 px-5 py-2.5 rounded-lg hover:bg-white/5 transition-colors border-t border-glass-border/50"
-            onClick={(e) => { e.stopPropagation(); closeMenu(); }}
-          >
-            <div className="flex items-center gap-3">
-              <ListEnd className="size-4 text-text-secondary" />
-              <span className="text-sm font-medium text-text">{t("menu.addToPlaylist")}</span>
-            </div>
-            <div className="size-6 rounded-full bg-white/5 flex items-center justify-center text-text-tertiary">
-              <ChevronIcon className="size-3" />
-            </div>
-          </button>
-          <button
-            className="compact-tile flex items-center justify-between gap-3 px-5 py-2.5 rounded-lg hover:bg-white/5 transition-colors border-t border-glass-border/50"
-            onClick={(e) => { e.stopPropagation(); closeMenu(); }}
-          >
-            <div className="flex items-center gap-3">
-              <Download className="size-4 text-text-secondary" />
-              <span className="text-sm font-medium text-text">{t("menu.download")}</span>
-            </div>
-            <div className="size-6 rounded-full bg-white/5 flex items-center justify-center text-text-tertiary">
-              <ChevronIcon className="size-3" />
-            </div>
-          </button>
-          <button
-            className="compact-tile flex items-center justify-between gap-3 px-5 py-2.5 rounded-lg hover:bg-white/5 transition-colors border-t border-glass-border/50"
             onClick={(e) => { e.stopPropagation(); setLyricsOpen(true); closeMenu(); }}
           >
             <div className="flex items-center gap-3">
@@ -157,15 +135,21 @@ export function ContextMenu() {
               <ChevronIcon className="size-3" />
             </div>
           </button>
-          <button
-            className="compact-tile flex items-center justify-between gap-3 px-5 py-2.5 rounded-lg hover:bg-white/5 transition-colors border-t border-glass-border/50 text-red-400"
-            onClick={(e) => { e.stopPropagation(); closeMenu(); }}
-          >
-            <div className="flex items-center gap-3">
-              <Trash2 className="size-4" />
-              <span className="text-sm font-medium text-red-400">{t("menu.removeFromQueue")}</span>
-            </div>
-          </button>
+          {/* Only offered for a track that is actually queued. The bridge used to
+              clear this row off the list without touching what plays, so the
+              song you removed came back at the end of the album - the row now
+              goes through the core, which is the list that plays. */}
+          {queue.some((q) => q.id === track.id) ? (
+            <button
+              className="compact-tile flex items-center justify-between gap-3 px-5 py-2.5 rounded-lg hover:bg-white/5 transition-colors border-t border-glass-border/50 text-red-400"
+              onClick={(e) => { e.stopPropagation(); removeFromQueue(track); }}
+            >
+              <div className="flex items-center gap-3">
+                <Trash2 className="size-4" />
+                <span className="text-sm font-medium text-red-400">{t("menu.removeFromQueue")}</span>
+              </div>
+            </button>
+          ) : null}
         </div>
       </div>
     </div>

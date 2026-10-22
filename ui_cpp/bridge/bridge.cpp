@@ -17,6 +17,21 @@ MelyarBridge* MelyarBridge::instance() {
 MelyarBridge::MelyarBridge(QObject *parent) : QObject(parent) {
     s_instance = this;
     melyar::init_melyar_core();
+
+    // One timer the bridge owns, so it can be stopped. Arming a bare
+    // singleShot left it unreachable: cancel cleared the label but the
+    // deadline still fired and paused playback anyway, and setting the timer
+    // again stacked a second one.
+    m_sleepTimer = new QTimer(this);
+    m_sleepTimer->setSingleShot(true);
+    connect(m_sleepTimer, &QTimer::timeout, this, [this]() {
+        if (!m_sleepTimerActive) return;
+        togglePlay();
+        m_sleepTimerActive = false;
+        m_sleepTimerText.clear();
+        emit sleepTimerChanged();
+    });
+
     loadFavorites();
     loadHistory();
     loadLibrary();
@@ -251,6 +266,26 @@ void MelyarBridge::fetchLyrics(const QString &trackId) {
 }
 
 // New playback control functions
+
+QVariantList MelyarBridge::queueFromCore() const {
+    QVariantList q_list;
+    try {
+        for (const auto &item : melyar::get_queue()) {
+            QVariantMap track;
+            track["id"] = QString::fromStdString(std::string(item.id));
+            track["title"] = QString::fromStdString(std::string(item.title));
+            track["artist"] = QString::fromStdString(std::string(item.artist));
+            track["album"] = QString::fromStdString(std::string(item.album));
+            track["duration"] = item.duration_secs;
+            track["thumbnail"] = QString::fromStdString(std::string(item.thumbnail_url));
+            q_list.append(track);
+        }
+    } catch (const std::exception &e) {
+        std::cerr << "queue read failed: " << e.what() << std::endl;
+    }
+    return q_list;
+}
+
 void MelyarBridge::replaceQueue(const QVariantList &tracks, int startIndex) {
     rust::Vec<melyar::CxxTrackMetadata> vec;
     for (const auto &item : tracks) {
@@ -268,19 +303,7 @@ void MelyarBridge::replaceQueue(const QVariantList &tracks, int startIndex) {
     try {
         melyar::replace_queue(vec, startIndex);
         // Refresh the exposed queue property so the UI queue panel stays in sync
-        rust::Vec<melyar::CxxTrackMetadata> updated = melyar::get_queue();
-        QVariantList q_list;
-        for (const auto &item : updated) {
-            QVariantMap track;
-            track["id"] = QString::fromStdString(std::string(item.id));
-            track["title"] = QString::fromStdString(std::string(item.title));
-            track["artist"] = QString::fromStdString(std::string(item.artist));
-            track["album"] = QString::fromStdString(std::string(item.album));
-            track["duration"] = item.duration_secs;
-            track["thumbnail"] = QString::fromStdString(std::string(item.thumbnail_url));
-            q_list.append(track);
-        }
-        m_queue = q_list;
+        m_queue = queueFromCore();
         emit queueChanged();
     } catch (const std::exception &e) {
         std::cerr << "replaceQueue failed: " << e.what() << std::endl;
@@ -318,45 +341,57 @@ void MelyarBridge::addToQueue(const QString &trackId) {
     (void)QtConcurrent::run([this, trackId]() {
         rust::String r_id(trackId.toStdString());
         auto track = melyar::get_track_metadata(r_id);
-        if (!track.id.empty()) {
-            QVariantMap trackMap;
-            trackMap["id"] = QString::fromStdString(std::string(track.id));
-            trackMap["title"] = QString::fromStdString(std::string(track.title));
-            trackMap["artist"] = QString::fromStdString(std::string(track.artist));
-            trackMap["album"] = QString::fromStdString(std::string(track.album));
-            trackMap["duration"] = track.duration_secs;
-            trackMap["thumbnail"] = QString::fromStdString(std::string(track.thumbnail_url));
+        if (track.id.empty()) return;
+        // Write to the core first, then read the list back. Appending only to
+        // this mirror drew the track and never played it: the end of the song,
+        // the media keys and MPRIS all read the core's list, which knew
+        // nothing about it.
+        melyar::append_to_queue(track);
+        const QVariantList updated = queueFromCore();
+        QMetaObject::invokeMethod(this, [this, updated]() {
+            m_queue = updated;
+            emit queueChanged();
+        }, Qt::QueuedConnection);
+    });
+}
 
-            QMetaObject::invokeMethod(this, [this, trackMap]() {
-                m_queue.append(trackMap);
-                emit queueChanged();
-            }, Qt::QueuedConnection);
-        }
+void MelyarBridge::playNextInQueue(const QString &trackId) {
+    (void)QtConcurrent::run([this, trackId]() {
+        rust::String r_id(trackId.toStdString());
+        auto track = melyar::get_track_metadata(r_id);
+        if (track.id.empty()) return;
+        melyar::insert_next_in_queue(track);
+        const QVariantList updated = queueFromCore();
+        QMetaObject::invokeMethod(this, [this, updated]() {
+            m_queue = updated;
+            emit queueChanged();
+        }, Qt::QueuedConnection);
     });
 }
 
 void MelyarBridge::removeFromQueue(int index) {
-    if (index >= 0 && index < m_queue.length()) {
-        m_queue.removeAt(index);
-        emit queueChanged();
-    }
+    if (!melyar::remove_from_queue(index)) return;
+    m_queue = queueFromCore();
+    emit queueChanged();
 }
 
 void MelyarBridge::playFromQueue(int index) {
-    if (index >= 0 && index < m_queue.length()) {
-        auto track = m_queue[index].toMap();
-        QString trackId = track["id"].toString();
-        playTrack(trackId);
+    if (index < 0 || index >= m_queue.length()) return;
+    auto track = m_queue[index].toMap();
+    const QString trackId = track["id"].toString();
 
-        // Move played track to current position in queue
-        m_queue.removeAt(index);
-        m_queue.prepend(track);
-        emit queueChanged();
-    }
+    // Tell the core where playback resumed. Its cursor is what the end of the
+    // track advances from, and it used to be left wherever it last happened to
+    // be, so picking row five carried on from somewhere else entirely.
+    // The queue also keeps its order now instead of jumping the clicked row to
+    // the front behind the user's back.
+    melyar::set_current_queue_index(index);
+    playTrack(trackId);
 }
 
 void MelyarBridge::clearQueue() {
-    m_queue.clear();
+    melyar::clear_queue();
+    m_queue = queueFromCore();
     emit queueChanged();
 }
 
@@ -379,18 +414,20 @@ void MelyarBridge::setSleepTimer(int seconds) {
     emit sleepTimerChanged();
 
     if (seconds > 0) {
-        QTimer::singleShot(seconds * 1000, this, [this]() {
-            this->togglePlay();
-            m_sleepTimerActive = false;
-            m_sleepTimerText = "";
-            emit sleepTimerChanged();
-        });
+        // Restart the one timer rather than arm another. A second call used to
+        // leave both deadlines live, and neither could ever be cancelled.
+        m_sleepTimer->start(seconds * 1000);
+    } else {
+        m_sleepTimer->stop();
     }
 }
 
 void MelyarBridge::cancelSleepTimer() {
+    // Stop the deadline, not only the label. Cancelling cleared the display
+    // while the original timer still fired and paused playback on its own.
+    m_sleepTimer->stop();
     m_sleepTimerActive = false;
-    m_sleepTimerText = "";
+    m_sleepTimerText.clear();
     emit sleepTimerChanged();
 }
 
@@ -436,6 +473,11 @@ void MelyarBridge::setPickedFile(const QString &fileUrl) {
         path = QUrl(path).toLocalFile();
     }
     if (path.isEmpty()) {
+        // Cancelled. The answer has to come back even when there is nothing to
+        // report: the web side is waiting on this signal, and a promise left
+        // waiting keeps its handler connected, so the next dialog would wake the
+        // stale handler as well and import the file twice.
+        emit filePicked(QString());
         return;
     }
     m_pickedFile = path;

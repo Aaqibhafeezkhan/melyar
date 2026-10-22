@@ -117,6 +117,70 @@ impl TrackQueue {
         self.state.read().tracks.clone()
     }
 
+    /// Add a track to the end of both the played list and the original order.
+    ///
+    /// The interface's "add to queue" used to touch only its own mirror of the
+    /// queue, so the tracks a user queued were drawn and never played: the end
+    /// of the song, the media keys and MPRIS all read this list instead.
+    pub fn append(&self, track: CxxTrackMetadata) {
+        let mut s = self.state.write();
+        s.original_tracks.push(track.clone());
+        s.tracks.push(track);
+    }
+
+    /// Insert a track immediately after the one playing, which is what
+    /// "Play next" promises. Appending would put it behind everything that is
+    /// already queued, and the toast would be lying.
+    pub fn insert_next(&self, track: CxxTrackMetadata) {
+        let mut s = self.state.write();
+        let at = (s.current_index + 1).min(s.tracks.len());
+        s.tracks.insert(at, track.clone());
+        // The original order carries no cursor, so this end is the only place
+        // that keeps the track no matter which way the next shuffle goes.
+        s.original_tracks.push(track);
+    }
+
+    /// Remove by position in the played list, keeping the original order in
+    /// step so a later shuffle round trip cannot bring the track back.
+    pub fn remove(&self, index: usize) -> bool {
+        let mut s = self.state.write();
+        if index >= s.tracks.len() {
+            return false;
+        }
+        let removed = s.tracks.remove(index);
+        if let Some(pos) = s.original_tracks.iter().position(|t| t.id == removed.id) {
+            s.original_tracks.remove(pos);
+        }
+        if index < s.current_index {
+            // Everything before the cursor shifted one place left.
+            s.current_index -= 1;
+        }
+        if s.current_index >= s.tracks.len() {
+            s.current_index = s.tracks.len().saturating_sub(1);
+        }
+        true
+    }
+
+    pub fn clear(&self) {
+        let mut s = self.state.write();
+        s.tracks.clear();
+        s.original_tracks.clear();
+        s.current_index = 0;
+    }
+
+    /// Point the cursor at the track the interface just started from the queue.
+    /// Without this the end of a clicked track advanced from wherever the core
+    /// last happened to be, so picking row five skipped to row six of some
+    /// other place in the list.
+    pub fn set_current_index(&self, index: usize) -> bool {
+        let mut s = self.state.write();
+        if index >= s.tracks.len() {
+            return false;
+        }
+        s.current_index = index;
+        true
+    }
+
     pub fn set_shuffle(&self, enabled: bool) {
         let mut s = self.state.write();
         s.shuffle = enabled;
@@ -345,5 +409,92 @@ mod tests {
         assert!(q.list().is_empty());
         assert!(q.current_track().is_none());
         assert!(q.next_track().is_none());
+    }
+
+    #[test]
+    fn appended_tracks_are_played_by_auto_advance() {
+        // The interface queues a track while an album is playing. The end of the
+        // album has to reach it, which only happens if the queue the core reads
+        // was told about it.
+        let q = TrackQueue::new();
+        q.set_queue(vec![track("a"), track("b")], 0);
+        q.append(track("c"));
+        assert_eq!(ids(&q.list()), vec!["a", "b", "c"]);
+        assert_eq!(q.next_track().map(|t| t.id), Some("b".into()));
+        assert_eq!(q.next_track().map(|t| t.id), Some("c".into()));
+    }
+
+    #[test]
+    fn insert_next_lands_after_the_playing_track() {
+        let q = TrackQueue::new();
+        q.set_queue(vec![track("a"), track("b"), track("c")], 1); // playing b
+        q.insert_next(track("x"));
+        assert_eq!(ids(&q.list()), vec!["a", "b", "x", "c"]);
+        assert_eq!(q.current_track().map(|t| t.id), Some("b".into()));
+        assert_eq!(q.next_track().map(|t| t.id), Some("x".into()));
+    }
+
+    #[test]
+    fn insert_next_on_an_empty_queue_starts_it() {
+        let q = TrackQueue::new();
+        q.insert_next(track("a"));
+        assert_eq!(ids(&q.list()), vec!["a"]);
+        assert_eq!(q.current_track().map(|t| t.id), Some("a".into()));
+    }
+
+    #[test]
+    fn removing_a_track_keeps_the_cursor_on_the_same_song() {
+        let q = TrackQueue::new();
+        q.set_queue(vec![track("a"), track("b"), track("c"), track("d")], 2); // playing c
+        assert!(q.remove(0));
+        // "a" went, so the cursor must move left or it would sit on "d".
+        assert_eq!(q.current_track().map(|t| t.id), Some("c".into()));
+        assert_eq!(ids(&q.list()), vec!["b", "c", "d"]);
+    }
+
+    #[test]
+    fn removing_the_playing_track_advances_to_the_next_one() {
+        let q = TrackQueue::new();
+        q.set_queue(vec![track("a"), track("b")], 0);
+        assert!(q.remove(0));
+        assert_eq!(q.current_track().map(|t| t.id), Some("b".into()));
+    }
+
+    #[test]
+    fn removed_tracks_do_not_return_after_a_shuffle_round_trip() {
+        let q = TrackQueue::new();
+        q.set_queue(vec![track("a"), track("b"), track("c")], 0);
+        q.append(track("d"));
+        assert!(q.remove(2));
+        q.set_shuffle(true);
+        q.set_shuffle(false);
+        let mut seen = ids(&q.list());
+        seen.sort();
+        assert_eq!(seen, vec!["a", "b", "d"]);
+    }
+
+    #[test]
+    fn clearing_empties_both_orders_and_the_cursor() {
+        let q = queue_of_five();
+        for _ in 0..3 {
+            q.next_track();
+        }
+        q.clear();
+        assert!(q.list().is_empty());
+        assert!(q.current_track().is_none());
+        assert!(q.next_track().is_none());
+        // A cleared queue is a usable queue, not a stranded cursor.
+        q.set_queue(vec![track("fresh")], 0);
+        assert_eq!(q.current_track().map(|t| t.id), Some("fresh".into()));
+    }
+
+    #[test]
+    fn removing_past_the_end_is_refused() {
+        let q = queue_of_five();
+        assert!(!q.remove(5));
+        assert!(!q.remove(99));
+        assert_eq!(q.list().len(), 5);
+        let empty = TrackQueue::new();
+        assert!(!empty.remove(0));
     }
 }

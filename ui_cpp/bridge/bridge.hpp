@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QTimer>
 #include <QVariantList>
 #include <QVariantMap>
 #include <cstdint>
@@ -108,6 +109,9 @@ public:
     Q_INVOKABLE void setRepeatMode(int mode);
     Q_INVOKABLE void replaceQueue(const QVariantList &tracks, int startIndex);
     Q_INVOKABLE void addToQueue(const QString &trackId);
+    /** Insert right after the track that is playing. addToQueue appends, which
+     * is a different promise from the one "Play next" makes. */
+    Q_INVOKABLE void playNextInQueue(const QString &trackId);
     Q_INVOKABLE void removeFromQueue(int index);
     Q_INVOKABLE void playFromQueue(int index);
     Q_INVOKABLE void clearQueue();
@@ -186,8 +190,16 @@ private:
     int m_repeatMode{0}; // 0=off, 1=all, 2=one
     bool m_sleepTimerActive{false};
     QString m_sleepTimerText{""};
+    /** One timer the bridge owns. An armed-and-forgotten singleShot cannot be
+     * cancelled, and re-arming left two of them racing to pause playback. */
+    QTimer *m_sleepTimer{nullptr};
     QVariantList m_libraryAlbums;
     QVariantList m_libraryArtists;
     QVariantList m_libraryPlaylists;
     QVariantList m_searchHistory;
+
+    /** Read the queue back from the core. The core is the single list that
+     * drives auto-advance, the media keys and MPRIS, so every mutation is
+     * written there first and this mirror is only ever rebuilt from it. */
+    QVariantList queueFromCore() const;
 };
