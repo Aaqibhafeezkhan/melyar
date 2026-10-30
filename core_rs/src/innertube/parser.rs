@@ -1,4 +1,4 @@
-use crate::ffi::CxxTrackMetadata;
+use crate::ffi::{CxxLibraryAlbum, CxxLibraryArtist, CxxLibraryPlaylist, CxxTrackMetadata};
 use anyhow::Result;
 use serde_json::Value;
 
@@ -86,6 +86,14 @@ fn parse_list_item(item: &Value) -> Option<CxxTrackMetadata> {
         }
     }
 
+    if duration_secs == 0.0 {
+        duration_secs = renderer
+            .pointer("/fixedColumns/0/musicResponsiveListItemFixedColumnRenderer/text/runs/0/text")
+            .and_then(Value::as_str)
+            .map(parse_duration_str)
+            .unwrap_or(0.0);
+    }
+
     let thumbnail_url = renderer
         .pointer("/thumbnail/musicThumbnailRenderer/thumbnail/thumbnails")
         .and_then(|v| v.as_array())
@@ -142,9 +150,253 @@ pub fn parse_duration_str(s: &str) -> f64 {
     }
 }
 
+
+fn first_run_text(value: Option<&Value>) -> Option<String> {
+    value?
+        .pointer("/runs/0/text")
+        .and_then(Value::as_str)
+        .map(str::to_string)
+}
+
+fn thumbnail_url(header: &Value) -> String {
+    header
+        .pointer("/thumbnail/musicThumbnailRenderer/thumbnail/thumbnails")
+        .and_then(Value::as_array)
+        .and_then(|items| items.last())
+        .and_then(|item| item.get("url"))
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string()
+}
+
+fn response_browse_id(json: &Value) -> Option<String> {
+    json.pointer("/responseContext/serviceTrackingParams")
+        .and_then(Value::as_array)?
+        .iter()
+        .flat_map(|service| service.get("params").and_then(Value::as_array).into_iter().flatten())
+        .find(|param| param.get("key").and_then(Value::as_str) == Some("browse_id"))
+        .and_then(|param| param.get("value").and_then(Value::as_str))
+        .map(str::to_string)
+}
+
+fn parse_leading_count(value: &str) -> i32 {
+    value
+        .trim()
+        .chars()
+        .take_while(|ch| ch.is_ascii_digit())
+        .collect::<String>()
+        .parse()
+        .unwrap_or(0)
+}
+
+fn parse_compact_count(value: &str) -> i64 {
+    let normalized = value.trim().replace(',', "");
+    let suffix = normalized.chars().last().unwrap_or_default();
+    let number = if suffix.is_ascii_alphabetic() {
+        normalized[..normalized.len() - suffix.len_utf8()]
+            .parse::<f64>()
+            .unwrap_or(0.0)
+    } else {
+        normalized.parse::<f64>().unwrap_or(0.0)
+    };
+    let multiplier = match suffix.to_ascii_uppercase() {
+        'K' => 1_000.0,
+        'M' => 1_000_000.0,
+        'B' => 1_000_000_000.0,
+        _ => 1.0,
+    };
+    (number * multiplier).round() as i64
+}
+
+fn parse_duration_display(value: &str) -> f64 {
+    if value.contains(':') {
+        return parse_duration_str(value);
+    }
+
+    value
+        .split(',')
+        .filter_map(|part| {
+            let mut words = part.split_whitespace();
+            let amount = words.next()?.parse::<f64>().ok()?;
+            let unit = words.next()?.to_ascii_lowercase();
+            let multiplier = if unit.starts_with("hour") {
+                3600.0
+            } else if unit.starts_with("minute") {
+                60.0
+            } else if unit.starts_with("second") {
+                1.0
+            } else {
+                return None;
+            };
+            Some(amount * multiplier)
+        })
+        .sum()
+}
+
+pub fn parse_album_detail(json: &Value) -> Option<CxxLibraryAlbum> {
+    let header = json.pointer("/header/musicResponsiveHeaderRenderer")?;
+    let title = first_run_text(header.get("title"))?;
+    let artist = first_run_text(header.get("straplineTextOne"))
+        .or_else(|| first_run_text(header.get("straplineTextTwo")))
+        .unwrap_or_default();
+    let subtitle_runs = header.pointer("/subtitle/runs").and_then(Value::as_array);
+    let year = subtitle_runs
+        .into_iter()
+        .flatten()
+        .filter_map(|run| run.get("text").and_then(Value::as_str))
+        .find(|text| text.len() == 4 && text.chars().all(|ch| ch.is_ascii_digit()))
+        .unwrap_or_default()
+        .to_string();
+    let second_subtitle = header.get("secondSubtitle");
+    let summary = second_subtitle
+        .and_then(|value| value.pointer("/runs/0/text"))
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    let track_count = parse_leading_count(summary);
+    let header_duration_secs = second_subtitle
+        .and_then(|value| value.pointer("/runs"))
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|run| run.get("text").and_then(Value::as_str))
+        .map(parse_duration_display)
+        .find(|duration| *duration > 0.0)
+        .unwrap_or(0.0);
+
+    let tracks = json
+        .pointer("/contents/twoColumnBrowseResultsRenderer/secondaryContents/sectionListRenderer/contents")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|section| section.pointer("/musicShelfRenderer/contents"))
+        .filter_map(Value::as_array)
+        .flatten()
+        .filter_map(parse_list_item)
+        .collect::<Vec<_>>();
+    let track_duration_secs = tracks.iter().map(|track| track.duration_secs).sum::<f64>();
+    let duration_secs = if header_duration_secs > 0.0 {
+        header_duration_secs
+    } else {
+        track_duration_secs
+    };
+
+    Some(CxxLibraryAlbum {
+        id: response_browse_id(json)?,
+        title,
+        artist,
+        thumbnail_url: thumbnail_url(header),
+        year,
+        track_count,
+        duration_secs,
+    })
+}
+
+pub fn parse_artist_detail(json: &Value) -> Option<CxxLibraryArtist> {
+    let header = json
+        .pointer("/header/musicImmersiveHeaderRenderer")
+        .or_else(|| json.pointer("/header/musicVisualHeaderRenderer"))?;
+    let subscription = header.pointer("/subscriptionButton/subscribeButtonRenderer");
+    let id = subscription
+        .and_then(|value| value.get("channelId"))
+        .and_then(Value::as_str)?
+        .to_string();
+    let follower_text = subscription
+        .and_then(|value| first_run_text(value.get("subscriberCountText")))
+        .unwrap_or_default();
+
+    Some(CxxLibraryArtist {
+        id,
+        name: first_run_text(header.get("title"))?,
+        thumbnail_url: thumbnail_url(header),
+        follower_count: parse_compact_count(&follower_text),
+    })
+}
+
+pub fn parse_playlist_detail(json: &Value) -> Option<CxxLibraryPlaylist> {
+    let header = json
+        .pointer("/header/musicResponsiveHeaderRenderer")
+        .or_else(|| json.pointer("/header/musicEditablePlaylistDetailHeaderRenderer"))?;
+    let shelf = json
+        .pointer("/contents/twoColumnBrowseResultsRenderer/secondaryContents/sectionListRenderer/contents")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .find_map(|section| section.get("musicPlaylistShelfRenderer"));
+    let id = shelf
+        .and_then(|value| value.get("playlistId"))
+        .and_then(Value::as_str)
+        .map(str::to_string)
+        .or_else(|| response_browse_id(json).map(|value| value.trim_start_matches("VL").to_string()))?;
+    let second_subtitle = header.get("secondSubtitle");
+    let summary = second_subtitle
+        .and_then(|value| value.pointer("/runs/0/text"))
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+
+    Some(CxxLibraryPlaylist {
+        id,
+        name: first_run_text(header.get("title"))?,
+        thumbnail_url: thumbnail_url(header),
+        track_count: parse_leading_count(summary),
+        is_owner: json.pointer("/header/musicEditablePlaylistDetailHeaderRenderer").is_some(),
+    })
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+
+    #[test]
+    fn parses_a_track_from_a_real_innertube_browse_response() {
+        let json: Value = serde_json::from_str(include_str!("fixtures/album.json")).unwrap();
+        let tracks = parse_search_results(&json).unwrap();
+
+        assert!(!tracks.is_empty());
+        assert_eq!(tracks[0].id, "0m68rsj48X0");
+        assert_eq!(tracks[0].title, "The Explanation");
+        assert_eq!(tracks[0].artist, "XXXTENTACION");
+        assert_eq!(tracks[0].duration_secs, 51.0);
+    }
+
+    #[test]
+    fn parses_album_metadata_from_a_real_innertube_response() {
+        let json: Value = serde_json::from_str(include_str!("fixtures/album.json")).unwrap();
+        let album = parse_album_detail(&json).unwrap();
+
+        assert_eq!(album.id, "MPREb_Tr9YVfRfip1");
+        assert_eq!(album.title, "17");
+        assert_eq!(album.artist, "XXXTENTACION");
+        assert_eq!(album.year, "2017");
+        assert_eq!(album.track_count, 11);
+        assert!(album.duration_secs > 0.0);
+        assert!(album.thumbnail_url.starts_with("https://"));
+    }
+
+    #[test]
+    fn parses_artist_metadata_from_a_real_innertube_response() {
+        let json: Value = serde_json::from_str(include_str!("fixtures/artist.json")).unwrap();
+        let artist = parse_artist_detail(&json).unwrap();
+
+        assert_eq!(artist.id, "UCJwGWV914kBlV4dKRn7AEFA");
+        assert_eq!(artist.name, "Hatsune Miku");
+        assert_eq!(artist.follower_count, 4_410_000);
+        assert!(artist.thumbnail_url.starts_with("https://"));
+    }
+
+    #[test]
+    fn parses_playlist_metadata_from_a_real_innertube_response() {
+        let json: Value = serde_json::from_str(include_str!("fixtures/playlist.json")).unwrap();
+        let playlist = parse_playlist_detail(&json).unwrap();
+
+        assert_eq!(playlist.id, "PLxyTaDz8f5PBc-8kE36gvB-eflhODG2dw");
+        assert_eq!(playlist.name, "collaborative");
+        assert_eq!(playlist.track_count, 2);
+        assert!(!playlist.is_owner);
+        assert!(playlist.thumbnail_url.starts_with("https://"));
+    }
+
 
     #[test]
     fn test_parse_duration_str() {
