@@ -104,7 +104,7 @@ export function LyricsOverlay() {
   return (
     <div
       className={cn(
-        "lyrics-overlay fixed inset-0 z-[70] flex flex-col bg-black",
+        "lyrics-motion fixed inset-0 z-[70] flex flex-col bg-black",
         !showControls ? "pointer-events-none" : "",
       )}
       role="dialog"

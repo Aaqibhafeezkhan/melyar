@@ -2195,10 +2195,10 @@
 
 /* ---- Reduced Motion Override ---- */
 @media (prefers-reduced-motion: reduce) {
-  .lyrics-overlay,
-  .lyrics-overlay *,
-  .lyrics-overlay *::before,
-  .lyrics-overlay *::after {
+  .lyrics-motion,
+  .lyrics-motion *,
+  .lyrics-motion *::before,
+  .lyrics-motion *::after {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
