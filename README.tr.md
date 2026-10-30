@@ -120,7 +120,7 @@ oynatılır.
 |---|---|
 | CMake | ≥ 3.25 |
 | Rust | ≥ 1.75 |
-| Qt6 | Core, Gui, Quick, Qml, WebEngineQuick, WebChannel |
+| Qt6 | Core, Gui, Quick, Qml, WebEngineQuick, WebChannel, SVG, Wayland |
 | mpv | ≥ 2.x (`libmpv`) |
 | pkg-config | — |
 | Node.js + pnpm | ≥ 20 / ≥ 9 (yalnızca web arayüzü geliştirmek için) |
@@ -132,8 +132,9 @@ indirilir; ayrıca kurulum gerekmez.
 ### Arch / Manjaro
 
 ```bash
-sudo pacman -S base-devel cmake rust pkgconf \
-    qt6-base qt6-declarative qt6-webengine qt6-webchannel mpv
+sudo pacman -S base-devel cmake git rust pkgconf \
+    qt6-base qt6-declarative qt6-svg qt6-wayland \
+    qt6-webengine qt6-webchannel mpv
 ```
 
 ### Debian / Ubuntu

@@ -67,7 +67,7 @@ The C++ ↔ Rust boundary is connected via the `cxx` bridge, while the UI commun
 
 - Rust ≥ 1.75
 - CMake ≥ 3.25
-- Qt 6 (`Core`, `Gui`, `Quick`, `Qml`, `WebEngineQuick`, `WebChannel`)
+- Qt 6 (`Core`, `Gui`, `Quick`, `Qml`, `WebEngineQuick`, `WebChannel`, `Svg`, `Wayland`)
 - Node.js ≥ 20
 - pnpm ≥ 9
 - mpv ≥ 2.x with development files
