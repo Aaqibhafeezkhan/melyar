@@ -1,0 +1,36 @@
+{
+  "header": {
+    "musicImmersiveHeaderRenderer": {
+      "title": {
+        "runs": [
+          {
+            "text": "Hatsune Miku"
+          }
+        ]
+      },
+      "subscriptionButton": {
+        "subscribeButtonRenderer": {
+          "channelId": "UCJwGWV914kBlV4dKRn7AEFA",
+          "subscriberCountText": {
+            "runs": [
+              {
+                "text": "4.41M"
+              }
+            ]
+          }
+        }
+      },
+      "thumbnail": {
+        "musicThumbnailRenderer": {
+          "thumbnail": {
+            "thumbnails": [
+              {
+                "url": "https://lh3.googleusercontent.com/l8WAJMXpC_FWfdXJbpDjndpmC5ZqXLsp0LB3d944wPnmu8w2J0ULUb1yPg247cjuRbMFbt988I-_7g=w2880-h1200-p-l90-rj"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
